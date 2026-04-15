@@ -1,0 +1,6 @@
+node_modules/
+.next/
+plotline.db
+plotline.db-wal
+plotline.db-shm
+drizzle/

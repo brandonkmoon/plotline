@@ -1,0 +1,8 @@
+{
+  "name": "plotline",
+  "main": "src/partykit/room.ts",
+  "parties": {
+    "registry": "src/partykit/registry.ts"
+  },
+  "compatibilityDate": "2024-01-01"
+}

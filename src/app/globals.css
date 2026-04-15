@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #06060a;
+  --surface: #0e0e14;
+  --surface-2: #16161e;
+  --border: #252530;
+  --text: #f2ede4;
+  --text-dim: #9a9490;
+  --text-muted: #5c5854;
+  --gold-light: #f5d778;
+  --gold: #d4a843;
+  --gold-dark: #b8922d;
+  --gold-deep: #8a6d1f;
+  --gold-highlight: #fce89d;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Film grain overlay */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Keyframe Animations */
+@keyframes goldShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes titleIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes promptIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes revealLine {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes monsterFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes dotWave {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Utility classes */
+.gold-text {
+  background: linear-gradient(
+    135deg,
+    #b8922d,
+    #f5d778,
+    #fce89d,
+    #f5d778,
+    #b8922d
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: goldShimmer 4s ease infinite;
+}
+
+.gold-gradient-bg {
+  background: linear-gradient(
+    135deg,
+    #b8922d,
+    #f5d778,
+    #fce89d,
+    #f5d778,
+    #b8922d
+  );
+  background-size: 300% 300%;
+  animation: goldShimmer 4s ease infinite;
+}
+
+.anim-title-in {
+  animation: titleIn 0.8s ease-out forwards;
+}
+
+.anim-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.anim-prompt-in {
+  animation: promptIn 0.5s ease-out forwards;
+}
+
+.anim-reveal-line {
+  animation: revealLine 0.6s ease-out forwards;
+}
+
+.anim-float {
+  animation: monsterFloat 4s ease-in-out infinite;
+}
+
+.anim-float-small {
+  animation: monsterFloat 3.5s ease-in-out infinite;
+}
+
+/* scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
