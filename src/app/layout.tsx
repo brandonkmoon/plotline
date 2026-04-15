@@ -31,7 +31,10 @@ export const metadata: Metadata = {
     "A blind collaborative storytelling party game for 4-12 players.",
   manifest: "/manifest.json",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    (() => {
+      const url = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      return url.startsWith("http") ? url : `https://${url}`;
+    })()
   ),
   openGraph: {
     title: "Plotline",
