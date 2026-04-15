@@ -58,8 +58,18 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubs: (() => void)[] = [];
 
+    // Sync playerId from gameClient — it may have been set before
+    // this provider mounted (e.g., TitleScreen called connect directly)
+    const existingId = gameClient.getPlayerId();
+    if (existingId) {
+      playerIdRef.current = existingId;
+    }
+
     unsubs.push(
       gameClient.onStateUpdate((r) => {
+        // Also sync playerId on every state update in case it wasn't set yet
+        const pid = gameClient.getPlayerId();
+        if (pid) playerIdRef.current = pid;
         setRoom(r);
       })
     );
