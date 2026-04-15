@@ -26,6 +26,11 @@ class GameClient {
     (entry: { direction: "in" | "out"; data: string; timestamp: number }) => void
   > = new Set();
 
+  // Cache latest values so new subscribers get the current state immediately
+  private latestRoom: Room | null = null;
+  private latestStatuses: Record<string, PlayerStatus> | null = null;
+  private latestStories: AssembledStory[] | null = null;
+
   async connect(
     roomCode: string,
     playerName: string,
@@ -67,6 +72,7 @@ class GameClient {
         switch (msg.type) {
           case "STATE_UPDATE":
             this.playerId = msg.playerId;
+            this.latestRoom = msg.room;
             for (const cb of this.stateListeners) cb(msg.room);
             if (!resolved) {
               resolved = true;
@@ -75,6 +81,7 @@ class GameClient {
             break;
 
           case "PLAYER_STATUS_CHANGED":
+            this.latestStatuses = msg.statuses;
             for (const cb of this.statusListeners) cb(msg.statuses);
             break;
 
@@ -91,6 +98,7 @@ class GameClient {
             break;
 
           case "ASSEMBLED_STORIES":
+            this.latestStories = msg.stories;
             for (const cb of this.storiesListeners) cb(msg.stories);
             break;
 
@@ -115,6 +123,9 @@ class GameClient {
       this.socket = null;
     }
     this.playerId = null;
+    this.latestRoom = null;
+    this.latestStatuses = null;
+    this.latestStories = null;
   }
 
   // --- Actions ---
@@ -160,11 +171,14 @@ class GameClient {
 
   onStateUpdate(callback: StateCallback): () => void {
     this.stateListeners.add(callback);
+    // Replay cached state immediately so late subscribers get current data
+    if (this.latestRoom) callback(this.latestRoom);
     return () => this.stateListeners.delete(callback);
   }
 
   onPlayerStatusChanged(callback: StatusCallback): () => void {
     this.statusListeners.add(callback);
+    if (this.latestStatuses) callback(this.latestStatuses);
     return () => this.statusListeners.delete(callback);
   }
 
@@ -180,6 +194,7 @@ class GameClient {
 
   onAssembledStories(callback: StoriesCallback): () => void {
     this.storiesListeners.add(callback);
+    if (this.latestStories) callback(this.latestStories);
     return () => this.storiesListeners.delete(callback);
   }
 
