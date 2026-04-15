@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { db, schema } from "@/lib/db";
+import { getDb, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import ArchiveView from "@/components/archive/ArchiveView";
 import ArchiveNotFound from "@/components/archive/ArchiveNotFound";
@@ -30,6 +30,7 @@ export default async function ArchivePage({
 }: {
   params: { code: string };
 }) {
+  const db = await getDb();
   const code = params.code.toUpperCase();
 
   const rooms = await db
@@ -57,8 +58,8 @@ export default async function ArchivePage({
       storyIndex: story.storyIndex,
       readerName: story.readerName,
       prompts: prompts
-        .sort((a, b) => a.slot - b.slot)
-        .map((p) => ({
+        .sort((a: any, b: any) => a.slot - b.slot)
+        .map((p: any) => ({
           slot: p.slot,
           promptText: p.promptText,
           contribution: p.contribution,

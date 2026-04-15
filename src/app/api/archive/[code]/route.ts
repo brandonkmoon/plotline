@@ -1,13 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { db, schema } from "@/lib/db";
+import { getDb, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: { code: string } }
 ) {
+  const db = await getDb();
   const code = params.code.toUpperCase();
 
   const rooms = await db
@@ -37,8 +38,8 @@ export async function GET(
       storyIndex: story.storyIndex,
       readerName: story.readerName,
       prompts: prompts
-        .sort((a, b) => a.slot - b.slot)
-        .map((p) => ({
+        .sort((a: any, b: any) => a.slot - b.slot)
+        .map((p: any) => ({
           slot: p.slot,
           promptText: p.promptText,
           contribution: p.contribution,

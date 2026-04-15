@@ -1,13 +1,19 @@
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient, type Client } from "@libsql/client";
 import * as schema from "./schema";
 
-let client: Client | null = null;
-let database: ReturnType<typeof drizzle<typeof schema>> | null = null;
+export { schema };
 
-function getClient(): Client {
-  if (!client) {
-    client = createClient(
+// Fully lazy database initialization — @libsql/client is only
+// dynamically imported when getDb() is first called, preventing
+// any native binding resolution during Next.js static generation.
+
+let database: any = null;
+
+export async function getDb() {
+  if (!database) {
+    const { createClient } = await import("@libsql/client");
+    const { drizzle } = await import("drizzle-orm/libsql");
+
+    const client = createClient(
       process.env.TURSO_DATABASE_URL
         ? {
             url: process.env.TURSO_DATABASE_URL,
@@ -17,22 +23,8 @@ function getClient(): Client {
             url: "file:plotline.db",
           }
     );
-  }
-  return client;
-}
 
-export function getDb() {
-  if (!database) {
-    database = drizzle(getClient(), { schema });
+    database = drizzle(client, { schema });
   }
   return database;
 }
-
-// Keep backward-compatible named export, but lazy
-export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
-  get(_target, prop) {
-    return (getDb() as any)[prop];
-  },
-});
-
-export { schema };

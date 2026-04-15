@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { db, schema } from "@/lib/db";
+import { getDb, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import type { ArchiveData } from "@/lib/archive/serialize";
 
@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await db.transaction(async (tx) => {
+    const db = await getDb();
+    await db.transaction(async (tx: any) => {
       // Upsert: delete existing data for this room code first
       const existingRooms = await tx
         .select()
