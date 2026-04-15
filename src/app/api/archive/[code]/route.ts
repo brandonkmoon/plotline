@@ -8,29 +8,28 @@ export async function GET(
 ) {
   const code = params.code.toUpperCase();
 
-  const room = db
+  const rooms = await db
     .select()
     .from(schema.archivedRooms)
-    .where(eq(schema.archivedRooms.code, code))
-    .get();
+    .where(eq(schema.archivedRooms.code, code));
+
+  const room = rooms[0];
 
   if (!room) {
     return NextResponse.json({ error: "Archive not found" }, { status: 404 });
   }
 
-  const stories = db
+  const stories = await db
     .select()
     .from(schema.archivedStories)
-    .where(eq(schema.archivedStories.roomCode, code))
-    .all();
+    .where(eq(schema.archivedStories.roomCode, code));
 
   const storiesWithPrompts = [];
   for (const story of stories) {
-    const prompts = db
+    const prompts = await db
       .select()
       .from(schema.archivedPrompts)
-      .where(eq(schema.archivedPrompts.storyId, story.id))
-      .all();
+      .where(eq(schema.archivedPrompts.storyId, story.id));
 
     storiesWithPrompts.push({
       storyIndex: story.storyIndex,

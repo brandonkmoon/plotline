@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { New_Rocker, Cormorant_Garamond, Outfit } from "next/font/google";
+import { PlausibleAnalytics } from "@/components/PlausibleAnalytics";
 import "./globals.css";
 
 const newRocker = New_Rocker({
@@ -27,8 +28,23 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Plotline",
   description:
-    "A multiplayer party game where players collaboratively create absurd stories",
+    "A blind collaborative storytelling party game for 4-12 players.",
   manifest: "/manifest.json",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  ),
+  openGraph: {
+    title: "Plotline",
+    description: "You can't make this up. Oh wait.",
+    images: ["/og-image.png"],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Plotline",
+    description: "You can't make this up. Oh wait.",
+    images: ["/og-image.png"],
+  },
 };
 
 export const viewport: Viewport = {
@@ -50,6 +66,7 @@ export default function RootLayout({
     >
       <body className="bg-bg text-text font-sans antialiased">
         {children}
+        <PlausibleAnalytics />
       </body>
     </html>
   );

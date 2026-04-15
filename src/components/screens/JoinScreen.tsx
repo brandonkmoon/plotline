@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { gameClient } from "@/lib/multiplayer/gameClient";
+import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
 import BlackletterHeading from "@/components/BlackletterHeading";
 import GoldBar from "@/components/GoldBar";
@@ -51,6 +52,7 @@ export default function JoinScreen() {
 
     try {
       await gameClient.connect(code, name);
+      trackEvent("room_joined");
       router.push(`/room/${code}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to join room");

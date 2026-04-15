@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import GoldBar from "@/components/GoldBar";
+import { trackEvent } from "@/lib/analytics";
 
 interface ArchivePrompt {
   slot: number;
@@ -43,7 +44,12 @@ function formatDate(timestamp: number): string {
 export default function ArchiveView({ room, stories }: ArchiveViewProps) {
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    trackEvent("archive_viewed");
+  }, []);
+
   const handleShare = () => {
+    trackEvent("copy_archive_link");
     navigator.clipboard.writeText(window.location.href).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

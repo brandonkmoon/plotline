@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { RoomProvider, useRoom } from "@/lib/client/RoomContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import LobbyScreen from "@/components/screens/LobbyScreen";
 import PromptScreen from "@/components/screens/PromptScreen";
 import WaitingScreen from "@/components/screens/WaitingScreen";
@@ -59,8 +60,10 @@ function RoomContent() {
 
 export default function RoomPage() {
   return (
-    <RoomProvider>
-      <RoomContent />
-    </RoomProvider>
+    <ErrorBoundary>
+      <RoomProvider>
+        <RoomContent />
+      </RoomProvider>
+    </ErrorBoundary>
   );
 }

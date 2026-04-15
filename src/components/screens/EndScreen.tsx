@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRoom } from "@/lib/client/RoomContext";
+import { trackEvent } from "@/lib/analytics";
 import BlackletterHeading from "@/components/BlackletterHeading";
 import GoldBar from "@/components/GoldBar";
 import Button from "@/components/Button";
@@ -11,6 +12,10 @@ export default function EndScreen() {
   const { room, assembledStories, playAgain, endGame, isHost, archiveUrl } =
     useRoom();
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    trackEvent("game_completed");
+  }, []);
 
   if (!room) return null;
 
@@ -23,6 +28,7 @@ export default function EndScreen() {
 
   const handleCopy = () => {
     if (!fullArchiveUrl) return;
+    trackEvent("copy_archive_link");
     navigator.clipboard.writeText(fullArchiveUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

@@ -35,7 +35,7 @@ class GameClient {
       let resolved = false;
 
       this.socket = new PartySocket({
-        host: "localhost:1999",
+        host: process.env.NEXT_PUBLIC_PARTYKIT_HOST || "localhost:1999",
         room: roomCode,
       });
 

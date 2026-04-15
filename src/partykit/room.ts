@@ -564,7 +564,8 @@ export default class RoomServer implements Party.Server {
     if (!this.gameState) return;
     try {
       const archiveData = serializeRoomForArchive(this.gameState);
-      const response = await fetch("http://localhost:3000/api/archive", {
+      const apiHost = process.env.APP_URL || "http://localhost:3000";
+      const response = await fetch(`${apiHost}/api/archive`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(archiveData),

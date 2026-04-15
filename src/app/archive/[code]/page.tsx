@@ -30,27 +30,26 @@ export default async function ArchivePage({
 }) {
   const code = params.code.toUpperCase();
 
-  const room = db
+  const rooms = await db
     .select()
     .from(schema.archivedRooms)
-    .where(eq(schema.archivedRooms.code, code))
-    .get();
+    .where(eq(schema.archivedRooms.code, code));
+
+  const room = rooms[0];
 
   if (!room) return <ArchiveNotFound />;
 
-  const dbStories = db
+  const dbStories = await db
     .select()
     .from(schema.archivedStories)
-    .where(eq(schema.archivedStories.roomCode, code))
-    .all();
+    .where(eq(schema.archivedStories.roomCode, code));
 
   const stories: ArchiveStory[] = [];
   for (const story of dbStories) {
-    const prompts = db
+    const prompts = await db
       .select()
       .from(schema.archivedPrompts)
-      .where(eq(schema.archivedPrompts.storyId, story.id))
-      .all();
+      .where(eq(schema.archivedPrompts.storyId, story.id));
 
     stories.push({
       storyIndex: story.storyIndex,

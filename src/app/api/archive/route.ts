@@ -24,54 +24,47 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Use a transaction for atomicity
-    const sqliteDb = (db as any).$client;
-
-    const runTransaction = sqliteDb.transaction(() => {
+    await db.transaction(async (tx) => {
       // Upsert: delete existing data for this room code first
-      const existingRoom = db
+      const existingRooms = await tx
         .select()
         .from(schema.archivedRooms)
-        .where(eq(schema.archivedRooms.code, body.room.code))
-        .get();
+        .where(eq(schema.archivedRooms.code, body.room.code));
 
-      if (existingRoom) {
+      if (existingRooms.length > 0) {
         // Get existing story IDs to delete their prompts
-        const existingStories = db
+        const existingStories = await tx
           .select()
           .from(schema.archivedStories)
-          .where(eq(schema.archivedStories.roomCode, body.room.code))
-          .all();
+          .where(eq(schema.archivedStories.roomCode, body.room.code));
 
         for (const story of existingStories) {
-          db.delete(schema.archivedPrompts)
-            .where(eq(schema.archivedPrompts.storyId, story.id))
-            .run();
+          await tx
+            .delete(schema.archivedPrompts)
+            .where(eq(schema.archivedPrompts.storyId, story.id));
         }
 
-        db.delete(schema.archivedStories)
-          .where(eq(schema.archivedStories.roomCode, body.room.code))
-          .run();
+        await tx
+          .delete(schema.archivedStories)
+          .where(eq(schema.archivedStories.roomCode, body.room.code));
 
-        db.delete(schema.archivedRooms)
-          .where(eq(schema.archivedRooms.code, body.room.code))
-          .run();
+        await tx
+          .delete(schema.archivedRooms)
+          .where(eq(schema.archivedRooms.code, body.room.code));
       }
 
       // Insert room
-      db.insert(schema.archivedRooms)
-        .values({
-          code: body.room.code,
-          createdAt: body.room.createdAt,
-          completedAt: body.room.completedAt,
-          playerCount: body.room.playerCount,
-          storyCount: body.room.storyCount,
-        })
-        .run();
+      await tx.insert(schema.archivedRooms).values({
+        code: body.room.code,
+        createdAt: body.room.createdAt,
+        completedAt: body.room.completedAt,
+        playerCount: body.room.playerCount,
+        storyCount: body.room.storyCount,
+      });
 
       // Insert stories and prompts
       for (const story of body.stories) {
-        const storyResult = db
+        const storyResults = await tx
           .insert(schema.archivedStories)
           .values({
             roomCode: body.room.code,
@@ -79,25 +72,22 @@ export async function POST(request: NextRequest) {
             readerName: story.readerName,
             createdAt: body.room.completedAt,
           })
-          .returning()
-          .get();
+          .returning();
+
+        const storyResult = storyResults[0];
 
         for (const prompt of story.prompts) {
-          db.insert(schema.archivedPrompts)
-            .values({
-              storyId: storyResult.id,
-              slot: prompt.slot,
-              promptText: prompt.promptText,
-              contribution: prompt.contribution,
-              authorName: prompt.authorName,
-              wasPlaceholder: prompt.wasPlaceholder ? 1 : 0,
-            })
-            .run();
+          await tx.insert(schema.archivedPrompts).values({
+            storyId: storyResult.id,
+            slot: prompt.slot,
+            promptText: prompt.promptText,
+            contribution: prompt.contribution,
+            authorName: prompt.authorName,
+            wasPlaceholder: prompt.wasPlaceholder ? 1 : 0,
+          });
         }
       }
     });
-
-    runTransaction();
 
     return NextResponse.json({
       archiveUrl: `/archive/${body.room.code}`,

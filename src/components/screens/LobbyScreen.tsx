@@ -1,6 +1,7 @@
 "use client";
 
 import { useRoom } from "@/lib/client/RoomContext";
+import { trackEvent } from "@/lib/analytics";
 import BlackletterHeading from "@/components/BlackletterHeading";
 import GoldBar from "@/components/GoldBar";
 import PlayerTag from "@/components/PlayerTag";
@@ -64,7 +65,10 @@ export default function LobbyScreen() {
           {isHost ? (
             <Button
               variant="primary"
-              onClick={startGame}
+              onClick={() => {
+                trackEvent("game_started");
+                startGame();
+              }}
               disabled={!canStart}
               className="w-full"
             >

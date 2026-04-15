@@ -16,6 +16,7 @@ export const archivedStories = sqliteTable("archived_stories", {
   storyIndex: integer("story_index").notNull(),
   readerName: text("reader_name").notNull(),
   createdAt: integer("created_at").notNull(),
+  souvenirVideoUrl: text("souvenir_video_url"),
 });
 
 export const archivedPrompts = sqliteTable("archived_prompts", {
