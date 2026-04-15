@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import ArchiveView from "@/components/archive/ArchiveView";
