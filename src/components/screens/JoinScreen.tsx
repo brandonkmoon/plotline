@@ -83,7 +83,7 @@ export default function JoinScreen() {
         onChange={handleCodeChange}
         placeholder="XXXX"
         className="w-full font-serif font-bold text-[32px] text-ink text-center py-[14px] px-4 border-2 border-input-border focus:border-ink focus:outline-none transition-colors"
-        style={{ borderRadius: 0, letterSpacing: "10px" }}
+        style={{ borderRadius: 0, letterSpacing: "clamp(4px, 3vw, 10px)" }}
         maxLength={4}
         autoComplete="off"
         autoCapitalize="characters"

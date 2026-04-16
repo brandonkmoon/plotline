@@ -23,8 +23,8 @@ export default function LobbyScreen() {
             Room Code
           </p>
           <p
-            className="font-serif font-bold text-[48px] text-ink"
-            style={{ letterSpacing: "10px" }}
+            className="font-serif font-bold text-ink"
+            style={{ fontSize: "clamp(32px, 12vw, 48px)", letterSpacing: "clamp(4px, 3vw, 10px)" }}
           >
             {room.code}
           </p>

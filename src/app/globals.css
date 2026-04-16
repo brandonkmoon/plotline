@@ -49,6 +49,7 @@ body {
   margin: 0 auto;
   height: 44px;
   width: auto;
+  max-width: 90%;
 }
 .banner-subtitle {
   font-family: var(--font-inter), sans-serif;
@@ -56,7 +57,7 @@ body {
   font-size: 11px;
   color: var(--ink);
   margin-top: 0;
-  letter-spacing: 3px;
+  letter-spacing: clamp(1px, 1vw, 3px);
   text-transform: uppercase;
 }
 
@@ -208,15 +209,20 @@ body {
 
 .help-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 12px;
+  right: 12px;
   background: none;
   border: none;
   font-size: 28px;
   line-height: 1;
   color: var(--ink);
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 8px 12px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .help-section {
