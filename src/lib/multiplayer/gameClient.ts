@@ -86,16 +86,6 @@ function getRejoinId(roomCode: string): string | null {
   }
 }
 
-function storeRejoinId(roomCode: string, playerId: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(`plotline.rejoin.${roomCode}`, playerId);
-    devLog(`localStorage write rejoin.${roomCode} = ${playerId}`);
-  } catch {
-    // ignore
-  }
-}
-
 function clearRejoinId(roomCode: string): void {
   if (typeof window === "undefined") return;
   try {
@@ -133,6 +123,14 @@ class GameClient {
   private latestPendingDisconnected: number = 0;
   private latestRevealState: RevealState | null = null;
   private connectionError: ConnectionErrorReason | null = null;
+
+  // beforeunload handler registered while connected. Copies the per-tab
+  // sessionStorage playerId into the shared localStorage rejoin slot at
+  // the moment the tab is closing. We do NOT write localStorage on every
+  // STATE_UPDATE because it is shared across tabs in the same browser —
+  // writing eagerly causes the last active tab to overwrite others, which
+  // leads to the wrong identity being used when a tab reopens.
+  private beforeUnloadHandler: (() => void) | null = null;
 
   async connect(
     roomCode: string,
@@ -236,10 +234,14 @@ class GameClient {
               typeof msg.pendingDisconnected === "number"
                 ? msg.pendingDisconnected
                 : 0;
-            // Persist playerId in both sessionStorage (per-tab) and
-            // localStorage (tab-close recovery)
+            // Persist playerId in sessionStorage (per-tab identity).
+            // localStorage is NOT written here — it is shared across tabs
+            // in the same browser, so eager writes cause cross-tab
+            // contamination. Instead we register a beforeunload handler
+            // that copies the per-tab id into localStorage the moment
+            // THIS tab is unloading, so reopening the URL can recover it.
             storePlayerId(roomCode, msg.playerId);
-            storeRejoinId(roomCode, msg.playerId);
+            this.registerRejoinOnUnload(roomCode);
             for (const cb of this.stateListeners) cb(msg.room);
             if (!resolved) {
               resolved = true;
@@ -326,6 +328,7 @@ class GameClient {
   }
 
   disconnect(): void {
+    this.unregisterRejoinOnUnload();
     if (this.socket) {
       this.socket.close();
       this.socket = null;
@@ -341,6 +344,55 @@ class GameClient {
     this.latestPendingDisconnected = 0;
     this.latestRevealState = null;
     this.connectionError = null;
+  }
+
+  // --- Rejoin-on-unload listener ---
+
+  // Copy sessionStorage playerId → localStorage at the moment the tab
+  // is closing. Because this runs only on the closing tab, each tab's
+  // id never overwrites another's — localStorage reflects the identity
+  // of whichever tab closed most recently.
+  private registerRejoinOnUnload(roomCode: string): void {
+    if (
+      typeof window === "undefined" ||
+      typeof window.addEventListener !== "function"
+    ) {
+      return;
+    }
+    if (this.beforeUnloadHandler) return; // already registered
+
+    const handler = () => {
+      try {
+        const playerId = sessionStorage.getItem(
+          `plotline.playerId.${roomCode}`
+        );
+        if (playerId) {
+          localStorage.setItem(`plotline.rejoin.${roomCode}`, playerId);
+        }
+      } catch {
+        // ignore storage errors (quota, privacy mode)
+      }
+    };
+
+    window.addEventListener("beforeunload", handler);
+    // pagehide is more reliable than beforeunload on mobile browsers
+    // (iOS Safari in particular). Registering both is idempotent from
+    // the handler's perspective — it just writes the same value twice.
+    window.addEventListener("pagehide", handler);
+    this.beforeUnloadHandler = handler;
+  }
+
+  private unregisterRejoinOnUnload(): void {
+    if (
+      typeof window === "undefined" ||
+      typeof window.removeEventListener !== "function"
+    ) {
+      return;
+    }
+    if (!this.beforeUnloadHandler) return;
+    window.removeEventListener("beforeunload", this.beforeUnloadHandler);
+    window.removeEventListener("pagehide", this.beforeUnloadHandler);
+    this.beforeUnloadHandler = null;
   }
 
   // --- Actions ---
