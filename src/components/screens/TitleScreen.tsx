@@ -48,17 +48,23 @@ export default function TitleScreen() {
 
   return (
     <div className="screen">
+      {/* Generous whitespace — pushes buttons down the page.
+          clamp() keeps it reasonable on small screens. */}
+      <div style={{ height: "clamp(80px, 20vh, 200px)" }} />
+
       {/* Create — primary */}
       <div
         className={`title-btn-wrapper ${
           showButtons ? "title-btn-animate" : ""
         }`}
       >
-        <Button variant="primary" onClick={handleCreate} disabled={!ready}>
-          <span className={`title-btn-text ${ready ? "visible" : ""}`}>
-            Create a Show
-          </span>
-        </Button>
+        <div style={{ pointerEvents: ready ? "auto" : "none" }}>
+          <Button variant="primary" onClick={handleCreate}>
+            <span className={`title-btn-text ${ready ? "visible" : ""}`}>
+              Create a Show
+            </span>
+          </Button>
+        </div>
       </div>
 
       {/* Join — secondary, staggered 150ms */}
@@ -67,11 +73,13 @@ export default function TitleScreen() {
           showButtons ? "title-btn-animate title-btn-delay" : ""
         }`}
       >
-        <Button variant="secondary" onClick={handleJoin} disabled={!ready}>
-          <span className={`title-btn-text ${ready ? "visible" : ""}`}>
-            Join a Show
-          </span>
-        </Button>
+        <div style={{ pointerEvents: ready ? "auto" : "none" }}>
+          <Button variant="secondary" onClick={handleJoin}>
+            <span className={`title-btn-text ${ready ? "visible" : ""}`}>
+              Join a Show
+            </span>
+          </Button>
+        </div>
       </div>
 
       {/* Supporting text — opacity-only fade, staggered after buttons settle */}
