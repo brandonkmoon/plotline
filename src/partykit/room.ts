@@ -81,12 +81,14 @@ export default class RoomServer implements Party.Server {
         if (existingPlayer || existingPending) {
           this.connectionToPlayer.set(conn.id, playerId);
           this.playerToConnection.set(playerId, conn.id);
-          console.log(
-            "[room] reconnect registered:",
-            playerId,
-            "→",
-            conn.id
-          );
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              "[room] reconnect registered:",
+              playerId,
+              "→",
+              conn.id
+            );
+          }
         }
       }
     } catch {
@@ -413,9 +415,11 @@ export default class RoomServer implements Party.Server {
           this.roomDestroyTimer = null;
         }
 
-        console.log(
-          `[room] name-based reconnect: "${msg.playerName}" → ${disconnectedMatch.id}`
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            `[room] name-based reconnect: "${msg.playerName}" → ${disconnectedMatch.id}`
+          );
+        }
 
         this.broadcastStateUpdate();
         this.broadcastPlayerStatuses();

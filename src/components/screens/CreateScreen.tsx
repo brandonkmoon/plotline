@@ -3,17 +3,9 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { gameClient } from "@/lib/multiplayer/gameClient";
+import { generateRoomCode } from "@/lib/game";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
-
-function generateCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}
 
 export default function CreateScreen() {
   const router = useRouter();
@@ -42,7 +34,7 @@ export default function CreateScreen() {
     setError("");
 
     try {
-      const code = generateCode();
+      const code = generateRoomCode();
       await gameClient.connect(code, name, undefined, { forceNewPlayer: true });
       trackEvent("room_created");
       router.push(`/room/${code}`);
