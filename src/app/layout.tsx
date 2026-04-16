@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Lora, Inter } from "next/font/google";
 import { PlausibleAnalytics } from "@/components/PlausibleAnalytics";
 import PlaybillBanner from "@/components/PlaybillBanner";
+import HelpOverlay from "@/components/HelpOverlay";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -71,6 +72,7 @@ export default function RootLayout({
       <body className="antialiased">
         <PlaybillBanner />
         <main className="app-main">{children}</main>
+        <HelpOverlay />
         <PlausibleAnalytics />
       </body>
     </html>
