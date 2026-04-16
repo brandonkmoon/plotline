@@ -11,13 +11,15 @@ import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 const MAX_CHARS = 120;
 const TOTAL_ROUNDS = 7;
 
-// Placeholder hints for free-text rounds (rounds 2-6)
+// Placeholder hints for free-text rounds (rounds 2-6).
+// These double as tense guides — the examples model the phrasing
+// that fits the assembled story template.
 const PLACEHOLDER_HINTS: Record<number, string> = {
-  2: "A place, real or imagined",
-  3: "Something dramatic, stupid, or both",
-  4: "A line of dialogue",
-  5: "A line of dialogue back",
-  6: "Wrap it up — happy, tragic, or weird",
+  2: 'e.g., "at an IKEA at 3am"',
+  3: 'e.g., "fighting over the last pretzel"',
+  4: 'e.g., "I swear this isn\'t what it looks like."',
+  5: 'e.g., "Bold of you to assume I care."',
+  6: 'e.g., "they both pretend it never happened"',
 };
 
 export default function PromptScreen() {

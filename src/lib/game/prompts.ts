@@ -3,11 +3,11 @@ import type { Prompt } from "./types";
 export const PROMPTS: Prompt[] = [
   { index: 0, text: "Pick someone in this room. Who are they really?" },
   { index: 1, text: "Pick someone else. What\u2019s their deal?" },
-  { index: 2, text: "Where did these two cross paths?" },
-  { index: 3, text: "What are they doing there?" },
-  { index: 4, text: "What did the first one say?" },
-  { index: 5, text: "What did the other one say back?" },
-  { index: 6, text: "How did it all end?" },
+  { index: 2, text: "Where are they?" },
+  { index: 3, text: "What are they doing?" },
+  { index: 4, text: "What does the first one say?" },
+  { index: 5, text: "What does the other one say back?" },
+  { index: 6, text: "How does it end?" },
 ];
 
 /** Whether a round uses the name-picker UI (tap a name, then write a descriptor). */
@@ -35,7 +35,12 @@ export const DESCRIPTOR_PLACEHOLDERS: Record<number, string[]> = {
   ],
 };
 
-/** Placeholder examples for free-text rounds (3-7). */
+/** Placeholder examples for free-text rounds (3-7).
+ *  These model the correct tense and phrasing so players imitate the style.
+ *  Template: "[Name1] and [Name2] are [location], [action].
+ *            [Name1] says, '[dialogue]' [Name2] says, '[dialogue]'
+ *            Then, [ending]."
+ */
 export const PLACEHOLDERS: Record<number, string[]> = {
   2: [
     "at an IKEA at 3am",
@@ -50,20 +55,20 @@ export const PLACEHOLDERS: Record<number, string[]> = {
     "building a fort out of pancakes",
   ],
   4: [
-    '"I swear this isn\'t what it looks like."',
-    '"Do you think pigeons have feelings?"',
-    '"I left the oven on... three days ago."',
+    "I swear this isn't what it looks like.",
+    "Do you think pigeons have feelings?",
+    "I left the oven on... three days ago.",
   ],
   5: [
-    '"That explains the smell."',
-    '"Bold of you to assume I care."',
-    '"I knew this would happen eventually."',
+    "That explains the smell.",
+    "Bold of you to assume I care.",
+    "I knew this would happen eventually.",
   ],
   6: [
-    "They were never seen again.",
-    "And then everything caught fire.",
-    "They both pretended it never happened.",
-    "A tumbleweed rolled by. Nobody moved.",
+    "they are never seen again",
+    "everything catches fire",
+    "they both pretend it never happened",
+    "a tumbleweed rolls by and nobody moves",
   ],
 };
 
