@@ -1,20 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Rye, Playfair_Display, Lora, Inter } from "next/font/google";
+import { Playfair_Display, Lora, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { PlausibleAnalytics } from "@/components/PlausibleAnalytics";
 import PlaybillBanner from "@/components/PlaybillBanner";
 import "./globals.css";
 
-// Note on the display font: the Playbill theme spec and the reference
-// mockup reference a Google Font called "Playbill". That font is not
-// (or no longer) in the Google Fonts catalog — the URL returns 400 and
-// the specimen page returns 404. "Rye" is the closest visual match: a
-// western / theater-poster display serif with the same condensed, high-
-// contrast character Playbill is known for. It's loaded here via
-// next/font for zero-CLS and exposed as --font-playbill everywhere else
-// so the rest of the app continues to read it as the "Playbill" font.
-const playbillDisplay = Rye({
-  weight: "400",
-  subsets: ["latin"],
+// Display font for the banner logo. Self-hosted from public/fonts/
+// via next/font/local, exposed app-wide as --font-playbill.
+const latinBold = localFont({
+  src: "../../public/fonts/Latin CG Bold Regular.otf",
   variable: "--font-playbill",
   display: "swap",
 });
@@ -81,7 +75,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playbillDisplay.variable} ${playfair.variable} ${lora.variable} ${inter.variable}`}
+      className={`${latinBold.variable} ${playfair.variable} ${lora.variable} ${inter.variable}`}
     >
       <body className="antialiased">
         <PlaybillBanner />
