@@ -51,7 +51,8 @@ export default function JoinScreen() {
     setError("");
 
     try {
-      await gameClient.connect(code, name);
+      // /join flow always joins as a new player — never reconnect
+      await gameClient.connect(code, name, undefined, { forceNewPlayer: true });
       trackEvent("room_joined");
       router.push(`/room/${code}`);
     } catch (err) {

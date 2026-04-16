@@ -776,6 +776,88 @@ describe("RoomServer instance behavior", () => {
     });
   });
 
+  describe("Multi-tab / per-tab identity", () => {
+    it("two clients joining the same room without playerId become distinct players", () => {
+      const { server, connections } = makeServer();
+      const tab1 = join(server, connections, "tab1", "Alice");
+      const tab2 = join(server, connections, "tab2", "Bob");
+
+      const u1 = getLatestStateUpdate(tab1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const u2 = getLatestStateUpdate(tab2) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+
+      expect(u1).not.toBeNull();
+      expect(u2).not.toBeNull();
+      expect(u1.playerId).not.toBe(u2.playerId);
+      expect(u2.room.players.length).toBe(2);
+
+      const names = u2.room.players.map((p) => p.name).sort();
+      expect(names).toEqual(["Alice", "Bob"]);
+    });
+
+    it("rejects a second active connection trying to reconnect with the same playerId", () => {
+      const { server, connections } = makeServer();
+      const tab1 = join(server, connections, "tab1", "Alice");
+
+      const u1 = getLatestStateUpdate(tab1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const aliceId = u1.playerId;
+
+      // Tab 2 (still in same browser) tries to reconnect with Alice's id
+      // while tab 1 is still actively connected.
+      const tab2 = join(server, connections, "tab2", "Alice", {
+        playerId: aliceId,
+      });
+
+      const err = tab2.sentMessages.find((m) => m.type === "ERROR");
+      expect(err).toBeDefined();
+      expect((err as any).reason).toBe("PLAYER_ALREADY_CONNECTED");
+      expect(tab2.closeCalled).toBe(true);
+
+      // Tab 1 still has only one player in its view
+      const tab1After = getLatestStateUpdate(tab1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(tab1After.room.players.length).toBe(1);
+    });
+
+    it("allows reconnect with same playerId after the original socket closes", () => {
+      const { server, connections } = makeServer();
+      const tab1 = join(server, connections, "tab1", "Alice");
+
+      const u1 = getLatestStateUpdate(tab1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const aliceId = u1.playerId;
+
+      // Original socket closes (e.g., tab refresh)
+      server.onClose(tab1 as any);
+      connections.delete("tab1");
+
+      // Reconnect succeeds
+      const reconn = join(server, connections, "tab1b", "Alice", {
+        playerId: aliceId,
+      });
+
+      const err = reconn.sentMessages.find((m) => m.type === "ERROR");
+      expect(err).toBeUndefined();
+      const after = getLatestStateUpdate(reconn) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(after.playerId).toBe(aliceId);
+    });
+  });
+
   describe("Reject new joiners when game is in progress", () => {
     it("rejects a new player (no playerId) once state is PLAYING", () => {
       const { server, connections } = makeServer();

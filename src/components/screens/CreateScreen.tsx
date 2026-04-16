@@ -45,7 +45,8 @@ export default function CreateScreen() {
 
     try {
       const code = generateCode();
-      await gameClient.connect(code, name);
+      // Create flow always joins as a new player (and host)
+      await gameClient.connect(code, name, undefined, { forceNewPlayer: true });
       trackEvent("room_created");
       router.push(`/room/${code}`);
     } catch (err) {

@@ -80,6 +80,16 @@ function ConnectionErrorView() {
         </Button>
       );
       break;
+    case "PLAYER_ALREADY_CONNECTED":
+      title = "Already connected";
+      message =
+        "This player is already connected from another tab or device.";
+      action = (
+        <Link href="/">
+          <Button variant="primary">Back to home</Button>
+        </Link>
+      );
+      break;
   }
 
   return (

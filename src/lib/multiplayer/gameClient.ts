@@ -27,12 +27,15 @@ type RevealStateCallback = (state: RevealState) => void;
 const CONNECT_TIMEOUT_MS = 10_000;
 const DEFAULT_ROUND_DURATION_MS = 90_000;
 
-// --- localStorage helpers ---
+// --- sessionStorage helpers ---
+// Per-tab identity: each browser tab gets its own playerId so multiple
+// tabs in the same browser are treated as distinct players. Refreshing
+// a tab keeps the same identity (reconnect).
 
 function getStoredPlayerId(roomCode: string): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return localStorage.getItem(`plotline.playerId.${roomCode}`);
+    return sessionStorage.getItem(`plotline.playerId.${roomCode}`);
   } catch {
     return null;
   }
@@ -41,7 +44,7 @@ function getStoredPlayerId(roomCode: string): string | null {
 function storePlayerId(roomCode: string, playerId: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(`plotline.playerId.${roomCode}`, playerId);
+    sessionStorage.setItem(`plotline.playerId.${roomCode}`, playerId);
   } catch {
     // ignore
   }
@@ -50,7 +53,7 @@ function storePlayerId(roomCode: string, playerId: string): void {
 function clearStoredPlayerId(roomCode: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(`plotline.playerId.${roomCode}`);
+    sessionStorage.removeItem(`plotline.playerId.${roomCode}`);
   } catch {
     // ignore
   }
@@ -86,14 +89,23 @@ class GameClient {
   async connect(
     roomCode: string,
     playerName: string,
-    existingPlayerId?: string
+    existingPlayerId?: string,
+    options?: { forceNewPlayer?: boolean }
   ): Promise<string> {
     this.roomCode = roomCode;
     this.connectionError = null;
 
-    // Fall back to stored playerId if none supplied
-    const playerIdToSend =
-      existingPlayerId ?? getStoredPlayerId(roomCode) ?? undefined;
+    // Determine which playerId to send:
+    // - If forceNewPlayer is true: never reconnect, always join as new
+    //   (also clear any stale sessionStorage entry for this room)
+    // - Otherwise: prefer explicit arg, fall back to sessionStorage
+    let playerIdToSend: string | undefined;
+    if (options?.forceNewPlayer) {
+      clearStoredPlayerId(roomCode);
+      playerIdToSend = undefined;
+    } else {
+      playerIdToSend = existingPlayerId ?? getStoredPlayerId(roomCode) ?? undefined;
+    }
 
     return new Promise((resolve, reject) => {
       let resolved = false;
@@ -180,8 +192,14 @@ class GameClient {
             if (
               msg.reason === "GAME_IN_PROGRESS" ||
               msg.reason === "UNKNOWN_PLAYER" ||
-              msg.reason === "PROTOCOL_MISMATCH"
+              msg.reason === "PROTOCOL_MISMATCH" ||
+              msg.reason === "PLAYER_ALREADY_CONNECTED"
             ) {
+              // Clear stored playerId on PLAYER_ALREADY_CONNECTED so a
+              // refresh doesn't repeat the conflict
+              if (msg.reason === "PLAYER_ALREADY_CONNECTED") {
+                clearStoredPlayerId(roomCode);
+              }
               this.emitConnectionError(msg.reason);
             }
             if (!resolved) {

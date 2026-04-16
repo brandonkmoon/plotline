@@ -167,6 +167,31 @@ export default class RoomServer implements Party.Server {
         (p) => p.id === msg.playerId
       );
       if (existingPlayer && this.gameState) {
+        // Safeguard: if this player is already connected from another
+        // active socket, reject the new connection rather than silently
+        // attaching it. Prevents two tabs in the same browser from
+        // hijacking each other's identity.
+        const existingConnId = this.playerToConnection.get(existingPlayer.id);
+        if (existingConnId && existingConnId !== sender.id) {
+          // Verify the existing connection is still alive — if its
+          // socket was already closed, the maps may be stale.
+          let stillConnected = false;
+          for (const c of this.room.getConnections()) {
+            if (c.id === existingConnId) {
+              stillConnected = true;
+              break;
+            }
+          }
+          if (stillConnected) {
+            this.sendTo(sender, {
+              type: "ERROR",
+              reason: "PLAYER_ALREADY_CONNECTED",
+            });
+            sender.close();
+            return;
+          }
+        }
+
         // Restore connection
         this.connectionToPlayer.set(sender.id, existingPlayer.id);
         this.playerToConnection.set(existingPlayer.id, sender.id);

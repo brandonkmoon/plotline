@@ -13,7 +13,8 @@ export type ConnectionErrorReason =
   | "GAME_IN_PROGRESS"
   | "UNKNOWN_PLAYER"
   | "PROTOCOL_MISMATCH"
-  | "CONNECT_TIMEOUT";
+  | "CONNECT_TIMEOUT"
+  | "PLAYER_ALREADY_CONNECTED";
 
 export type ClientMessage =
   | {
