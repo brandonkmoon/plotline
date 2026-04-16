@@ -14,9 +14,9 @@ const TOTAL_ROUNDS = 7;
 // Placeholder hints for free-text rounds (rounds 2-6)
 const PLACEHOLDER_HINTS: Record<number, string> = {
   2: "A place, real or imagined",
-  3: "An action — dramatic, stupid, or both",
+  3: "Something dramatic, stupid, or both",
   4: "A line of dialogue",
-  5: "What they did or said back",
+  5: "A line of dialogue back",
   6: "Wrap it up — happy, tragic, or weird",
 };
 

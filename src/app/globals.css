@@ -44,15 +44,11 @@ body {
   text-align: center;
   border-bottom: 3px solid var(--ink);
 }
-.banner-title {
-  font-family: var(--font-playbill);
-  font-weight: 400;
-  font-size: 62px;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  color: var(--ink);
-  line-height: 1;
-  -webkit-text-stroke: 1.5px var(--ink);
+.banner-title-img {
+  display: block;
+  margin: 0 auto;
+  height: 44px;
+  width: auto;
 }
 .banner-subtitle {
   font-family: var(--font-inter), sans-serif;
@@ -105,13 +101,15 @@ body {
 }
 
 /* Each button sits in a wrapper so the transform doesn't conflict with
-   the button's own styles. Buttons start hidden above, behind the banner;
-   adding .title-btn-animate triggers the slide-down with overshoot.
-   No opacity fade — the buttons stay fully opaque (solid black) while moving. */
+   the button's own styles. Buttons start fully hidden (visibility:hidden)
+   so no white box peeks out; .title-btn-animate makes them visible and
+   slides them down from behind the banner at full opacity (solid black). */
 .title-btn-wrapper {
+  visibility: hidden;
   transform: translateY(-300px);
 }
 .title-btn-wrapper.title-btn-animate {
+  visibility: visible;
   animation: titleBtnSlide 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 .title-btn-wrapper.title-btn-animate.title-btn-delay {

@@ -2,11 +2,11 @@ import type { Prompt } from "./types";
 
 export const PROMPTS: Prompt[] = [
   { index: 0, text: "Pick someone in this room. Who are they really?" },
-  { index: 1, text: "Pick someone else. What's their deal?" },
+  { index: 1, text: "Pick someone else. What\u2019s their deal?" },
   { index: 2, text: "Where did these two cross paths?" },
-  { index: 3, text: "What happened next?" },
-  { index: 4, text: "What did someone say out loud?" },
-  { index: 5, text: "How did the other person react?" },
+  { index: 3, text: "What are they doing there?" },
+  { index: 4, text: "What did the first one say?" },
+  { index: 5, text: "What did the other one say back?" },
   { index: 6, text: "How did it all end?" },
 ];
 
