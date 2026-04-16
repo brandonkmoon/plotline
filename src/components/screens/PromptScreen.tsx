@@ -39,8 +39,8 @@ export default function PromptScreen() {
       return;
 
     // Find the story + prompt index for this player in this round
-    const story = room.stories.find((s) =>
-      s.slots.some(
+    const story = room?.stories?.find((s) =>
+      s.slots?.some(
         (slot) =>
           slot.promptIndex === currentRound &&
           slot.playerId === currentPlayer.id

@@ -15,12 +15,12 @@ export default function RevealScreen() {
 
   const usingSyncedReveal = revealState !== null;
 
-  const totalStories = assembledStories.length;
+  const totalStories = assembledStories?.length ?? 0;
   const currentStoryIdx = usingSyncedReveal ? revealState.storyIndex : localStoryIdx;
   const revealedLines = usingSyncedReveal ? revealState.revealedCount : localRevealedLines;
 
   const story = assembledStories[currentStoryIdx];
-  const totalLines = story ? story.sections.length : 0;
+  const totalLines = story?.sections?.length ?? 0;
   const allRevealed = story ? revealedLines >= totalLines : false;
 
   const isReader = usingSyncedReveal && currentPlayer
@@ -98,7 +98,7 @@ export default function RevealScreen() {
 
         {/* Story sections (narrative prose) */}
         <div className="mt-8 w-full space-y-4">
-          {story.sections.map((section, i) => {
+          {(story?.sections ?? []).map((section, i) => {
             if (i >= revealedLines) return null;
 
             const isName = section.style === "name";

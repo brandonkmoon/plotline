@@ -9,7 +9,7 @@ export default function SubmissionStatus() {
 
   return (
     <div className="flex flex-wrap justify-center gap-3 mt-6">
-      {room.players.map((player) => {
+      {(room?.players ?? []).map((player) => {
         const status = playerStatuses[player.id];
         const submitted = status === "submitted";
         const isReconnecting = status === "reconnecting";
@@ -31,6 +31,7 @@ export default function SubmissionStatus() {
               }`}
             >
               {player.name}
+              {player.isHost && <span className="text-text-muted text-[10px] ml-1">(Host)</span>}
             </span>
             {isReconnecting && (
               <span className="italic text-text-muted text-[10px]">(reconnecting)</span>

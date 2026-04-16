@@ -413,4 +413,133 @@ describe("Room Server Logic (integration with reducer)", () => {
       expect(room.state).toBe("END");
     });
   });
+
+  describe("HOST_ADVANCE with partial submissions", () => {
+    it("should fill placeholders for unsubmitted players and advance to next round", () => {
+      let room = makeLobbyWith4Players();
+      room = gameReducer(room, {
+        type: "GAME_STARTED",
+        hostId: "p1",
+        timestamp: Date.now(),
+      });
+
+      expect(room.state).toBe("PLAYING");
+      expect(room.currentRound).toBe(0);
+      expect(room.stories).toHaveLength(4);
+
+      // Submit prompts for 3 of 4 stories in round 0, leaving 1 unsubmitted
+      const submittedStories = room.stories.slice(0, 3);
+      for (const story of submittedStories) {
+        const slot = story.slots[0];
+        room = gameReducer(room, {
+          type: "PROMPT_SUBMITTED",
+          playerId: slot.playerId!,
+          storyIndex: story.index,
+          promptIndex: 0,
+          response: `response for story ${story.index}`,
+        });
+      }
+
+      // Round should NOT have advanced yet (only 3 of 4 submitted)
+      expect(room.currentRound).toBe(0);
+
+      // Host advances
+      room = gameReducer(room, {
+        type: "HOST_ADVANCED",
+        hostId: "p1",
+        timestamp: Date.now(),
+      });
+
+      // Should now be on round 1
+      expect(room.currentRound).toBe(1);
+      expect(room.state).toBe("PLAYING");
+
+      // Verify all stories and slots are defined
+      expect(room.stories).toBeDefined();
+      for (const story of room.stories) {
+        expect(story).toBeDefined();
+        expect(story.slots).toBeDefined();
+
+        const round0Slot = story.slots[0];
+        expect(round0Slot).toBeDefined();
+        expect(round0Slot.response).not.toBeNull();
+      }
+
+      // The unsubmitted story (index 3) should have a placeholder
+      const unsubmittedStory = room.stories[3];
+      expect(unsubmittedStory.slots[0].response).not.toBeNull();
+      expect(unsubmittedStory.slots[0].isPlaceholder).toBe(true);
+
+      // The submitted stories should NOT have placeholders
+      for (let i = 0; i < 3; i++) {
+        expect(room.stories[i].slots[0].isPlaceholder).toBe(false);
+      }
+    });
+
+    it("should transition to REVEAL when host advances on the last round", () => {
+      let room = makeLobbyWith4Players();
+      room = gameReducer(room, {
+        type: "GAME_STARTED",
+        hostId: "p1",
+        timestamp: Date.now(),
+      });
+
+      // Complete rounds 0-5 normally
+      for (let round = 0; round < 6; round++) {
+        for (const story of room.stories) {
+          const slot = story.slots[round];
+          room = gameReducer(room, {
+            type: "PROMPT_SUBMITTED",
+            playerId: slot.playerId!,
+            storyIndex: story.index,
+            promptIndex: round,
+            response: `r${round}s${story.index}`,
+          });
+        }
+      }
+
+      expect(room.currentRound).toBe(6);
+
+      // Submit 3 of 4 for round 6, leave 1 unsubmitted
+      const submittedStories = room.stories.slice(0, 3);
+      for (const story of submittedStories) {
+        const slot = story.slots[6];
+        room = gameReducer(room, {
+          type: "PROMPT_SUBMITTED",
+          playerId: slot.playerId!,
+          storyIndex: story.index,
+          promptIndex: 6,
+          response: `final response for story ${story.index}`,
+        });
+      }
+
+      expect(room.currentRound).toBe(6);
+      expect(room.state).toBe("PLAYING");
+
+      // Host advances on the last round
+      room = gameReducer(room, {
+        type: "HOST_ADVANCED",
+        hostId: "p1",
+        timestamp: Date.now(),
+      });
+
+      // Should transition to REVEAL
+      expect(room.state).toBe("REVEAL");
+
+      // Verify all stories and all slots are defined and filled
+      expect(room.stories).toBeDefined();
+      for (const story of room.stories) {
+        expect(story).toBeDefined();
+        expect(story.slots).toBeDefined();
+        for (const slot of story.slots) {
+          expect(slot).toBeDefined();
+          expect(slot.response).not.toBeNull();
+        }
+      }
+
+      // The unsubmitted story's last slot should be a placeholder
+      const unsubmittedStory = room.stories[3];
+      expect(unsubmittedStory.slots[6].isPlaceholder).toBe(true);
+    });
+  });
 });

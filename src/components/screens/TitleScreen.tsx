@@ -3,8 +3,6 @@
 import { useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { gameClient } from "@/lib/multiplayer/gameClient";
-import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
 import GoldBar from "@/components/GoldBar";
 import MorphVideo from "@/components/MorphVideo";
@@ -38,17 +36,8 @@ export default function TitleScreen() {
     return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
-  const handleCreate = useCallback(async () => {
-    try {
-      // Connect to a new room — the server creates the room on first join
-      // We generate a random code and connect; the server will create it
-      const code = generateCode();
-      await gameClient.connect(code, "Host");
-      trackEvent("room_created");
-      router.push(`/room/${code}`);
-    } catch {
-      // If connection fails, still navigate so user can see error state
-    }
+  const handleCreate = useCallback(() => {
+    router.push("/create");
   }, [router]);
 
   const handleJoin = useCallback(() => {
@@ -152,11 +141,3 @@ export default function TitleScreen() {
   );
 }
 
-function generateCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 4; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}

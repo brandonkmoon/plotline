@@ -33,7 +33,7 @@ export default function PlayerTag({
           : "none",
       }}
     >
-      <span className={isDisconnected ? "line-through" : ""}>{name}</span>
+      <span className={isDisconnected ? "line-through" : ""}>{name}{isHost && <span className="text-text-muted text-[12px] ml-1 font-sans">(Host)</span>}</span>
       {isReconnecting && (
         <span className="italic text-text-muted text-[11px]">(reconnecting)</span>
       )}

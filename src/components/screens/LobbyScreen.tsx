@@ -12,7 +12,7 @@ export default function LobbyScreen() {
 
   if (!room) return null;
 
-  const connectedPlayers = room.players.filter((p) => p.isConnected);
+  const connectedPlayers = room?.players?.filter((p) => p.isConnected) ?? [];
   const canStart = connectedPlayers.length >= 4;
 
   return (
@@ -48,7 +48,7 @@ export default function LobbyScreen() {
           className="flex flex-wrap justify-center gap-3 mt-6 anim-fade-in"
           style={{ opacity: 0, animationDelay: "0.4s", animationFillMode: "forwards" }}
         >
-          {room.players.map((player) => {
+          {(room?.players ?? []).map((player) => {
             const status = playerStatuses[player.id];
             return (
               <PlayerTag

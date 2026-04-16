@@ -19,8 +19,8 @@ export default function EndScreen() {
 
   if (!room) return null;
 
-  const playerCount = room.players.filter((p) => p.isConnected).length;
-  const storyCount = assembledStories.length;
+  const playerCount = room?.players?.filter((p) => p.isConnected)?.length ?? 0;
+  const storyCount = assembledStories?.length ?? 0;
 
   const fullArchiveUrl = archiveUrl
     ? `${window.location.origin}${archiveUrl}`
