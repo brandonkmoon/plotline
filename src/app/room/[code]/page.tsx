@@ -125,6 +125,29 @@ function ConnectingView() {
   );
 }
 
+// Ensures a WebSocket is always opened when the room page mounts.
+// The /create and /join flows connect before navigating here, so
+// isConnected() will be true and this is a no-op. On a fresh tab
+// (e.g. reopening the URL after closing the browser), gameClient
+// is a fresh singleton with no socket — we must initiate the
+// connection ourselves. The server decides whether the id we send
+// (sessionStorage → localStorage fallback inside connect()) is a
+// reconnect, a new joiner, or should be rejected.
+function AutoConnect() {
+  const params = useParams<{ code: string }>();
+  const code = params?.code;
+
+  useEffect(() => {
+    if (!code) return;
+    if (gameClient.isConnected()) return;
+    gameClient.connect(code, "", undefined).catch(() => {
+      // Errors surface via onConnectionError → ConnectionErrorView
+    });
+  }, [code]);
+
+  return null;
+}
+
 function RoomContent() {
   const {
     room,
@@ -200,6 +223,7 @@ export default function RoomPage() {
   return (
     <ErrorBoundary>
       <RoomProvider>
+        <AutoConnect />
         <div className="relative">
           <ConnectionStatus />
           <RoomContent />
