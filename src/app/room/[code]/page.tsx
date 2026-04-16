@@ -11,6 +11,7 @@ import PromptScreen from "@/components/screens/PromptScreen";
 import WaitingScreen from "@/components/screens/WaitingScreen";
 import RevealScreen from "@/components/screens/RevealScreen";
 import EndScreen from "@/components/screens/EndScreen";
+import PendingLobbyScreen from "@/components/screens/PendingLobbyScreen";
 import Button from "@/components/Button";
 import { gameClient } from "@/lib/multiplayer/gameClient";
 
@@ -36,7 +37,8 @@ function ConnectionErrorView() {
   switch (connectionError) {
     case "GAME_IN_PROGRESS":
       title = "Game in progress";
-      message = "Rejoining isn't supported yet.";
+      message =
+        "This room is mid-game and couldn't take you in. Try again in a moment.";
       action = (
         <Link href="/">
           <Button variant="primary">Back to home</Button>
@@ -124,7 +126,27 @@ function ConnectingView() {
 }
 
 function RoomContent() {
-  const { room, currentPlayer, playerStatuses, connectionError } = useRoom();
+  const {
+    room,
+    currentPlayer,
+    isPending,
+    playerStatuses,
+    connectionError,
+    roomRedirect,
+  } = useRoom();
+  const router = useRouter();
+
+  // Handle ROOM_REDIRECT — navigate to the new room
+  useEffect(() => {
+    if (roomRedirect) {
+      try {
+        gameClient.disconnect();
+      } catch {
+        // ignore
+      }
+      router.push(`/room/${roomRedirect}`);
+    }
+  }, [roomRedirect, router]);
 
   if (connectionError) {
     return <ConnectionErrorView />;
@@ -132,6 +154,11 @@ function RoomContent() {
 
   if (!room) {
     return <ConnectingView />;
+  }
+
+  // Pending players (late joiners) see a dedicated waiting screen
+  if (isPending) {
+    return <PendingLobbyScreen />;
   }
 
   switch (room.state) {

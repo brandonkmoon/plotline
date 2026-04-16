@@ -135,6 +135,82 @@ describe("GameClient", () => {
 
       await expect(connectPromise).rejects.toThrow("Room is full");
     });
+
+    it("falls back to localStorage rejoin id when sessionStorage is empty", async () => {
+      const ROOM_CODE = "ZZZZ";
+      const REJOIN_ID = "local-rejoin-id-42";
+
+      // Provide browser-ish storage shims on the Node global for this test.
+      function makeStorage(): Storage {
+        const store = new Map<string, string>();
+        return {
+          get length() {
+            return store.size;
+          },
+          clear: () => store.clear(),
+          getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
+          key: (i: number) => Array.from(store.keys())[i] ?? null,
+          removeItem: (k: string) => void store.delete(k),
+          setItem: (k: string, v: string) => void store.set(k, String(v)),
+        };
+      }
+      const sessionStorageShim = makeStorage();
+      const localStorageShim = makeStorage();
+
+      vi.stubGlobal("sessionStorage", sessionStorageShim);
+      vi.stubGlobal("localStorage", localStorageShim);
+      // gameClient guards on `typeof window === "undefined"` — provide a
+      // minimal window global so the storage helpers run.
+      vi.stubGlobal("window", {
+        sessionStorage: sessionStorageShim,
+        localStorage: localStorageShim,
+      });
+
+      localStorageShim.setItem(`plotline.rejoin.${ROOM_CODE}`, REJOIN_ID);
+
+      const connectPromise = client.connect(ROOM_CODE, "Alice");
+      await vi.advanceTimersByTimeAsync(10);
+
+      const socket = getSocket();
+      // The outgoing JOIN_ROOM should carry the localStorage playerId
+      const joinMsg = JSON.parse(socket.sentMessages[0]);
+      expect(joinMsg.type).toBe("JOIN_ROOM");
+      expect(joinMsg.playerId).toBe(REJOIN_ID);
+
+      // The PartySocket should also have received the playerId in its
+      // query string so that onConnect on the server can re-register.
+      expect((socket as any).opts.query?.playerId).toBe(REJOIN_ID);
+
+      // Resolve the connect promise so the afterEach disconnect cleans up
+      socket.simulateMessage({
+        type: "STATE_UPDATE",
+        room: {
+          code: ROOM_CODE,
+          state: "LOBBY",
+          players: [],
+          stories: [],
+          currentRound: 0,
+          hostId: REJOIN_ID,
+          createdAt: 0,
+          updatedAt: 0,
+          pendingPlayers: [],
+        },
+        playerId: REJOIN_ID,
+        roundStartedAt: null,
+        roundDurationMs: 90000,
+        pendingConnected: 0,
+        pendingDisconnected: 0,
+        protocolVersion: 2,
+      });
+      await connectPromise;
+
+      // Connecting should also populate sessionStorage (dual storage)
+      expect(sessionStorageShim.getItem(`plotline.playerId.${ROOM_CODE}`)).toBe(
+        REJOIN_ID
+      );
+
+      vi.unstubAllGlobals();
+    });
   });
 
   describe("disconnect", () => {

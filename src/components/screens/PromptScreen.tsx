@@ -7,6 +7,7 @@ import BlackletterHeading from "@/components/BlackletterHeading";
 import Button from "@/components/Button";
 import CountdownTimer from "@/components/CountdownTimer";
 import SubmissionStatus from "@/components/SubmissionStatus";
+import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
 const MAX_CHARS = 120;
 const TOTAL_ROUNDS = 7;
@@ -168,6 +169,7 @@ export default function PromptScreen() {
         {/* Submission status */}
         <SubmissionStatus />
       </div>
+      <PendingPlayersBadge />
     </div>
   );
 }

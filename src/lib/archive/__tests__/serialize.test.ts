@@ -45,6 +45,7 @@ function makeRoom(overrides?: Partial<Room>): Room {
     hostId: "p1",
     createdAt: 1000,
     updatedAt: 5000,
+    pendingPlayers: [],
     ...overrides,
   };
 }

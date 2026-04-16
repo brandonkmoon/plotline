@@ -197,6 +197,49 @@ body::after {
   animation: connectionPulse 1.5s ease-in-out infinite;
 }
 
+/* Breathing glow for ambient "someone is reading" UI */
+@keyframes breathe {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+.breathing-glow {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+/* Cycling ellipsis used next to text like "Listening..." */
+@keyframes dot-cycle-1 {
+  0%, 20% { opacity: 0; }
+  33%, 100% { opacity: 1; }
+}
+
+@keyframes dot-cycle-2 {
+  0%, 40% { opacity: 0; }
+  55%, 100% { opacity: 1; }
+}
+
+@keyframes dot-cycle-3 {
+  0%, 60% { opacity: 0; }
+  75%, 100% { opacity: 1; }
+}
+
+.dot-cycle {
+  display: inline-block;
+  opacity: 0;
+}
+
+.dot-cycle-1 {
+  animation: dot-cycle-1 1.5s infinite;
+}
+
+.dot-cycle-2 {
+  animation: dot-cycle-2 1.5s infinite;
+}
+
+.dot-cycle-3 {
+  animation: dot-cycle-3 1.5s infinite;
+}
+
 /* scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;

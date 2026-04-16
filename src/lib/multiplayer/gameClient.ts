@@ -23,6 +23,7 @@ type AdvanceCallback = (count: number) => void;
 type StoriesCallback = (stories: AssembledStory[]) => void;
 type ArchiveReadyCallback = (archiveUrl: string) => void;
 type RevealStateCallback = (state: RevealState) => void;
+type RoomRedirectCallback = (newRoomCode: string) => void;
 
 const CONNECT_TIMEOUT_MS = 10_000;
 const DEFAULT_ROUND_DURATION_MS = 90_000;
@@ -69,6 +70,42 @@ function clearStoredPlayerId(roomCode: string): void {
   }
 }
 
+// --- localStorage helpers (rejoin identity) ---
+// Persists across tab close / browser restart so a player can resume a
+// session after their tab dies. Uses a separate key prefix to avoid
+// colliding with the per-tab sessionStorage identity.
+
+function getRejoinId(roomCode: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const id = localStorage.getItem(`plotline.rejoin.${roomCode}`);
+    devLog(`localStorage read rejoin.${roomCode} → ${id ?? "(none)"}`);
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+function storeRejoinId(roomCode: string, playerId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(`plotline.rejoin.${roomCode}`, playerId);
+    devLog(`localStorage write rejoin.${roomCode} = ${playerId}`);
+  } catch {
+    // ignore
+  }
+}
+
+function clearRejoinId(roomCode: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(`plotline.rejoin.${roomCode}`);
+    devLog(`localStorage clear rejoin.${roomCode}`);
+  } catch {
+    // ignore
+  }
+}
+
 class GameClient {
   private socket: PartySocket | null = null;
   private playerId: string | null = null;
@@ -81,6 +118,7 @@ class GameClient {
   private storiesListeners: Set<StoriesCallback> = new Set();
   private archiveReadyListeners: Set<ArchiveReadyCallback> = new Set();
   private revealStateListeners: Set<RevealStateCallback> = new Set();
+  private roomRedirectListeners: Set<RoomRedirectCallback> = new Set();
   private messageLogListeners: Set<
     (entry: { direction: "in" | "out"; data: string; timestamp: number }) => void
   > = new Set();
@@ -107,14 +145,20 @@ class GameClient {
 
     // Determine which playerId to send:
     // - If forceNewPlayer is true: never reconnect, always join as new
-    //   (also clear any stale sessionStorage entry for this room)
-    // - Otherwise: prefer explicit arg, fall back to sessionStorage
+    //   (clear both sessionStorage AND localStorage entries for this room)
+    // - Otherwise: prefer explicit arg, fall back to sessionStorage, then
+    //   to localStorage (tab-close recovery)
     let playerIdToSend: string | undefined;
     if (options?.forceNewPlayer) {
       clearStoredPlayerId(roomCode);
+      clearRejoinId(roomCode);
       playerIdToSend = undefined;
     } else {
-      playerIdToSend = existingPlayerId ?? getStoredPlayerId(roomCode) ?? undefined;
+      playerIdToSend =
+        existingPlayerId ??
+        getStoredPlayerId(roomCode) ??
+        getRejoinId(roomCode) ??
+        undefined;
     }
 
     return new Promise((resolve, reject) => {
@@ -192,8 +236,10 @@ class GameClient {
               typeof msg.pendingDisconnected === "number"
                 ? msg.pendingDisconnected
                 : 0;
-            // Persist playerId
+            // Persist playerId in both sessionStorage (per-tab) and
+            // localStorage (tab-close recovery)
             storePlayerId(roomCode, msg.playerId);
+            storeRejoinId(roomCode, msg.playerId);
             for (const cb of this.stateListeners) cb(msg.room);
             if (!resolved) {
               resolved = true;
@@ -216,9 +262,17 @@ class GameClient {
               msg.reason === "PLAYER_ALREADY_CONNECTED"
             ) {
               // Clear stored playerId on PLAYER_ALREADY_CONNECTED so a
-              // refresh doesn't repeat the conflict
+              // refresh doesn't repeat the conflict. Also clear the
+              // localStorage rejoin id so another tab can claim the slot.
               if (msg.reason === "PLAYER_ALREADY_CONNECTED") {
                 clearStoredPlayerId(roomCode);
+                clearRejoinId(roomCode);
+              }
+              // UNKNOWN_PLAYER: the player id we used no longer exists
+              // on the server — clear both storages so we'll join fresh.
+              if (msg.reason === "UNKNOWN_PLAYER") {
+                clearStoredPlayerId(roomCode);
+                clearRejoinId(roomCode);
               }
               this.emitConnectionError(msg.reason);
             }
@@ -250,6 +304,13 @@ class GameClient {
               readerName: msg.readerName,
             };
             for (const cb of this.revealStateListeners) cb(this.latestRevealState);
+            break;
+
+          case "ROOM_REDIRECT":
+            // Clear identity for the old room — we won't be coming back.
+            clearStoredPlayerId(roomCode);
+            clearRejoinId(roomCode);
+            for (const cb of this.roomRedirectListeners) cb(msg.newRoomCode);
             break;
         }
       });
@@ -325,6 +386,14 @@ class GameClient {
     this.send({ type: "PLAY_AGAIN" });
   }
 
+  newRoom(): void {
+    this.send({ type: "NEW_ROOM" });
+  }
+
+  setReady(ready: boolean): void {
+    this.send({ type: "SET_READY", ready });
+  }
+
   sendTypingStatus(status: "writing" | "idle"): void {
     this.send({ type: "TYPING_STATUS", status });
   }
@@ -377,6 +446,11 @@ class GameClient {
     return () => this.revealStateListeners.delete(callback);
   }
 
+  onRoomRedirect(callback: RoomRedirectCallback): () => void {
+    this.roomRedirectListeners.add(callback);
+    return () => this.roomRedirectListeners.delete(callback);
+  }
+
   onMessageLog(
     callback: (entry: {
       direction: "in" | "out";
@@ -424,15 +498,18 @@ class GameClient {
 
   clearStoredPlayerIdForRoom(roomCode: string): void {
     clearStoredPlayerId(roomCode);
+    clearRejoinId(roomCode);
   }
 
   // --- Private ---
 
   private emitConnectionError(reason: ConnectionErrorReason): void {
     this.connectionError = reason;
-    // If the reason is UNKNOWN_PLAYER, clear stored playerId for this room
+    // If the reason is UNKNOWN_PLAYER, clear BOTH stored identities for
+    // this room so the next connect attempt won't retry with the same id.
     if (reason === "UNKNOWN_PLAYER" && this.roomCode) {
       clearStoredPlayerId(this.roomCode);
+      clearRejoinId(this.roomCode);
     }
     for (const cb of this.connectionErrorListeners) cb(reason);
   }

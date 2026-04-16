@@ -6,6 +6,7 @@ import BlackletterHeading from "@/components/BlackletterHeading";
 import Button from "@/components/Button";
 import CountdownTimer from "@/components/CountdownTimer";
 import SubmissionStatus from "@/components/SubmissionStatus";
+import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
 export default function WaitingScreen() {
   const {
@@ -78,6 +79,7 @@ export default function WaitingScreen() {
           </div>
         )}
       </div>
+      <PendingPlayersBadge />
     </div>
   );
 }

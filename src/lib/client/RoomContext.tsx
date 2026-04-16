@@ -10,7 +10,12 @@ import React, {
 } from "react";
 import { gameClient } from "@/lib/multiplayer/gameClient";
 import type { RevealState } from "@/lib/multiplayer/gameClient";
-import type { Room, Player, AssembledStory } from "@/lib/game/types";
+import type {
+  Room,
+  Player,
+  PendingPlayer,
+  AssembledStory,
+} from "@/lib/game/types";
 import type {
   PlayerStatus,
   ConnectionErrorReason,
@@ -19,6 +24,8 @@ import type {
 interface RoomContextValue {
   room: Room | null;
   currentPlayer: Player | null;
+  currentPendingPlayer: PendingPlayer | null;
+  isPending: boolean;
   playerStatuses: Record<string, PlayerStatus>;
   isHost: boolean;
   advanceAvailable: boolean;
@@ -31,6 +38,7 @@ interface RoomContextValue {
   connectionError: ConnectionErrorReason | null;
   clearConnectionError: () => void;
   revealState: RevealState | null;
+  roomRedirect: string | null;
   connect: (
     roomCode: string,
     playerName: string,
@@ -49,6 +57,8 @@ interface RoomContextValue {
   nextStory: () => void;
   endGame: () => void;
   playAgain: () => void;
+  newRoom: () => void;
+  setReady: (ready: boolean) => void;
   sendTypingStatus: (status: "writing" | "idle") => void;
   archiveUrl: string | null;
 }
@@ -77,6 +87,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
   const [connectionError, setConnectionError] =
     useState<ConnectionErrorReason | null>(null);
   const [revealState, setRevealState] = useState<RevealState | null>(null);
+  const [roomRedirect, setRoomRedirect] = useState<string | null>(null);
   const playerIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -146,6 +157,12 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
       })
     );
 
+    unsubs.push(
+      gameClient.onRoomRedirect((newCode) => {
+        setRoomRedirect(newCode);
+      })
+    );
+
     return () => {
       unsubs.forEach((fn) => fn());
       gameClient.disconnect();
@@ -200,6 +217,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     setPendingDisconnected(0);
     setConnectionError(null);
     setRevealState(null);
+    setRoomRedirect(null);
   }, []);
 
   const clearConnectionError = useCallback(() => {
@@ -209,11 +227,16 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
 
   const currentPlayer =
     room?.players.find((p) => p.id === playerIdRef.current) ?? null;
+  const currentPendingPlayer =
+    room?.pendingPlayers?.find((p) => p.id === playerIdRef.current) ?? null;
+  const isPending = currentPendingPlayer !== null;
   const isHost = currentPlayer?.isHost ?? false;
 
   const value: RoomContextValue = {
     room,
     currentPlayer,
+    currentPendingPlayer,
+    isPending,
     playerStatuses,
     isHost,
     advanceAvailable,
@@ -226,6 +249,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     connectionError,
     clearConnectionError,
     revealState,
+    roomRedirect,
     connect,
     disconnect,
     startGame: () => gameClient.startGame(),
@@ -237,6 +261,8 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     nextStory: () => gameClient.nextStory(),
     endGame: () => gameClient.endGame(),
     playAgain: () => gameClient.playAgain(),
+    newRoom: () => gameClient.newRoom(),
+    setReady: (ready) => gameClient.setReady(ready),
     sendTypingStatus: (status) => gameClient.sendTypingStatus(status),
     archiveUrl,
   };

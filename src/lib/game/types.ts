@@ -14,6 +14,13 @@ export interface Player {
   joinedAt: number;
 }
 
+export interface PendingPlayer {
+  id: string;
+  name: string;
+  joinedAt: number;
+  ready: boolean;
+}
+
 export interface PromptSlot {
   storyIndex: number;
   promptIndex: number;
@@ -37,6 +44,7 @@ export interface Room {
   hostId: string;
   createdAt: number;
   updatedAt: number;
+  pendingPlayers: PendingPlayer[];
 }
 
 export interface Prompt {
@@ -72,4 +80,8 @@ export type GameAction =
   | { type: "HOST_ADVANCED"; hostId: string; timestamp: number }
   | { type: "REVEAL_STARTED"; hostId: string; timestamp: number }
   | { type: "STORY_REVEALED"; storyIndex: number; timestamp: number }
-  | { type: "GAME_ENDED"; timestamp: number };
+  | { type: "GAME_ENDED"; timestamp: number }
+  | { type: "PENDING_PLAYER_JOINED"; player: PendingPlayer }
+  | { type: "PENDING_PLAYER_LEFT"; playerId: string }
+  | { type: "PENDING_PLAYER_READY_CHANGED"; playerId: string; ready: boolean }
+  | { type: "PENDING_PROMOTED"; playerIds: string[]; timestamp: number };

@@ -6,6 +6,7 @@ import BlackletterHeading from "@/components/BlackletterHeading";
 import GoldBar from "@/components/GoldBar";
 import PlayerTag from "@/components/PlayerTag";
 import Button from "@/components/Button";
+import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
 export default function LobbyScreen() {
   const { room, isHost, startGame, playerStatuses } = useRoom();
@@ -96,6 +97,7 @@ export default function LobbyScreen() {
           Share the code to invite players
         </p>
       </div>
+      <PendingPlayersBadge />
     </div>
   );
 }

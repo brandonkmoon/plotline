@@ -35,6 +35,8 @@ export type ClientMessage =
   | { type: "REVEAL_ADVANCE" }
   | { type: "END_GAME" }
   | { type: "PLAY_AGAIN" }
+  | { type: "NEW_ROOM" }
+  | { type: "SET_READY"; ready: boolean }
   | { type: "TYPING_STATUS"; status: "writing" | "idle" };
 
 export type ServerMessage =
@@ -53,7 +55,8 @@ export type ServerMessage =
   | { type: "ERROR"; reason: string }
   | { type: "ASSEMBLED_STORIES"; stories: AssembledStory[] }
   | { type: "ARCHIVE_READY"; archiveUrl: string }
-  | { type: "REVEAL_STATE"; storyIndex: number; revealedCount: number; readerId: string; readerName: string };
+  | { type: "REVEAL_STATE"; storyIndex: number; revealedCount: number; readerId: string; readerName: string }
+  | { type: "ROOM_REDIRECT"; newRoomCode: string };
 
 export type RegistryMessage =
   | { type: "REGISTER"; code: string }

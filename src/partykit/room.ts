@@ -1,12 +1,12 @@
 import type * as Party from "partykit/server";
-import type { Room, Player, GameAction } from "@/lib/game/types";
+import type { Room, Player, GameAction, PendingPlayer } from "@/lib/game/types";
 import type {
   ClientMessage,
   ServerMessage,
   PlayerStatus,
 } from "@/lib/multiplayer/types";
 import { PROTOCOL_VERSION } from "@/lib/multiplayer/types";
-import { gameReducer, createRoom, assembleStories } from "@/lib/game";
+import { gameReducer, createRoom, assembleStories, generateRoomCode } from "@/lib/game";
 import { serializeRoomForArchive } from "@/lib/archive/serialize";
 
 /**
@@ -75,7 +75,10 @@ export default class RoomServer implements Party.Server {
         const existingPlayer = this.gameState.players.find(
           (p) => p.id === playerId
         );
-        if (existingPlayer) {
+        const existingPending = this.gameState.pendingPlayers?.find(
+          (p) => p.id === playerId
+        );
+        if (existingPlayer || existingPending) {
           this.connectionToPlayer.set(conn.id, playerId);
           this.playerToConnection.set(playerId, conn.id);
           console.log(
@@ -135,6 +138,12 @@ export default class RoomServer implements Party.Server {
       case "PLAY_AGAIN":
         this.handlePlayAgain(sender);
         break;
+      case "NEW_ROOM":
+        this.handleNewRoom(sender);
+        break;
+      case "SET_READY":
+        this.handleSetReady(msg, sender);
+        break;
       case "TYPING_STATUS":
         this.handleTypingStatus(msg, sender);
         break;
@@ -166,6 +175,25 @@ export default class RoomServer implements Party.Server {
       // A newer connection already claimed this player — nothing
       // to clean up on the player-side, and no need to mark them
       // as reconnecting.
+      return;
+    }
+
+    // If the disconnecting identity is a pending player, remove them
+    // from pendingPlayers immediately — they don't participate in
+    // reconnect timeouts.
+    if (
+      this.gameState?.pendingPlayers?.some((p) => p.id === playerId)
+    ) {
+      const action: GameAction = {
+        type: "PENDING_PLAYER_LEFT",
+        playerId,
+      };
+      const newState = gameReducer(this.gameState, action);
+      if (newState !== this.gameState) {
+        this.gameState = newState;
+        this.broadcastStateUpdate();
+      }
+      this.checkForEmptyRoom();
       return;
     }
 
@@ -210,6 +238,43 @@ export default class RoomServer implements Party.Server {
 
     // Reconnection case: client supplied a playerId
     if (msg.playerId) {
+      // Check pending players first — a pending joiner reconnecting should
+      // restore their pending status, not get UNKNOWN_PLAYER
+      const existingPending = this.gameState?.pendingPlayers?.find(
+        (p) => p.id === msg.playerId
+      );
+      if (existingPending && this.gameState) {
+        const existingConnId = this.playerToConnection.get(existingPending.id);
+        if (existingConnId && existingConnId !== sender.id) {
+          let stillConnected = false;
+          for (const c of this.room.getConnections()) {
+            if (c.id === existingConnId) {
+              stillConnected = true;
+              break;
+            }
+          }
+          if (stillConnected) {
+            this.sendTo(sender, {
+              type: "ERROR",
+              reason: "PLAYER_ALREADY_CONNECTED",
+            });
+            sender.close();
+            return;
+          }
+        }
+
+        this.connectionToPlayer.set(sender.id, existingPending.id);
+        this.playerToConnection.set(existingPending.id, sender.id);
+
+        if (this.roomDestroyTimer) {
+          clearTimeout(this.roomDestroyTimer);
+          this.roomDestroyTimer = null;
+        }
+
+        this.broadcastStateUpdate();
+        return;
+      }
+
       const existingPlayer = this.gameState?.players.find(
         (p) => p.id === msg.playerId
       );
@@ -295,17 +360,37 @@ export default class RoomServer implements Party.Server {
     }
 
     // New player joining (no playerId)
-    // Reject if game is already in progress
+    // If game is in progress, add them to pendingPlayers instead of
+    // rejecting. They'll auto-join when the next game starts.
     if (
       this.gameState &&
       this.gameState.state !== "LOBBY" &&
-      this.gameState.state !== "CREATED"
+      this.gameState.state !== "CREATED" &&
+      this.gameState.state !== "DESTROYED"
     ) {
-      this.sendTo(sender, {
-        type: "ERROR",
-        reason: "GAME_IN_PROGRESS",
-      });
-      sender.close();
+      const pendingId = crypto.randomUUID();
+      const pendingPlayer: PendingPlayer = {
+        id: pendingId,
+        name: msg.playerName,
+        joinedAt: now,
+        ready: false,
+      };
+      const pendingAction: GameAction = {
+        type: "PENDING_PLAYER_JOINED",
+        player: pendingPlayer,
+      };
+      const newStateAfterPending = gameReducer(this.gameState, pendingAction);
+      this.gameState = newStateAfterPending;
+
+      this.connectionToPlayer.set(sender.id, pendingId);
+      this.playerToConnection.set(pendingId, sender.id);
+
+      if (this.roomDestroyTimer) {
+        clearTimeout(this.roomDestroyTimer);
+        this.roomDestroyTimer = null;
+      }
+
+      this.broadcastStateUpdate();
       return;
     }
 
@@ -331,10 +416,7 @@ export default class RoomServer implements Party.Server {
       if (newState === this.gameState) {
         this.sendTo(sender, {
           type: "ERROR",
-          reason:
-            this.gameState.state !== "LOBBY"
-              ? "GAME_IN_PROGRESS"
-              : "Room is full",
+          reason: "Room is full",
         });
         sender.close();
         return;
@@ -492,14 +574,19 @@ export default class RoomServer implements Party.Server {
     if (!this.gameState) return;
     if (this.gameState.state !== "REVEAL") return;
 
-    // Find the next unrevealed story
-    const nextStory = this.gameState.stories.find((s) => !s.isRevealed);
-    if (!nextStory) return;
+    // Mark the current story as revealed (if not already) and move on.
+    const currentStory = this.gameState.stories[this.revealStoryIndex];
+    const targetStoryIndex =
+      currentStory && !currentStory.isRevealed
+        ? currentStory.index
+        : this.gameState.stories.find((s) => !s.isRevealed)?.index;
+
+    if (targetStoryIndex === undefined) return;
 
     const now = Date.now();
     const action: GameAction = {
       type: "STORY_REVEALED",
-      storyIndex: nextStory.index,
+      storyIndex: targetStoryIndex,
       timestamp: now,
     };
     this.gameState = gameReducer(this.gameState, action);
@@ -542,32 +629,14 @@ export default class RoomServer implements Party.Server {
       return;
     }
 
-    this.revealedLineCount++;
-
+    // Idempotent: don't increment past 7. The reader sees all 7 lines
+    // but nothing auto-advances. Only ADVANCE_REVEAL moves to the
+    // next story.
     if (this.revealedLineCount >= 7) {
-      // Mark current story as revealed
-      const now = Date.now();
-      const action: GameAction = {
-        type: "STORY_REVEALED",
-        storyIndex: this.revealStoryIndex,
-        timestamp: now,
-      };
-      this.gameState = gameReducer(this.gameState, action);
-
-      // Check if all stories revealed
-      const nextUnrevealed = this.gameState.stories.find((s) => !s.isRevealed);
-      if (!nextUnrevealed) {
-        // All done - transition to END
-        this.broadcastRevealState();
-        this.broadcastStateUpdate();
-        this.archiveRoom();
-        return;
-      } else {
-        // Move to next story
-        this.revealStoryIndex = nextUnrevealed.index;
-        this.revealedLineCount = 0;
-      }
+      return;
     }
+
+    this.revealedLineCount++;
 
     this.broadcastRevealState();
     this.broadcastStateUpdate();
@@ -594,9 +663,25 @@ export default class RoomServer implements Party.Server {
     if (this.gameState.state !== "END" && this.gameState.state !== "REVEAL")
       return;
 
+    const senderPlayerId = this.connectionToPlayer.get(sender.id);
+    if (!senderPlayerId || senderPlayerId !== this.gameState.hostId) {
+      this.sendTo(sender, {
+        type: "ERROR",
+        reason: "Only the host can start the next round",
+      });
+      return;
+    }
+
     const now = Date.now();
     const host = this.gameState.players.find((p) => p.isHost);
     if (!host) return;
+
+    const readyPending = (this.gameState.pendingPlayers ?? []).filter(
+      (p) => p.ready
+    );
+    const keepPending = (this.gameState.pendingPlayers ?? []).filter(
+      (p) => !p.ready
+    );
 
     // Create fresh room with same code and players
     const newRoom = createRoom(
@@ -624,6 +709,27 @@ export default class RoomServer implements Party.Server {
       state = gameReducer(state, action);
     }
 
+    // Promote ready pending players to active players
+    for (const pending of readyPending) {
+      const action: GameAction = {
+        type: "PLAYER_JOINED",
+        player: {
+          id: pending.id,
+          name: pending.name,
+          isHost: false,
+          isConnected: true,
+          joinedAt: now,
+        },
+      };
+      state = gameReducer(state, action);
+    }
+
+    // Preserve non-ready pending players across the reset
+    state = {
+      ...state,
+      pendingPlayers: keepPending,
+    };
+
     this.gameState = state;
 
     // Reset statuses
@@ -634,6 +740,70 @@ export default class RoomServer implements Party.Server {
     this.clearRoundTimer();
     this.broadcastStateUpdate();
     this.broadcastPlayerStatuses();
+  }
+
+  private handleSetReady(
+    msg: Extract<ClientMessage, { type: "SET_READY" }>,
+    sender: Party.Connection
+  ) {
+    if (!this.gameState) return;
+
+    const playerId = this.connectionToPlayer.get(sender.id);
+    if (!playerId) return;
+
+    const isPending = this.gameState.pendingPlayers?.some(
+      (p) => p.id === playerId
+    );
+    if (!isPending) return;
+
+    const action: GameAction = {
+      type: "PENDING_PLAYER_READY_CHANGED",
+      playerId,
+      ready: msg.ready,
+    };
+    const newState = gameReducer(this.gameState, action);
+    if (newState === this.gameState) return;
+
+    this.gameState = newState;
+    this.broadcastStateUpdate();
+  }
+
+  private handleNewRoom(sender: Party.Connection) {
+    if (!this.gameState) return;
+
+    const playerId = this.connectionToPlayer.get(sender.id);
+    if (!playerId || playerId !== this.gameState.hostId) {
+      this.sendTo(sender, {
+        type: "ERROR",
+        reason: "Only the host can create a new room",
+      });
+      return;
+    }
+
+    const newRoomCode = generateRoomCode();
+
+    // Broadcast ROOM_REDIRECT to all connected clients
+    this.broadcast({ type: "ROOM_REDIRECT", newRoomCode });
+
+    // Mark current room as destroyed and close connections after a short
+    // delay to let the redirect message reach clients.
+    this.gameState = {
+      ...this.gameState,
+      state: "DESTROYED",
+      updatedAt: Date.now(),
+    };
+    this.clearRoundTimer();
+
+    setTimeout(() => {
+      for (const conn of this.room.getConnections()) {
+        try {
+          conn.close();
+        } catch {
+          // ignore
+        }
+      }
+      this.gameState = null;
+    }, 1000);
   }
 
   private handleTypingStatus(

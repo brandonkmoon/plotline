@@ -23,6 +23,7 @@ function makeRoom(stories: Story[], players?: Player[]): Room {
     hostId: "host",
     createdAt: 1000,
     updatedAt: 2000,
+    pendingPlayers: [],
   };
 }
 

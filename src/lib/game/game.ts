@@ -1,4 +1,4 @@
-import type { Room, GameAction, Story, PromptSlot } from "./types";
+import type { Room, GameAction, Story, PromptSlot, Player } from "./types";
 import { generateAssignments } from "./rotation";
 import { getRandomPlaceholder, PROMPTS } from "./prompts";
 
@@ -24,9 +24,85 @@ export function gameReducer(state: Room, action: GameAction): Room {
       return handleStoryRevealed(state, action);
     case "GAME_ENDED":
       return handleGameEnded(state, action);
+    case "PENDING_PLAYER_JOINED":
+      return handlePendingPlayerJoined(state, action);
+    case "PENDING_PLAYER_LEFT":
+      return handlePendingPlayerLeft(state, action);
+    case "PENDING_PLAYER_READY_CHANGED":
+      return handlePendingPlayerReadyChanged(state, action);
+    case "PENDING_PROMOTED":
+      return handlePendingPromoted(state, action);
     default:
       return state;
   }
+}
+
+function handlePendingPlayerJoined(
+  state: Room,
+  action: Extract<GameAction, { type: "PENDING_PLAYER_JOINED" }>
+): Room {
+  const pending = state.pendingPlayers ?? [];
+  if (pending.some((p) => p.id === action.player.id)) return state;
+  return {
+    ...state,
+    pendingPlayers: [...pending, action.player],
+    updatedAt: action.player.joinedAt,
+  };
+}
+
+function handlePendingPlayerLeft(
+  state: Room,
+  action: Extract<GameAction, { type: "PENDING_PLAYER_LEFT" }>
+): Room {
+  const pending = state.pendingPlayers ?? [];
+  if (!pending.some((p) => p.id === action.playerId)) return state;
+  return {
+    ...state,
+    pendingPlayers: pending.filter((p) => p.id !== action.playerId),
+    updatedAt: Date.now(),
+  };
+}
+
+function handlePendingPlayerReadyChanged(
+  state: Room,
+  action: Extract<GameAction, { type: "PENDING_PLAYER_READY_CHANGED" }>
+): Room {
+  const pending = state.pendingPlayers ?? [];
+  const target = pending.find((p) => p.id === action.playerId);
+  if (!target) return state;
+  if (target.ready === action.ready) return state;
+  return {
+    ...state,
+    pendingPlayers: pending.map((p) =>
+      p.id === action.playerId ? { ...p, ready: action.ready } : p
+    ),
+    updatedAt: Date.now(),
+  };
+}
+
+function handlePendingPromoted(
+  state: Room,
+  action: Extract<GameAction, { type: "PENDING_PROMOTED" }>
+): Room {
+  const pending = state.pendingPlayers ?? [];
+  const promotedIds = new Set(action.playerIds);
+  const toPromote = pending.filter((p) => promotedIds.has(p.id));
+  if (toPromote.length === 0) return state;
+
+  const newPlayers: Player[] = toPromote.map((p) => ({
+    id: p.id,
+    name: p.name,
+    isHost: false,
+    isConnected: true,
+    joinedAt: p.joinedAt,
+  }));
+
+  return {
+    ...state,
+    players: [...state.players, ...newPlayers],
+    pendingPlayers: pending.filter((p) => !promotedIds.has(p.id)),
+    updatedAt: action.timestamp,
+  };
 }
 
 function handlePlayerJoined(
@@ -262,5 +338,6 @@ export function createRoom(
     hostId: host.id,
     createdAt: timestamp,
     updatedAt: timestamp,
+    pendingPlayers: [],
   };
 }

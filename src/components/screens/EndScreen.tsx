@@ -8,9 +8,22 @@ import BlackletterHeading from "@/components/BlackletterHeading";
 import GoldBar from "@/components/GoldBar";
 import Button from "@/components/Button";
 
+function joinNames(names: string[]): string {
+  if (names.length === 0) return "";
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
 export default function EndScreen() {
-  const { room, assembledStories, playAgain, endGame, isHost, archiveUrl } =
-    useRoom();
+  const {
+    room,
+    assembledStories,
+    playAgain,
+    newRoom,
+    isHost,
+    archiveUrl,
+  } = useRoom();
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -21,6 +34,9 @@ export default function EndScreen() {
 
   const playerCount = room?.players?.filter((p) => p.isConnected)?.length ?? 0;
   const storyCount = assembledStories?.length ?? 0;
+  const pending = room?.pendingPlayers ?? [];
+  const readyPendingNames = pending.filter((p) => p.ready).map((p) => p.name);
+  const hostName = room.players.find((p) => p.isHost)?.name ?? "the host";
 
   const fullArchiveUrl = archiveUrl
     ? `${window.location.origin}${archiveUrl}`
@@ -113,13 +129,35 @@ export default function EndScreen() {
             animationFillMode: "forwards",
           }}
         >
-          <Button variant="primary" onClick={playAgain} className="w-full">
-            Play Again
-          </Button>
-          {isHost && (
-            <Button variant="secondary" onClick={endGame} className="w-full">
-              End Game
-            </Button>
+          {isHost ? (
+            <>
+              <Button
+                variant="primary"
+                onClick={playAgain}
+                className="w-full"
+              >
+                Next Round &mdash; Bring Back Everyone
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={newRoom}
+                className="w-full"
+              >
+                New Room Code
+              </Button>
+            </>
+          ) : (
+            <p className="font-serif italic text-[18px] text-text-dim text-center">
+              Waiting for {hostName} to start the next round&hellip;
+            </p>
+          )}
+
+          {readyPendingNames.length > 0 && (
+            <p className="font-sans text-[13px] text-text-muted text-center">
+              {joinNames(readyPendingNames)}{" "}
+              {readyPendingNames.length === 1 ? "is" : "are"} ready to join next
+              round
+            </p>
           )}
         </div>
       </div>

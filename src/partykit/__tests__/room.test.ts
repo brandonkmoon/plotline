@@ -861,8 +861,8 @@ describe("RoomServer instance behavior", () => {
     });
   });
 
-  describe("Reject new joiners when game is in progress", () => {
-    it("rejects a new player (no playerId) once state is PLAYING", () => {
+  describe("Pending players when game is in progress", () => {
+    it("adds a new joiner to pendingPlayers when state is PLAYING", () => {
       const { server, connections } = makeServer();
       const host = join(server, connections, "c1", "Alice");
       join(server, connections, "c2", "Bob");
@@ -880,10 +880,25 @@ describe("RoomServer instance behavior", () => {
       // New player tries to join
       const newcomer = join(server, connections, "c5", "Eve");
 
+      // No error, a STATE_UPDATE with a pendingPlayers entry for Eve
       const err = newcomer.sentMessages.find((m) => m.type === "ERROR");
-      expect(err).toBeDefined();
-      expect((err as any).reason).toBe("GAME_IN_PROGRESS");
-      expect(newcomer.closeCalled).toBe(true);
+      expect(err).toBeUndefined();
+      expect(newcomer.closeCalled).toBe(false);
+
+      const newcomerUpdate = getLatestStateUpdate(newcomer) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(newcomerUpdate).not.toBeNull();
+      const pending = newcomerUpdate.room.pendingPlayers ?? [];
+      expect(pending.length).toBe(1);
+      expect(pending[0].name).toBe("Eve");
+      expect(pending[0].ready).toBe(false);
+      // The newcomer's playerId equals the pending player id
+      expect(newcomerUpdate.playerId).toBe(pending[0].id);
+
+      // Active players list did not gain Eve
+      expect(newcomerUpdate.room.players.length).toBe(4);
     });
   });
 
@@ -1176,6 +1191,241 @@ describe("RoomServer instance behavior", () => {
       expect(c2After.pendingConnected).toBe(3);
       expect(c3After.pendingConnected).toBe(3);
       expect(c4After.pendingConnected).toBe(3);
+    });
+  });
+
+  // Helper: drive a 4-player game all the way into REVEAL, returning the
+  // server plus the four connections and a name->id map.
+  function gameIntoReveal() {
+    const { server, connections } = makeServer();
+    const c1 = join(server, connections, "c1", "Alice");
+    const c2 = join(server, connections, "c2", "Bob");
+    const c3 = join(server, connections, "c3", "Carol");
+    const c4 = join(server, connections, "c4", "Dave");
+    startGameViaServer(server, c1);
+
+    const update = getLatestStateUpdate(c1) as Extract<
+      ServerMessage,
+      { type: "STATE_UPDATE" }
+    >;
+    const byName: Record<string, string> = {};
+    for (const p of update.room.players) byName[p.name] = p.id;
+    const connByPlayerId: Record<string, MockConnection> = {
+      [byName["Alice"]]: c1,
+      [byName["Bob"]]: c2,
+      [byName["Carol"]]: c3,
+      [byName["Dave"]]: c4,
+    };
+
+    // Submit every slot across all 7 rounds
+    for (let round = 0; round < 7; round++) {
+      const u = getLatestStateUpdate(c1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      for (const story of u.room.stories) {
+        const slot = story.slots.find((s) => s.promptIndex === round)!;
+        const conn = connByPlayerId[slot.playerId!];
+        server.onMessage(
+          JSON.stringify({
+            type: "SUBMIT_PROMPT",
+            storyIndex: story.index,
+            promptIndex: round,
+            response: `r${round}s${story.index}`,
+          }),
+          conn as any
+        );
+      }
+    }
+
+    return { server, connections, c1, c2, c3, c4, byName };
+  }
+
+  describe("Reveal: no auto-advance after 7 lines", () => {
+    it("stays in REVEAL on the same story after 7 REVEAL_ADVANCE calls, and 8th is a no-op", () => {
+      const { server, c1 } = gameIntoReveal();
+
+      const beforeReveal = getLatestStateUpdate(c1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(beforeReveal.room.state).toBe("REVEAL");
+
+      const revealStart = c1.sentMessages.filter(
+        (m) => m.type === "REVEAL_STATE"
+      );
+      const initialRevealIdx =
+        revealStart.length > 0
+          ? (revealStart[revealStart.length - 1] as any).storyIndex
+          : 0;
+
+      // Find the reader for the current story
+      const story = beforeReveal.room.stories[initialRevealIdx];
+      const readerSlot = story.slots.find((s) => s.promptIndex === 6)!;
+      const readerId = readerSlot.playerId!;
+
+      const nameToConn: Record<string, MockConnection> = {};
+      for (const p of beforeReveal.room.players) {
+        // Find a MockConnection whose id matches playerToConnection
+        const connId = (server as any).playerToConnection.get(p.id);
+        if (connId) nameToConn[p.id] = (server as any).room.getConnection(connId);
+      }
+      const readerConn = nameToConn[readerId];
+      expect(readerConn).toBeDefined();
+
+      // Fire 7 REVEAL_ADVANCE calls
+      for (let i = 0; i < 7; i++) {
+        server.onMessage(
+          JSON.stringify({ type: "REVEAL_ADVANCE" }),
+          readerConn as any
+        );
+      }
+
+      // After 7 lines, state is still REVEAL and story hasn't advanced
+      const afterSeven = getLatestStateUpdate(c1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(afterSeven.room.state).toBe("REVEAL");
+      const stillUnrevealed = afterSeven.room.stories.every(
+        (s) => !s.isRevealed
+      );
+      expect(stillUnrevealed).toBe(true);
+
+      const revealStates = c1.sentMessages.filter(
+        (m) => m.type === "REVEAL_STATE"
+      );
+      const lastReveal = revealStates[revealStates.length - 1] as any;
+      expect(lastReveal.revealedCount).toBe(7);
+      expect(lastReveal.storyIndex).toBe(initialRevealIdx);
+
+      // 8th call — should be a no-op
+      const revealMsgsBefore = c1.sentMessages.filter(
+        (m) => m.type === "REVEAL_STATE"
+      ).length;
+      server.onMessage(
+        JSON.stringify({ type: "REVEAL_ADVANCE" }),
+        readerConn as any
+      );
+      const revealMsgsAfter = c1.sentMessages.filter(
+        (m) => m.type === "REVEAL_STATE"
+      ).length;
+      expect(revealMsgsAfter).toBe(revealMsgsBefore);
+    });
+  });
+
+  describe("SET_READY", () => {
+    it("flips the ready flag for a pending player and broadcasts", () => {
+      const { server, connections } = makeServer();
+      const host = join(server, connections, "c1", "Alice");
+      join(server, connections, "c2", "Bob");
+      join(server, connections, "c3", "Carol");
+      join(server, connections, "c4", "Dave");
+      startGameViaServer(server, host);
+
+      const newcomer = join(server, connections, "c5", "Eve");
+      const beforeReady = getLatestStateUpdate(newcomer) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(beforeReady.room.pendingPlayers?.[0]?.ready).toBe(false);
+
+      server.onMessage(
+        JSON.stringify({ type: "SET_READY", ready: true }),
+        newcomer as any
+      );
+
+      const afterReady = getLatestStateUpdate(host) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const pending = afterReady.room.pendingPlayers ?? [];
+      expect(pending.length).toBe(1);
+      expect(pending[0].name).toBe("Eve");
+      expect(pending[0].ready).toBe(true);
+    });
+  });
+
+  describe("PLAY_AGAIN promotes ready pending players", () => {
+    it("promotes ready pendings to active players and keeps non-ready ones", () => {
+      const { server, connections, c1 } = gameIntoReveal();
+
+      // Add two pending players
+      const eve = join(server, connections, "c5", "Eve");
+      const frank = join(server, connections, "c6", "Frank");
+
+      // Mark Eve as ready, leave Frank not ready
+      server.onMessage(
+        JSON.stringify({ type: "SET_READY", ready: true }),
+        eve as any
+      );
+
+      // Transition to END
+      server.onMessage(
+        JSON.stringify({ type: "END_GAME" }),
+        c1 as any
+      );
+
+      const atEnd = getLatestStateUpdate(c1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(atEnd.room.state).toBe("END");
+
+      // Host sends PLAY_AGAIN
+      server.onMessage(
+        JSON.stringify({ type: "PLAY_AGAIN" }),
+        c1 as any
+      );
+
+      const afterPlayAgain = getLatestStateUpdate(c1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(afterPlayAgain.room.state).toBe("LOBBY");
+
+      const activeNames = afterPlayAgain.room.players.map((p) => p.name).sort();
+      expect(activeNames).toContain("Eve");
+      expect(activeNames).not.toContain("Frank");
+
+      const remainingPending = afterPlayAgain.room.pendingPlayers ?? [];
+      expect(remainingPending.length).toBe(1);
+      expect(remainingPending[0].name).toBe("Frank");
+      expect(remainingPending[0].ready).toBe(false);
+    });
+  });
+
+  describe("NEW_ROOM broadcasts ROOM_REDIRECT", () => {
+    it("sends ROOM_REDIRECT with a 4-character code to all connections", () => {
+      const { server, connections } = makeServer();
+      const host = join(server, connections, "c1", "Alice");
+      const c2 = join(server, connections, "c2", "Bob");
+      const c3 = join(server, connections, "c3", "Carol");
+      const c4 = join(server, connections, "c4", "Dave");
+
+      server.onMessage(JSON.stringify({ type: "NEW_ROOM" }), host as any);
+
+      for (const conn of [host, c2, c3, c4]) {
+        const redirect = conn.sentMessages.find(
+          (m) => m.type === "ROOM_REDIRECT"
+        ) as any;
+        expect(redirect).toBeDefined();
+        expect(typeof redirect.newRoomCode).toBe("string");
+        expect(redirect.newRoomCode.length).toBe(4);
+      }
+    });
+
+    it("rejects NEW_ROOM from non-host", () => {
+      const { server, connections } = makeServer();
+      join(server, connections, "c1", "Alice");
+      const c2 = join(server, connections, "c2", "Bob");
+
+      server.onMessage(JSON.stringify({ type: "NEW_ROOM" }), c2 as any);
+
+      const err = c2.sentMessages.find((m) => m.type === "ERROR");
+      expect(err).toBeDefined();
+      const redirect = c2.sentMessages.find((m) => m.type === "ROOM_REDIRECT");
+      expect(redirect).toBeUndefined();
     });
   });
 });

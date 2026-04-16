@@ -8,6 +8,7 @@ export type {
   Room,
   RoomState,
   Player,
+  PendingPlayer,
   PromptSlot,
   Story,
   Prompt,
