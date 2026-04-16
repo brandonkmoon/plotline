@@ -162,6 +162,10 @@ export default function HelpOverlay() {
                 chaos.
               </p>
             </div>
+
+            <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted text-center mt-6">
+              Built by Brandon Moon
+            </p>
           </div>
         </div>
       )}
