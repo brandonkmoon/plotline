@@ -32,6 +32,14 @@ export const metadata: Metadata = {
   description:
     "A blind collaborative storytelling party game for 4-12 players.",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Plotline",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
   metadataBase: new URL(
     (() => {
       const url = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -49,6 +57,13 @@ export const metadata: Metadata = {
     title: "Plotline",
     description: "The Collaborative Storytelling Game",
     images: ["/og-image.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
@@ -74,6 +89,11 @@ export default function RootLayout({
         <main className="app-main">{children}</main>
         <HelpOverlay />
         <PlausibleAnalytics />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if("serviceWorker"in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js")})}`,
+          }}
+        />
       </body>
     </html>
   );
