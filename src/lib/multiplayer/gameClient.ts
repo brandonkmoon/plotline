@@ -261,7 +261,8 @@ class GameClient {
               msg.reason === "GAME_IN_PROGRESS" ||
               msg.reason === "UNKNOWN_PLAYER" ||
               msg.reason === "PROTOCOL_MISMATCH" ||
-              msg.reason === "PLAYER_ALREADY_CONNECTED"
+              msg.reason === "PLAYER_ALREADY_CONNECTED" ||
+              msg.reason === "NAME_TAKEN"
             ) {
               // Clear stored playerId on PLAYER_ALREADY_CONNECTED so a
               // refresh doesn't repeat the conflict. Also clear the

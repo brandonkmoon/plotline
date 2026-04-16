@@ -423,6 +423,27 @@ export default class RoomServer implements Party.Server {
       }
     }
 
+    // ── Unique name check (case-insensitive) ──
+    // Reject if any active player or pending player already has this name.
+    if (this.gameState && msg.playerName) {
+      const nameLower = msg.playerName.toLowerCase();
+      const nameTaken =
+        this.gameState.players.some(
+          (p) => p.name.toLowerCase() === nameLower
+        ) ||
+        (this.gameState.pendingPlayers ?? []).some(
+          (p) => p.name.toLowerCase() === nameLower
+        );
+      if (nameTaken) {
+        this.sendTo(sender, {
+          type: "ERROR",
+          reason: "NAME_TAKEN",
+        });
+        sender.close();
+        return;
+      }
+    }
+
     // New player joining (no playerId)
     // If game is in progress, add them to pendingPlayers instead of
     // rejecting. They'll auto-join when the next game starts.

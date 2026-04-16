@@ -14,7 +14,8 @@ export type ConnectionErrorReason =
   | "UNKNOWN_PLAYER"
   | "PROTOCOL_MISMATCH"
   | "CONNECT_TIMEOUT"
-  | "PLAYER_ALREADY_CONNECTED";
+  | "PLAYER_ALREADY_CONNECTED"
+  | "NAME_TAKEN";
 
 export type ClientMessage =
   | {

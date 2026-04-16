@@ -92,6 +92,16 @@ function ConnectionErrorView() {
         </Link>
       );
       break;
+    case "NAME_TAKEN":
+      title = "Name taken";
+      message =
+        "Someone in this room already has that name. Try joining with a different one.";
+      action = (
+        <Link href="/join">
+          <Button variant="primary">Try again</Button>
+        </Link>
+      );
+      break;
   }
 
   return (

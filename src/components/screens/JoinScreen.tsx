@@ -53,7 +53,12 @@ export default function JoinScreen() {
       trackEvent("room_joined");
       router.push(`/room/${code}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to join room");
+      const reason = err instanceof Error ? err.message : "Failed to join room";
+      if (reason === "NAME_TAKEN") {
+        setError("That name is already taken. Try a different one.");
+      } else {
+        setError(reason);
+      }
       setLoading(false);
     }
   }, [code, name, router]);
