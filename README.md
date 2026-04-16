@@ -2,23 +2,55 @@
 
 A blind collaborative storytelling party game for 4-12 players. Players take turns filling in prompts without seeing each other's responses, then read the resulting absurd stories aloud.
 
-## Local Development
+## Local development
+
+One-time setup:
+
+1. Install dependencies: `npm install`
+2. Copy your dev Turso credentials into `.env.local` (file is git-ignored):
+   ```
+   TURSO_DATABASE_URL=libsql://your-dev-db.turso.io
+   TURSO_AUTH_TOKEN=eyJhbGciOi...
+   ```
+3. Push the schema to the dev DB:
+   ```
+   npm run db:push:dev
+   ```
+
+Run the app:
 
 ```bash
-# Install dependencies
-npm install
+# Terminal 1 — PartyKit server (multiplayer, port 1999)
+npx partykit dev
 
-# Start PartyKit server (multiplayer)
-npm run partykit:dev
-
-# Start Next.js dev server (in a separate terminal)
+# Terminal 2 — Next.js (port 3000)
 npm run dev
 
-# Push database schema (first time only)
-npm run db:push
+# Then open http://localhost:3000 in four Chrome tabs
 ```
 
-No external services required for local development -- the app uses a local SQLite file and local PartyKit server by default.
+Each tab gets its own player identity (sessionStorage is per-tab),
+so you can test a 4-player game from a single browser.
+
+Verbose dev logs are enabled. Watch the terminal for:
+- `[room] ←` inbound messages received by the server
+- `[room] →` broadcasts sent by the server
+- `[room] phase change:` state transitions
+- `[client] ←` / `[client] →` messages in the browser console
+- `[client] sessionStorage` reads and writes
+
+### Troubleshooting
+
+- **Chrome caching old JS:** Open DevTools → Application → Service
+  Workers → Unregister, then hard reload (Cmd+Shift+R). Should not
+  happen because the PWA service worker is disabled in dev, but
+  occasionally a leftover from a production visit lingers.
+- **WebSocket won't connect:** Make sure `npx partykit dev` is
+  running on port 1999. The client reads `NEXT_PUBLIC_PARTYKIT_HOST`
+  from `.env.local`.
+- **Database errors:** Make sure `TURSO_DATABASE_URL` and
+  `TURSO_AUTH_TOKEN` in `.env.local` point to your **dev** database,
+  not production.
 
 ## Tests
 

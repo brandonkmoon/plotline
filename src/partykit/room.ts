@@ -62,8 +62,33 @@ export default class RoomServer implements Party.Server {
   }
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
-    // Don't add player yet - wait for JOIN_ROOM message
-    // The connection is stored automatically by PartyKit
+    // If the client passed a playerId in the URL query string and it
+    // matches an existing player, re-register the connection mapping
+    // immediately. This covers the case where PartySocket opens a new
+    // socket (e.g., after a reconnect) before the JOIN_ROOM message
+    // is sent — without this, onClose of the old socket would delete
+    // the player-side map, losing state.
+    try {
+      const url = new URL(ctx.request.url);
+      const playerId = url.searchParams.get("playerId");
+      if (playerId && this.gameState) {
+        const existingPlayer = this.gameState.players.find(
+          (p) => p.id === playerId
+        );
+        if (existingPlayer) {
+          this.connectionToPlayer.set(conn.id, playerId);
+          this.playerToConnection.set(playerId, conn.id);
+          console.log(
+            "[room] reconnect registered:",
+            playerId,
+            "→",
+            conn.id
+          );
+        }
+      }
+    } catch {
+      // ignore malformed URLs
+    }
   }
 
   onMessage(message: string, sender: Party.Connection) {
@@ -76,6 +101,13 @@ export default class RoomServer implements Party.Server {
         reason: "Invalid message format",
       });
       return;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      const playerId = this.connectionToPlayer.get(sender.id) ?? "(none)";
+      console.log(
+        `[room] ← ${msg.type} from conn=${sender.id} player=${playerId}`
+      );
     }
 
     switch (msg.type) {
@@ -118,9 +150,24 @@ export default class RoomServer implements Party.Server {
     const playerId = this.connectionToPlayer.get(conn.id);
     if (!playerId) return;
 
-    // Clean up connection maps
+    // Always clean up the connection-side map — this specific
+    // connection is gone.
     this.connectionToPlayer.delete(conn.id);
-    this.playerToConnection.delete(playerId);
+
+    // Only clear the player-side map if it still points to THIS
+    // closing connection. If the player already reconnected on a
+    // newer connection, playerToConnection now points to the newer
+    // id and we must not delete it — otherwise the next JOIN_ROOM
+    // would see an empty map and lose state.
+    const storedConnId = this.playerToConnection.get(playerId);
+    if (storedConnId === conn.id) {
+      this.playerToConnection.delete(playerId);
+    } else {
+      // A newer connection already claimed this player — nothing
+      // to clean up on the player-side, and no need to mark them
+      // as reconnecting.
+      return;
+    }
 
     // Mark player as reconnecting
     this.playerStatuses.set(playerId, "reconnecting");
@@ -745,8 +792,13 @@ export default class RoomServer implements Party.Server {
 
   private broadcast(msg: ServerMessage) {
     const data = JSON.stringify(msg);
+    let count = 0;
     for (const conn of this.room.getConnections()) {
       conn.send(data);
+      count++;
+    }
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[room] → broadcast ${msg.type} to ${count} client(s)`);
     }
   }
 
@@ -804,20 +856,48 @@ export default class RoomServer implements Party.Server {
     const { pendingConnected, pendingDisconnected } =
       this.computePendingCounts();
 
-    for (const conn of this.room.getConnections()) {
-      const playerId = this.connectionToPlayer.get(conn.id);
-      if (playerId) {
-        this.sendTo(conn, {
-          type: "STATE_UPDATE",
-          room: this.gameState,
-          playerId,
-          roundStartedAt: this.roundStartedAt,
-          roundDurationMs: ROUND_TIMER_MS,
-          pendingConnected,
-          pendingDisconnected,
-          protocolVersion: PROTOCOL_VERSION,
-        });
+    if (process.env.NODE_ENV === "development") {
+      const lastState = (this as any)._lastLoggedState;
+      if (lastState !== this.gameState.state) {
+        console.log(
+          `[room] phase change: ${lastState ?? "(none)"} → ${this.gameState.state} (round=${this.gameState.currentRound}, players=${this.gameState.players.length})`
+        );
+        (this as any)._lastLoggedState = this.gameState.state;
       }
+    }
+
+    // Send STATE_UPDATE to every player via our authoritative
+    // playerToConnection map. Do NOT delete stale entries here —
+    // the player may reconnect momentarily. onClose handles
+    // cleanup conditionally.
+    let count = 0;
+    for (const [playerId, connId] of this.playerToConnection) {
+      const conn = this.room.getConnection(connId);
+      if (!conn) {
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            `[room] skipping player ${playerId} — conn not live`
+          );
+        }
+        continue;
+      }
+      this.sendTo(conn, {
+        type: "STATE_UPDATE",
+        room: this.gameState,
+        playerId,
+        roundStartedAt: this.roundStartedAt,
+        roundDurationMs: ROUND_TIMER_MS,
+        pendingConnected,
+        pendingDisconnected,
+        protocolVersion: PROTOCOL_VERSION,
+      });
+      count++;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `[room] → STATE_UPDATE to ${count} client(s) | pendingConn=${pendingConnected} pendingDisc=${pendingDisconnected}`
+      );
     }
   }
 
@@ -826,6 +906,19 @@ export default class RoomServer implements Party.Server {
     for (const [id, status] of this.playerStatuses) {
       statuses[id] = status;
     }
-    this.broadcast({ type: "PLAYER_STATUS_CHANGED", statuses });
+    const msg: ServerMessage = { type: "PLAYER_STATUS_CHANGED", statuses };
+    const data = JSON.stringify(msg);
+    let count = 0;
+    for (const [, connId] of this.playerToConnection) {
+      const conn = this.room.getConnection(connId);
+      if (!conn) continue;
+      conn.send(data);
+      count++;
+    }
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `[room] → broadcast PLAYER_STATUS_CHANGED to ${count} client(s)`
+      );
+    }
   }
 }

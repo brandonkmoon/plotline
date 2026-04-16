@@ -584,6 +584,9 @@ function makeMockPartyRoom(id: string, connections: Map<string, MockConnection>)
     getConnections() {
       return connections.values();
     },
+    getConnection(connId: string) {
+      return connections.get(connId);
+    },
   } as any;
 }
 
@@ -1041,6 +1044,138 @@ describe("RoomServer instance behavior", () => {
       >;
       expect(latest.pendingConnected).toBe(1); // Carol
       expect(latest.pendingDisconnected).toBe(1); // Dave
+    });
+  });
+
+  describe("Broadcast targeting (every state-mutating handler reaches all clients)", () => {
+    function countStateUpdatesAfter(conn: MockConnection, baseline: number) {
+      return conn.sentMessages
+        .slice(baseline)
+        .filter((m) => m.type === "STATE_UPDATE").length;
+    }
+
+    it("STATE_UPDATE on JOIN reaches every previously-connected client", () => {
+      const { server, connections } = makeServer();
+
+      // Player 1 joins
+      const c1 = join(server, connections, "c1", "Alice");
+      const c1AfterJoin1 = c1.sentMessages.length;
+
+      // Player 2 joins — c1 should receive a STATE_UPDATE about player 2
+      const c2 = join(server, connections, "c2", "Bob");
+      expect(countStateUpdatesAfter(c1, c1AfterJoin1)).toBeGreaterThan(0);
+      const c1Last = getLatestStateUpdate(c1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(c1Last.room.players.length).toBe(2);
+
+      const c1AfterJoin2 = c1.sentMessages.length;
+      const c2AfterJoin2 = c2.sentMessages.length;
+
+      // Player 3 joins — both c1 and c2 should receive STATE_UPDATE
+      const c3 = join(server, connections, "c3", "Carol");
+      expect(countStateUpdatesAfter(c1, c1AfterJoin2)).toBeGreaterThan(0);
+      expect(countStateUpdatesAfter(c2, c2AfterJoin2)).toBeGreaterThan(0);
+
+      const c1AfterJoin3 = c1.sentMessages.length;
+      const c2AfterJoin3 = c2.sentMessages.length;
+      const c3AfterJoin3 = c3.sentMessages.length;
+
+      // Player 4 joins — all three previous should receive STATE_UPDATE
+      const c4 = join(server, connections, "c4", "Dave");
+      expect(countStateUpdatesAfter(c1, c1AfterJoin3)).toBeGreaterThan(0);
+      expect(countStateUpdatesAfter(c2, c2AfterJoin3)).toBeGreaterThan(0);
+      expect(countStateUpdatesAfter(c3, c3AfterJoin3)).toBeGreaterThan(0);
+
+      // Final state: every client sees 4 players
+      const c1Final = getLatestStateUpdate(c1) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const c2Final = getLatestStateUpdate(c2) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const c3Final = getLatestStateUpdate(c3) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const c4Final = getLatestStateUpdate(c4) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(c1Final.room.players.length).toBe(4);
+      expect(c2Final.room.players.length).toBe(4);
+      expect(c3Final.room.players.length).toBe(4);
+      expect(c4Final.room.players.length).toBe(4);
+
+      // All four clients see identical player list
+      const names = (u: typeof c1Final) =>
+        u.room.players.map((p) => p.name).sort();
+      expect(names(c2Final)).toEqual(names(c1Final));
+      expect(names(c3Final)).toEqual(names(c1Final));
+      expect(names(c4Final)).toEqual(names(c1Final));
+    });
+
+    it("STATE_UPDATE on SUBMIT_PROMPT reaches every other client with fresh pendingConnected", () => {
+      const { server, connections } = makeServer();
+      const c1 = join(server, connections, "c1", "Alice");
+      const c2 = join(server, connections, "c2", "Bob");
+      const c3 = join(server, connections, "c3", "Carol");
+      const c4 = join(server, connections, "c4", "Dave");
+
+      startGameViaServer(server, c1);
+
+      // Initial pending = 4 (no one has submitted)
+      const initial = getLatestStateUpdate(c2) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(initial.pendingConnected).toBe(4);
+
+      // Find Alice's slot for round 0
+      const aliceId = initial.room.players.find((p) => p.name === "Alice")!.id;
+      const aliceSlot = initial.room.stories
+        .flatMap((s) => s.slots)
+        .find((sl) => sl.promptIndex === 0 && sl.playerId === aliceId);
+      expect(aliceSlot).toBeDefined();
+
+      const c2Before = c2.sentMessages.length;
+      const c3Before = c3.sentMessages.length;
+      const c4Before = c4.sentMessages.length;
+
+      // Alice submits
+      server.onMessage(
+        JSON.stringify({
+          type: "SUBMIT_PROMPT",
+          storyIndex: aliceSlot!.storyIndex,
+          promptIndex: 0,
+          response: "alice's answer",
+        }),
+        c1 as any
+      );
+
+      // Every other client should receive a STATE_UPDATE with pendingConnected === 3
+      expect(countStateUpdatesAfter(c2, c2Before)).toBeGreaterThan(0);
+      expect(countStateUpdatesAfter(c3, c3Before)).toBeGreaterThan(0);
+      expect(countStateUpdatesAfter(c4, c4Before)).toBeGreaterThan(0);
+
+      const c2After = getLatestStateUpdate(c2) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const c3After = getLatestStateUpdate(c3) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const c4After = getLatestStateUpdate(c4) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(c2After.pendingConnected).toBe(3);
+      expect(c3After.pendingConnected).toBe(3);
+      expect(c4After.pendingConnected).toBe(3);
     });
   });
 });

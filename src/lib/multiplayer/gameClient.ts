@@ -32,10 +32,18 @@ const DEFAULT_ROUND_DURATION_MS = 90_000;
 // tabs in the same browser are treated as distinct players. Refreshing
 // a tab keeps the same identity (reconnect).
 
+function devLog(msg: string): void {
+  if (process.env.NODE_ENV === "development" && typeof console !== "undefined") {
+    console.log(`[client] ${msg}`);
+  }
+}
+
 function getStoredPlayerId(roomCode: string): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return sessionStorage.getItem(`plotline.playerId.${roomCode}`);
+    const id = sessionStorage.getItem(`plotline.playerId.${roomCode}`);
+    devLog(`sessionStorage read playerId.${roomCode} → ${id ?? "(none)"}`);
+    return id;
   } catch {
     return null;
   }
@@ -45,6 +53,7 @@ function storePlayerId(roomCode: string, playerId: string): void {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.setItem(`plotline.playerId.${roomCode}`, playerId);
+    devLog(`sessionStorage write playerId.${roomCode} = ${playerId}`);
   } catch {
     // ignore
   }
@@ -54,6 +63,7 @@ function clearStoredPlayerId(roomCode: string): void {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.removeItem(`plotline.playerId.${roomCode}`);
+    devLog(`sessionStorage clear playerId.${roomCode}`);
   } catch {
     // ignore
   }
@@ -126,6 +136,12 @@ class GameClient {
       this.socket = new PartySocket({
         host: process.env.NEXT_PUBLIC_PARTYKIT_HOST || "localhost:1999",
         room: roomCode,
+        // Include playerId in the URL so the server can re-register
+        // the player → connection mapping on WebSocket open, before
+        // the JOIN_ROOM message is processed. This prevents race
+        // conditions where a reconnecting socket closes the previous
+        // socket and leaves the player-side map empty.
+        query: playerIdToSend ? { playerId: playerIdToSend } : undefined,
       });
 
       this.socket.addEventListener("open", () => {
@@ -152,6 +168,10 @@ class GameClient {
           msg = JSON.parse(data);
         } catch {
           return;
+        }
+
+        if (process.env.NODE_ENV === "development") {
+          console.log(`[client] ← ${msg.type}`);
         }
 
         switch (msg.type) {
@@ -420,6 +440,10 @@ class GameClient {
   private send(msg: ClientMessage): void {
     if (!this.socket) return;
     const data = JSON.stringify(msg);
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[client] → ${msg.type}`);
+    }
 
     // Log outgoing message
     for (const listener of this.messageLogListeners) {
