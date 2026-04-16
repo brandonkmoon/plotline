@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRoom } from "@/lib/client/RoomContext";
 import { trackEvent } from "@/lib/analytics";
-import BlackletterHeading from "@/components/BlackletterHeading";
-import GoldBar from "@/components/GoldBar";
 import Button from "@/components/Button";
 
 function joinNames(names: string[]): string {
@@ -16,14 +14,8 @@ function joinNames(names: string[]): string {
 }
 
 export default function EndScreen() {
-  const {
-    room,
-    assembledStories,
-    playAgain,
-    newRoom,
-    isHost,
-    archiveUrl,
-  } = useRoom();
+  const { room, assembledStories, playAgain, newRoom, isHost, archiveUrl } =
+    useRoom();
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -52,114 +44,70 @@ export default function EndScreen() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6">
-      <div
-        className="flex flex-col items-center w-full"
-        style={{ maxWidth: 420 }}
-      >
-        <BlackletterHeading size="56px" className="anim-title-in">
-          <span className="gold-text">That&apos;s a wrap</span>
-        </BlackletterHeading>
+    <div className="screen text-center anim-fade-in">
+      <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
+        Curtain Call
+      </p>
+      <h1 className="font-serif font-bold text-[28px] text-ink mb-1">
+        That&apos;s a Wrap
+      </h1>
+      <p className="font-body italic text-[16px] text-text-dim">
+        {storyCount} {storyCount === 1 ? "story" : "stories"} &middot;{" "}
+        {playerCount} {playerCount === 1 ? "player" : "players"}
+      </p>
 
-        <div
-          className="mt-6 anim-fade-in"
-          style={{
-            opacity: 0,
-            animationDelay: "0.2s",
-            animationFillMode: "forwards",
-          }}
-        >
-          <GoldBar />
-        </div>
+      <hr className="rule" />
 
-        {/* Summary */}
-        <p
-          className="mt-6 font-serif italic text-[18px] text-text-dim text-center anim-fade-in"
-          style={{
-            opacity: 0,
-            animationDelay: "0.3s",
-            animationFillMode: "forwards",
-          }}
-        >
-          {storyCount} {storyCount === 1 ? "story" : "stories"} &middot;{" "}
-          {playerCount} {playerCount === 1 ? "player" : "players"}
+      {/* Share link */}
+      <div className="border border-ink p-4 text-left">
+        <p className="font-serif font-medium text-[12px] uppercase tracking-[2px] text-text-dim mb-2">
+          Share Link
         </p>
-
-        {/* Shareable link */}
-        <div
-          className="mt-8 w-full bg-surface border-2 border-border p-4 text-center anim-fade-in"
-          style={{
-            borderRadius: 0,
-            opacity: 0,
-            animationDelay: "0.4s",
-            animationFillMode: "forwards",
-          }}
-        >
-          <p className="font-sans text-[12px] uppercase tracking-[4px] text-text-muted mb-2">
-            Share Link
+        {archiveUrl ? (
+          <>
+            <Link
+              href={archiveUrl}
+              className="font-sans text-[13px] text-ink underline underline-offset-4 break-all"
+            >
+              {fullArchiveUrl}
+            </Link>
+            <button
+              onClick={handleCopy}
+              className="mt-3 font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors block"
+            >
+              {copied ? "Copied!" : "Copy Link"}
+            </button>
+          </>
+        ) : (
+          <p className="font-body italic text-[14px] text-text-muted">
+            Saving stories&hellip;
           </p>
-          {archiveUrl ? (
-            <>
-              <Link
-                href={archiveUrl}
-                className="font-sans text-[14px] text-gold hover:text-gold-light transition-colors underline underline-offset-4"
-              >
-                {fullArchiveUrl}
-              </Link>
-              <button
-                onClick={handleCopy}
-                className="mt-3 font-sans text-[12px] uppercase tracking-[3px] text-text-muted hover:text-text transition-colors"
-              >
-                {copied ? "Copied!" : "Copy Link"}
-              </button>
-            </>
-          ) : (
-            <p className="font-sans text-[14px] text-text-muted italic">
-              Saving stories...
-            </p>
-          )}
-        </div>
+        )}
+      </div>
 
-        {/* Buttons */}
-        <div
-          className="flex flex-col gap-4 w-full mt-8 anim-fade-in"
-          style={{
-            opacity: 0,
-            animationDelay: "0.5s",
-            animationFillMode: "forwards",
-          }}
-        >
-          {isHost ? (
-            <>
-              <Button
-                variant="primary"
-                onClick={playAgain}
-                className="w-full"
-              >
-                Next Round &mdash; Bring Back Everyone
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={newRoom}
-                className="w-full"
-              >
-                New Room Code
-              </Button>
-            </>
-          ) : (
-            <p className="font-serif italic text-[18px] text-text-dim text-center">
-              Waiting for {hostName} to start the next round&hellip;
-            </p>
-          )}
+      <div className="flex flex-col gap-3 mt-8">
+        {isHost ? (
+          <>
+            <Button variant="primary" onClick={playAgain}>
+              Play Again
+            </Button>
+            <Button variant="secondary" onClick={newRoom}>
+              New Room Code
+            </Button>
+          </>
+        ) : (
+          <p className="font-body italic text-[16px] text-text-dim">
+            Waiting for {hostName} to start the next round&hellip;
+          </p>
+        )}
 
-          {readyPendingNames.length > 0 && (
-            <p className="font-sans text-[13px] text-text-muted text-center">
-              {joinNames(readyPendingNames)}{" "}
-              {readyPendingNames.length === 1 ? "is" : "are"} ready to join next
-              round
-            </p>
-          )}
-        </div>
+        {readyPendingNames.length > 0 && (
+          <p className="font-sans text-[13px] text-text-muted">
+            {joinNames(readyPendingNames)}{" "}
+            {readyPendingNames.length === 1 ? "is" : "are"} ready to join next
+            round
+          </p>
+        )}
       </div>
     </div>
   );

@@ -2,43 +2,56 @@
 
 import { useRoom } from "@/lib/client/RoomContext";
 
+// Compact list of who has submitted this round. Rendered below the prompt
+// / waiting screens. Styled as a simple Lora list with thin rules, to
+// match the cast list in the lobby.
 export default function SubmissionStatus() {
   const { room, playerStatuses } = useRoom();
 
   if (!room) return null;
 
   return (
-    <div className="flex flex-wrap justify-center gap-3 mt-6">
+    <ul className="w-full mt-8 list-none">
       {(room?.players ?? []).map((player) => {
         const status = playerStatuses[player.id];
         const submitted = status === "submitted";
         const isReconnecting = status === "reconnecting";
         const isDisconnected = status === "disconnected";
 
+        const dim = isReconnecting
+          ? "opacity-50"
+          : isDisconnected
+          ? "opacity-30"
+          : "";
+
         return (
-          <div
+          <li
             key={player.id}
-            className={`flex items-center gap-1.5 font-sans text-xs ${
-              isReconnecting ? "opacity-50" : ""
-            } ${isDisconnected ? "opacity-30" : ""}`}
+            className={`font-body text-[15px] py-2 flex justify-between items-center border-b border-list-border last:border-b-0 ${dim}`}
           >
-            <span className={submitted ? "text-gold" : "text-text-muted"}>
-              {submitted ? "\u2713" : "\u22EF"}
+            <span className={isDisconnected ? "line-through" : ""}>
+              {player.name}
+              {player.isHost && (
+                <span className="ml-2 font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
+                  Host
+                </span>
+              )}
+              {isReconnecting && (
+                <span className="ml-2 font-sans italic text-text-muted text-[12px]">
+                  reconnecting
+                </span>
+              )}
             </span>
             <span
-              className={`${submitted ? "text-text-dim" : "text-text-muted"} ${
-                isDisconnected ? "line-through" : ""
+              className={`font-sans text-[13px] ${
+                submitted ? "text-ink" : "text-text-muted"
               }`}
             >
-              {player.name}
-              {player.isHost && <span className="text-text-muted text-[10px] ml-1">(Host)</span>}
+              {submitted ? "\u2713" : "\u22EF"}
             </span>
-            {isReconnecting && (
-              <span className="italic text-text-muted text-[10px]">(reconnecting)</span>
-            )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

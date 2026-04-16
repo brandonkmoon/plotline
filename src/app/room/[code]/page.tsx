@@ -95,17 +95,14 @@ function ConnectionErrorView() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6">
-      <div
-        className="flex flex-col items-center w-full text-center"
-        style={{ maxWidth: 420 }}
-      >
-        <h1 className="font-serif text-[32px] gold-text mb-4">{title}</h1>
-        <p className="font-serif italic text-[18px] text-text-dim mb-8">
-          {message}
-        </p>
-        {action}
-      </div>
+    <div className="screen text-center">
+      <h1 className="font-serif font-bold text-[28px] text-ink mb-4">
+        {title}
+      </h1>
+      <p className="font-body italic text-[16px] text-text-dim mb-8">
+        {message}
+      </p>
+      {action}
     </div>
   );
 }
@@ -117,8 +114,8 @@ function ConnectingView() {
     return () => clearTimeout(t);
   }, []);
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <p className="font-serif italic text-[18px] text-text-dim">
+    <div className="screen text-center">
+      <p className="font-body italic text-[16px] text-text-dim">
         {showTimeout ? "Still connecting\u2026" : "Connecting\u2026"}
       </p>
     </div>
@@ -210,8 +207,8 @@ function RoomContent() {
 
     default:
       return (
-        <div className="flex items-center justify-center min-h-screen">
-          <p className="font-serif italic text-[18px] text-text-dim">
+        <div className="screen text-center">
+          <p className="font-body italic text-[16px] text-text-dim">
             Unknown state
           </p>
         </div>

@@ -1,27 +1,43 @@
 import type { Metadata, Viewport } from "next";
-import { New_Rocker, Cormorant_Garamond, Outfit } from "next/font/google";
+import { Rye, Playfair_Display, Lora, Inter } from "next/font/google";
 import { PlausibleAnalytics } from "@/components/PlausibleAnalytics";
+import PlaybillBanner from "@/components/PlaybillBanner";
 import "./globals.css";
 
-const newRocker = New_Rocker({
+// Note on the display font: the Playbill theme spec and the reference
+// mockup reference a Google Font called "Playbill". That font is not
+// (or no longer) in the Google Fonts catalog — the URL returns 400 and
+// the specimen page returns 404. "Rye" is the closest visual match: a
+// western / theater-poster display serif with the same condensed, high-
+// contrast character Playbill is known for. It's loaded here via
+// next/font for zero-CLS and exposed as --font-playbill everywhere else
+// so the rest of the app continues to read it as the "Playbill" font.
+const playbillDisplay = Rye({
   weight: "400",
   subsets: ["latin"],
-  variable: "--font-new-rocker",
+  variable: "--font-playbill",
   display: "swap",
 });
 
-const cormorant = Cormorant_Garamond({
-  weight: ["300", "400", "500", "600", "700"],
+const playfair = Playfair_Display({
+  weight: ["500", "700", "900"],
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+const lora = Lora({
+  weight: ["400", "600"],
   style: ["normal", "italic"],
   subsets: ["latin"],
-  variable: "--font-cormorant",
+  variable: "--font-lora",
   display: "swap",
 });
 
-const outfit = Outfit({
-  weight: ["300", "400", "500", "600", "700"],
+const inter = Inter({
+  weight: ["400", "500", "600"],
   subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -38,14 +54,14 @@ export const metadata: Metadata = {
   ),
   openGraph: {
     title: "Plotline",
-    description: "You can't make this up. Oh wait.",
+    description: "The Collaborative Storytelling Game",
     images: ["/og-image.png"],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Plotline",
-    description: "You can't make this up. Oh wait.",
+    description: "The Collaborative Storytelling Game",
     images: ["/og-image.png"],
   },
 };
@@ -65,10 +81,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${newRocker.variable} ${cormorant.variable} ${outfit.variable}`}
+      className={`${playbillDisplay.variable} ${playfair.variable} ${lora.variable} ${inter.variable}`}
     >
-      <body className="bg-bg text-text font-sans antialiased">
-        {children}
+      <body className="antialiased">
+        <PlaybillBanner />
+        <main className="app-main">{children}</main>
         <PlausibleAnalytics />
       </body>
     </html>

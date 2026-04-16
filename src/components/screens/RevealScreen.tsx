@@ -2,8 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
-import BlackletterHeading from "@/components/BlackletterHeading";
-import GoldBar from "@/components/GoldBar";
 import Button from "@/components/Button";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
@@ -21,7 +19,6 @@ export default function RevealScreen() {
     room,
   } = useRoom();
 
-  // Fallback local state for backward compat (no REVEAL_STATE from server)
   const [localStoryIdx, setLocalStoryIdx] = useState(0);
   const [localRevealedLines, setLocalRevealedLines] = useState(0);
 
@@ -42,15 +39,12 @@ export default function RevealScreen() {
   const isReader =
     usingSyncedReveal && currentPlayer
       ? currentPlayer.id === revealState.readerId
-      : true; // In local mode, everyone can tap
+      : true;
 
   const readerName = usingSyncedReveal
     ? revealState.readerName
     : story?.readerName ?? "someone";
 
-  // Transition state: after clicking "Next Story", show a 2s transition
-  // card announcing the next story before the server's REVEAL_STATE
-  // arrives.
   const [transitioning, setTransitioning] = useState(false);
   const [nextReaderName, setNextReaderName] = useState<string | null>(null);
   const [nextStoryNumber, setNextStoryNumber] = useState<number | null>(null);
@@ -66,21 +60,8 @@ export default function RevealScreen() {
     };
   }, []);
 
-  // Clear transition state when the synced reveal state advances.
-  useEffect(() => {
-    if (!transitioning) return;
-    if (!usingSyncedReveal) return;
-    // Once server-side reveal state matches the new story, we can
-    // drop out of transition mode even before the 2s expire.
-    if (nextStoryNumber !== null && revealState.storyIndex + 1 === nextStoryNumber) {
-      // The state caught up; leave the transition visible until the
-      // timer expires so it doesn't flash.
-    }
-  }, [revealState, transitioning, nextStoryNumber, usingSyncedReveal]);
-
   const handleTap = useCallback(() => {
     if (!story) return;
-    // Only the reader can advance. Tapping past the 7th line does nothing.
     if (!isReader) return;
     if (revealedLines >= SECTIONS_PER_STORY) return;
     if (usingSyncedReveal) {
@@ -96,7 +77,6 @@ export default function RevealScreen() {
     const isFinal = currentStoryIdx >= totalStories - 1;
 
     if (usingSyncedReveal) {
-      // Start local transition first
       if (!isFinal) {
         const next = assembledStories[currentStoryIdx + 1];
         setNextReaderName(next?.readerName ?? "someone");
@@ -132,159 +112,118 @@ export default function RevealScreen() {
 
   if (!story || !room) return null;
 
-  // Transition screen — shown after "Next Story" tap
+  // ── Transition card (between stories) ────────────────────
   if (transitioning && nextStoryNumber !== null) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
-        <div
-          className="flex flex-col items-center w-full text-center anim-fade-in"
-          style={{ maxWidth: 420 }}
-        >
-          <p
-            className="font-sans text-[12px] font-semibold uppercase text-text-muted mb-3"
-            style={{ letterSpacing: "4px" }}
-          >
+      <>
+        <div className="screen text-center anim-fade-in">
+          <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
             Up Next
           </p>
-          <BlackletterHeading size="56px">
-            <span className="gold-text">
-              Story {nextStoryNumber} of {totalStories}
-            </span>
-          </BlackletterHeading>
-          <div className="mt-6">
-            <GoldBar />
-          </div>
-          <p className="mt-6 font-serif italic text-[18px] text-text-dim">
+          <h1 className="font-serif font-bold text-[24px] text-ink mb-1">
+            Story {nextStoryNumber} of {totalStories}
+          </h1>
+          <p className="font-body italic text-[16px] text-text-dim">
             {nextReaderName} is reading next
           </p>
         </div>
         <PendingPlayersBadge />
-      </div>
+      </>
     );
   }
 
-  // Non-reader view — no story text, just an ambient waiting screen
+  // ── Non-reader view (clean, static) ──────────────────────
   if (!isReader && usingSyncedReveal) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
-        <div
-          className="flex flex-col items-center w-full text-center"
-          style={{ maxWidth: 420 }}
-        >
-          <p
-            className="font-sans text-[12px] font-semibold uppercase text-text-muted mb-3"
-            style={{ letterSpacing: "4px" }}
-          >
+      <>
+        <div className="screen text-center anim-fade-in">
+          <hr className="rule" />
+          <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
+            Now Playing
+          </p>
+          <h1 className="font-serif font-bold text-[24px] text-ink mb-1">
             Story {currentStoryIdx + 1} of {totalStories}
+          </h1>
+          <p className="font-body italic text-[16px] text-text-dim">
+            Read by {readerName}
           </p>
-          <BlackletterHeading size="48px" className="breathing-glow">
-            <span className="gold-text">{readerName}</span>
-          </BlackletterHeading>
-          <p className="mt-4 font-serif italic text-[20px] text-text-dim">
-            is reading Story {currentStoryIdx + 1}
-          </p>
-          <div className="mt-6">
-            <GoldBar />
-          </div>
-          <p className="mt-8 font-serif italic text-[18px] text-text-muted">
-            Listening
-            <span className="dot-cycle dot-cycle-1">.</span>
-            <span className="dot-cycle dot-cycle-2">.</span>
-            <span className="dot-cycle dot-cycle-3">.</span>
+          <hr className="rule" />
+          <p className="mt-6 font-body italic text-[16px] text-text-muted">
+            Listening&hellip;
           </p>
         </div>
         <PendingPlayersBadge />
-      </div>
+      </>
     );
   }
 
+  // ── Reader view ──────────────────────────────────────────
   const isFinalStory = currentStoryIdx >= totalStories - 1;
 
   return (
-    <div
-      className="flex flex-col items-center justify-center min-h-screen px-6 cursor-pointer select-none"
-      onClick={!allRevealed ? handleTap : undefined}
-    >
+    <>
       <div
-        className="flex flex-col items-center w-full"
-        style={{ maxWidth: 420 }}
+        className="screen cursor-pointer select-none anim-fade-in"
+        onClick={!allRevealed ? handleTap : undefined}
       >
-        {/* Eyebrow */}
-        <p
-          className="font-sans text-[12px] font-semibold uppercase text-text-muted mb-2"
-          style={{ letterSpacing: "4px" }}
-        >
-          Your Story
-        </p>
+        <hr className="rule" />
 
-        {/* Story counter */}
-        <p className="gold-text font-sans text-[14px] font-medium mb-6">
+        <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
+          Now Playing
+        </p>
+        <h1 className="font-serif font-bold text-[24px] text-ink text-center mb-1">
           Story {currentStoryIdx + 1} of {totalStories}
+        </h1>
+        <p className="font-body italic text-[16px] text-text-dim text-center mb-1">
+          Read by {readerName}
+        </p>
+        <p className="font-body italic text-[14px] text-[#888] text-center mb-6">
+          Your turn &mdash; read this aloud
         </p>
 
-        <GoldBar />
+        <hr className="rule" />
 
-        {/* Reader banner */}
-        {usingSyncedReveal && (
-          <div className="mt-4 w-full text-center">
-            <p className="font-serif italic text-[16px] gold-text font-semibold">
-              Your turn &mdash; read this aloud!
-            </p>
-          </div>
-        )}
-
-        {/* Story sections (narrative prose) */}
-        <div className="mt-8 w-full space-y-4">
+        <div className="mt-2 space-y-3">
           {(story?.sections ?? []).map((section, i) => {
             if (i >= revealedLines) return null;
-
-            const isName = section.style === "name";
-            const isLocation = section.style === "location";
-            const isAction = section.style === "action";
             const isDialogue = section.style === "dialogue";
-            const isEnding = section.style === "ending";
 
             return (
               <p
                 key={i}
-                className={`
-                  font-serif text-[28px] leading-relaxed anim-reveal-line
-                  ${isDialogue ? "italic" : ""}
-                `}
+                className={`font-body text-[18px] text-ink leading-[1.7] pl-4 border-l-2 ${
+                  isDialogue ? "italic" : ""
+                }`}
+                style={{ borderLeftColor: "#FCEB00" }}
               >
-                {isName ? (
-                  <span className="gold-text font-semibold">{section.text}</span>
-                ) : isLocation || isAction || isEnding ? (
-                  <span className="gold-text">{section.text}</span>
-                ) : (
-                  <span className="text-text">{section.text}</span>
-                )}
+                {section.text}
               </p>
             );
           })}
+
+          {!allRevealed && (
+            <p
+              className="font-body text-[18px] leading-[1.7] pl-4 border-l-2"
+              style={{
+                opacity: 0.3,
+                borderLeftColor: "#e0e0e0",
+                color: "#999",
+              }}
+            >
+              Tap to reveal the next line&hellip;
+            </p>
+          )}
         </div>
 
-        {/* Instruction or controls */}
-        {!allRevealed ? (
-          <p className="mt-8 font-serif italic text-[16px] text-text-muted text-center anim-fade-in">
-            Tap anywhere to reveal the next line
-          </p>
-        ) : (
-          <div className="mt-8 w-full flex flex-col items-center gap-4">
-            <p className="font-serif italic text-[16px] text-text-dim">
-              Read aloud by {readerName}
-            </p>
-            <Button
-              variant="primary"
-              onClick={handleNextStory}
-              className="w-full"
-            >
+        {allRevealed && (
+          <div className="mt-8">
+            <Button variant="secondary" onClick={handleNextStory}>
               {isFinalStory ? "That\u2019s a Wrap \u2192" : "Next Story \u2192"}
             </Button>
           </div>
         )}
       </div>
       <PendingPlayersBadge />
-    </div>
+    </>
   );
 }

@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { gameClient } from "@/lib/multiplayer/gameClient";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
-import BlackletterHeading from "@/components/BlackletterHeading";
-import GoldBar from "@/components/GoldBar";
 
 export default function JoinScreen() {
   const router = useRouter();
@@ -51,7 +49,6 @@ export default function JoinScreen() {
     setError("");
 
     try {
-      // /join flow always joins as a new player — never reconnect
       await gameClient.connect(code, name, undefined, { forceNewPlayer: true });
       trackEvent("room_joined");
       router.push(`/room/${code}`);
@@ -62,80 +59,65 @@ export default function JoinScreen() {
   }, [code, name, router]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6">
-      <div
-        className="flex flex-col items-center w-full"
-        style={{ maxWidth: 420 }}
-      >
-        <BlackletterHeading size="48px" className="anim-title-in">
-          <span className="gold-text">Join Game</span>
-        </BlackletterHeading>
+    <div className="screen anim-fade-in">
+      <h1 className="font-serif font-bold text-[28px] text-ink text-center mb-2">
+        Join Game
+      </h1>
+      <p className="font-body italic text-[15px] text-text-dim text-center mb-4">
+        Enter a room code to join your group.
+      </p>
 
-        <div className="mt-6 anim-fade-in" style={{ opacity: 0, animationDelay: "0.2s", animationFillMode: "forwards" }}>
-          <GoldBar />
-        </div>
+      <hr className="rule" />
 
-        {/* Room code input */}
-        <div className="w-full mt-10 anim-fade-in" style={{ opacity: 0, animationDelay: "0.3s", animationFillMode: "forwards" }}>
-          <label className="block font-sans text-[12px] uppercase tracking-[4px] text-text-muted mb-2">
-            Room Code
-          </label>
-          <input
-            type="text"
-            value={code}
-            onChange={handleCodeChange}
-            placeholder="XXXX"
-            className="w-full bg-surface border-2 border-border text-text text-center font-mono text-[36px] py-4 px-4 focus:border-gold-dark focus:outline-none transition-colors"
-            style={{
-              borderRadius: 0,
-              letterSpacing: "8px",
-            }}
-            maxLength={4}
-            autoComplete="off"
-            autoCapitalize="characters"
-          />
-        </div>
+      <label className="block font-serif text-[13px] uppercase tracking-[2px] text-text-dim mb-2">
+        Room Code
+      </label>
+      <input
+        type="text"
+        value={code}
+        onChange={handleCodeChange}
+        placeholder="XXXX"
+        className="w-full font-serif font-bold text-[32px] text-ink text-center py-[14px] px-4 border-2 border-input-border focus:border-ink focus:outline-none transition-colors"
+        style={{ borderRadius: 0, letterSpacing: "10px" }}
+        maxLength={4}
+        autoComplete="off"
+        autoCapitalize="characters"
+      />
 
-        {/* Name input */}
-        <div className="w-full mt-6 anim-fade-in" style={{ opacity: 0, animationDelay: "0.4s", animationFillMode: "forwards" }}>
-          <label className="block font-sans text-[12px] uppercase tracking-[4px] text-text-muted mb-2">
-            Your Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={handleNameChange}
-            placeholder="Enter your name"
-            className="w-full bg-surface border-2 border-border text-text font-serif text-[22px] py-3 px-4 focus:border-gold-dark focus:outline-none transition-colors"
-            style={{ borderRadius: 0 }}
-            maxLength={20}
-            autoComplete="off"
-          />
-        </div>
+      <label className="block font-serif text-[13px] uppercase tracking-[2px] text-text-dim mb-2 mt-6">
+        Your Name
+      </label>
+      <input
+        type="text"
+        value={name}
+        onChange={handleNameChange}
+        placeholder="Enter your name"
+        className="w-full font-body text-[18px] text-ink py-[14px] px-4 border-2 border-input-border focus:border-ink focus:outline-none transition-colors"
+        style={{ borderRadius: 0 }}
+        maxLength={20}
+        autoComplete="off"
+      />
 
-        {/* Error */}
-        {error && (
-          <p className="mt-4 font-sans text-sm text-red-400">{error}</p>
-        )}
+      {error && (
+        <p className="mt-3 font-sans text-[13px] text-red-600">{error}</p>
+      )}
 
-        {/* Join button */}
-        <div className="w-full mt-8 anim-fade-in" style={{ opacity: 0, animationDelay: "0.5s", animationFillMode: "forwards" }}>
-          <Button
-            variant="primary"
-            onClick={handleJoin}
-            disabled={loading || code.length !== 4 || name.length < 2}
-            className="w-full"
-          >
-            {loading ? "Joining..." : "Join"}
-          </Button>
-        </div>
+      <div className="mt-6">
+        <Button
+          variant="primary"
+          onClick={handleJoin}
+          disabled={loading || code.length !== 4 || name.length < 2}
+        >
+          {loading ? "Joining\u2026" : "Join"}
+        </Button>
+      </div>
 
-        {/* Back link */}
+      <div className="text-center mt-6">
         <button
           onClick={() => router.push("/")}
-          className="mt-6 font-serif italic text-[16px] text-text-muted hover:text-text-dim transition-colors"
+          className="font-body italic text-[15px] text-text-muted hover:text-ink transition-colors"
         >
-          Back to title
+          &larr; Back
         </button>
       </div>
     </div>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import GoldBar from "@/components/GoldBar";
 import { trackEvent } from "@/lib/analytics";
 
 interface ArchivePrompt {
@@ -57,150 +56,72 @@ export default function ArchiveView({ room, stories }: ArchiveViewProps) {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen px-6 py-12">
-      <div className="flex flex-col items-center w-full" style={{ maxWidth: 420 }}>
-        {/* Logo */}
-        <p
-          className="font-display text-[28px] text-text-muted mb-6"
-          style={{
-            textShadow: "2px 2px 0 rgba(0,0,0,.85), 0 0 30px rgba(212,168,67,.1)",
-          }}
-        >
-          Plotline
-        </p>
+    <div className="screen">
+      <p className="font-body italic text-[15px] text-text-dim text-center mb-2">
+        Played on {formatDate(room.completedAt)} &middot; {room.playerCount}{" "}
+        {room.playerCount === 1 ? "player" : "players"} &middot;{" "}
+        {room.storyCount} {room.storyCount === 1 ? "story" : "stories"}
+      </p>
 
-        {/* Room metadata */}
-        <p className="font-serif italic text-[16px] text-text-dim text-center mb-6">
-          Played on {formatDate(room.completedAt)} &middot; {room.playerCount}{" "}
-          {room.playerCount === 1 ? "player" : "players"} &middot;{" "}
-          {room.storyCount} {room.storyCount === 1 ? "story" : "stories"}
-        </p>
+      <hr className="rule" />
 
-        <GoldBar />
+      {stories.map((story, storyIdx) => (
+        <section key={story.storyIndex} className="py-10 first:pt-4">
+          <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
+            Story {storyIdx + 1} of {stories.length}
+          </p>
+          <p className="font-body italic text-[14px] text-text-dim text-center mb-6">
+            Read aloud by {story.readerName}
+          </p>
 
-        {/* Stories */}
-        <div className="w-full mt-8">
-          {stories.map((story, storyIdx) => (
-            <div key={story.storyIndex} className="py-16 first:pt-8">
-              {/* Story counter */}
-              <p className="gold-text font-serif text-[18px] text-center mb-8">
-                Story {storyIdx + 1} of {stories.length}
-              </p>
+          <div className="space-y-3">
+            {story.prompts.map((prompt) => {
+              const promptIndex = prompt.slot - 1;
+              const isDialogue = promptIndex === 4 || promptIndex === 5;
 
-              {/* Story content with decorative quote */}
-              <div className="relative">
-                {/* Decorative opening quote */}
-                <span
-                  className="absolute top-0 left-0 font-serif select-none pointer-events-none"
+              return (
+                <p
+                  key={prompt.slot}
+                  className={`font-body text-[18px] text-ink leading-[1.7] pl-4 border-l-2 ${
+                    isDialogue ? "italic" : ""
+                  }`}
                   style={{
-                    fontSize: 220,
-                    lineHeight: "0.8",
-                    opacity: 0.04,
-                    color: "var(--gold)",
-                    transform: "translate(-10px, -20px)",
+                    borderLeftColor: "#FCEB00",
+                    opacity: prompt.wasPlaceholder ? 0.6 : 1,
                   }}
                 >
-                  &ldquo;
-                </span>
-
-                {/* Story lines */}
-                <div className="relative space-y-4">
-                  {story.prompts.map((prompt) => {
-                    // slot is 1-indexed, so promptIndex = slot - 1
-                    const promptIndex = prompt.slot - 1;
-                    const isCharacterName = promptIndex === 0 || promptIndex === 1;
-                    const isDialogue = promptIndex === 4 || promptIndex === 5;
-
-                    if (prompt.wasPlaceholder) {
-                      return (
-                        <p
-                          key={prompt.slot}
-                          className={`font-serif text-[26px] leading-relaxed ${
-                            isDialogue ? "italic" : ""
-                          }`}
-                          style={{ opacity: 0.5 }}
-                        >
-                          <span className="text-gold-dark text-[14px] mr-1">
-                            &#10022;
-                          </span>
-                          {isCharacterName ? (
-                            <span className="gold-text font-semibold italic">
-                              {prompt.contribution}
-                            </span>
-                          ) : (
-                            <span className="text-text italic">
-                              {prompt.contribution}
-                            </span>
-                          )}
-                        </p>
-                      );
-                    }
-
-                    return (
-                      <p
-                        key={prompt.slot}
-                        className={`font-serif text-[26px] leading-relaxed ${
-                          isDialogue ? "italic" : ""
-                        }`}
-                      >
-                        {isCharacterName ? (
-                          <span className="gold-text font-semibold">
-                            {prompt.contribution}
-                          </span>
-                        ) : (
-                          <span className="text-text">
-                            {prompt.contribution}
-                          </span>
-                        )}
-                      </p>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Reader attribution */}
-              <p
-                className="mt-6 font-sans text-text-muted text-center"
-                style={{
-                  fontSize: 13,
-                  fontVariant: "small-caps",
-                  letterSpacing: "2px",
-                }}
-              >
-                read aloud by{" "}
-                <span className="text-gold">{story.readerName}</span>
-              </p>
-
-              {/* Divider between stories (not after last) */}
-              {storyIdx < stories.length - 1 && (
-                <div className="flex justify-center mt-12">
-                  <GoldBar />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom actions */}
-        <div className="w-full mt-8 mb-12 flex flex-col gap-4">
-          <GoldBar />
-          <div className="mt-6 flex flex-col gap-4">
-            <Link
-              href="/"
-              className="gold-gradient-bg text-[#0a0a08] font-sans text-[16px] font-bold uppercase tracking-widest py-[22px] px-[56px] text-center block"
-              style={{ borderRadius: 0 }}
-            >
-              Play Your Own Game
-            </Link>
-            <button
-              onClick={handleShare}
-              className="bg-transparent border-2 border-border text-text-dim font-sans text-[16px] font-bold uppercase tracking-widest py-[22px] px-[56px] transition-colors hover:border-gold-dark hover:text-text w-full"
-              style={{ borderRadius: 0 }}
-            >
-              {copied ? "Copied!" : "Share"}
-            </button>
+                  {prompt.wasPlaceholder && (
+                    <span className="font-sans text-[11px] text-text-muted mr-2 uppercase tracking-[1px]">
+                      [placeholder]
+                    </span>
+                  )}
+                  {prompt.contribution}
+                </p>
+              );
+            })}
           </div>
-        </div>
+
+          {storyIdx < stories.length - 1 && <hr className="rule mt-10" />}
+        </section>
+      ))}
+
+      <hr className="rule" />
+
+      <div className="flex flex-col gap-3 mt-6 mb-8">
+        <Link
+          href="/"
+          className="block w-full text-center font-serif font-medium uppercase text-[16px] py-4 px-6 bg-ink text-white hover:bg-[#333] transition-colors"
+          style={{ letterSpacing: "3px", borderRadius: 0 }}
+        >
+          Play Your Own Game
+        </Link>
+        <button
+          onClick={handleShare}
+          className="w-full font-serif font-medium uppercase text-[14px] py-3 px-6 bg-transparent text-ink border-2 border-ink hover:bg-ink hover:text-white transition-colors"
+          style={{ letterSpacing: "2px", borderRadius: 0 }}
+        >
+          {copied ? "Copied!" : "Share"}
+        </button>
       </div>
     </div>
   );

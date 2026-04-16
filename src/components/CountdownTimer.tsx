@@ -18,7 +18,6 @@ export default function CountdownTimer({
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
 
   useEffect(() => {
-    // Guard: if roundStartedAt is missing, invalid, or not a finite number
     if (
       roundStartedAt == null ||
       !Number.isFinite(roundStartedAt) ||
@@ -28,10 +27,7 @@ export default function CountdownTimer({
       return;
     }
 
-    if (
-      !Number.isFinite(roundDurationMs) ||
-      roundDurationMs <= 0
-    ) {
+    if (!Number.isFinite(roundDurationMs) || roundDurationMs <= 0) {
       setRemainingMs(null);
       return;
     }
@@ -49,19 +45,14 @@ export default function CountdownTimer({
     return () => clearInterval(interval);
   }, [roundStartedAt, roundDurationMs]);
 
-  // Determine display:
-  // - if we have a valid remainingMs, show M:SS
-  // - if roundStartedAt is null and we are in PLAYING, show 0:00 (graceful)
-  // - otherwise show --:--
+  const baseClass =
+    "font-serif text-[28px] text-center tracking-[2px]";
+
   if (remainingMs === null) {
     if (roomState === "PLAYING") {
-      return (
-        <div className="font-serif text-[32px] text-text-muted">0:00</div>
-      );
+      return <div className={`${baseClass} text-text-muted`}>0:00</div>;
     }
-    return (
-      <div className="font-serif text-[32px] text-text-muted">--:--</div>
-    );
+    return <div className={`${baseClass} text-text-muted`}>--:--</div>;
   }
 
   const totalSeconds = Math.ceil(remainingMs / 1000);
@@ -69,16 +60,12 @@ export default function CountdownTimer({
   const seconds = totalSeconds % 60;
   const display = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
-  let colorClass = "text-text-dim";
+  let colorClass = "text-ink";
   if (totalSeconds <= 10) {
-    colorClass = "text-red-500 connection-pulse";
+    colorClass = "text-red-600 connection-pulse";
   } else if (totalSeconds <= 20) {
-    colorClass = "gold-text";
+    colorClass = "text-ink";
   }
 
-  return (
-    <div className={`font-serif text-[32px] ${colorClass}`}>
-      {display}
-    </div>
-  );
+  return <div className={`${baseClass} ${colorClass}`}>{display}</div>;
 }

@@ -1,8 +1,6 @@
 "use client";
 
 import { useRoom } from "@/lib/client/RoomContext";
-import MorphVideo from "@/components/MorphVideo";
-import BlackletterHeading from "@/components/BlackletterHeading";
 import Button from "@/components/Button";
 import CountdownTimer from "@/components/CountdownTimer";
 import SubmissionStatus from "@/components/SubmissionStatus";
@@ -23,63 +21,42 @@ export default function WaitingScreen() {
   const totalPending = pendingConnected + pendingDisconnected;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6">
-      <div
-        className="flex flex-col items-center w-full"
-        style={{ maxWidth: 420 }}
-      >
-        {/* Video */}
-        <div className="anim-fade-in" style={{ opacity: 0, animationDelay: "0s", animationFillMode: "forwards" }}>
-          <MorphVideo size="small" />
-        </div>
+    <>
+      <div className="screen anim-fade-in text-center">
+        <hr className="rule" />
 
-        {/* Heading */}
-        <BlackletterHeading
-          size="48px"
-          className="mt-6 anim-fade-in"
-        >
-          <span className="gold-text">Sit Tight</span>
-        </BlackletterHeading>
-
-        {/* Subtitle */}
-        <p className="mt-4 font-serif italic text-[18px] text-text-dim text-center anim-fade-in"
-          style={{ opacity: 0, animationDelay: "0.2s", animationFillMode: "forwards" }}
-        >
-          Waiting on {totalPending} more player{totalPending !== 1 ? "s" : ""}&hellip;
+        <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
+          Intermission
+        </p>
+        <h1 className="font-serif font-bold text-[24px] text-ink mb-1">
+          Sit Tight
+        </h1>
+        <p className="font-body italic text-[16px] text-text-dim">
+          Waiting on {totalPending} more player{totalPending !== 1 ? "s" : ""}
+          &hellip;
         </p>
 
-        {/* Timer */}
-        <div className="mt-6 anim-fade-in"
-          style={{ opacity: 0, animationDelay: "0.3s", animationFillMode: "forwards" }}
-        >
-          <CountdownTimer
-            roundStartedAt={roundStartedAt}
-            roundDurationMs={roundDurationMs}
-            roomState={room?.state}
-          />
-        </div>
+        <hr className="rule" />
 
-        {/* Submission status */}
+        <CountdownTimer
+          roundStartedAt={roundStartedAt}
+          roundDurationMs={roundDurationMs}
+          roomState={room?.state}
+        />
+
         <SubmissionStatus />
 
-        {/* Host advance button — only shown after the timer has expired,
-            and only when there's still someone to wait on. Counts are
-            always fresh from the latest STATE_UPDATE. */}
         {isHost && advanceAvailable && totalPending > 0 && (
-          <div className="w-full mt-8">
-            <Button
-              variant="secondary"
-              onClick={hostAdvance}
-              className="w-full"
-            >
+          <div className="mt-8">
+            <Button variant="secondary" onClick={hostAdvance}>
               {pendingDisconnected === 0
                 ? `Advance Now (${pendingConnected} working)`
-                : `Advance Now (${pendingConnected} working, ${pendingDisconnected} offline — all will get placeholders)`}
+                : `Advance (${pendingConnected} working, ${pendingDisconnected} offline)`}
             </Button>
           </div>
         )}
       </div>
       <PendingPlayersBadge />
-    </div>
+    </>
   );
 }

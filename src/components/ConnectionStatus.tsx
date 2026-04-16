@@ -18,7 +18,6 @@ export default function ConnectionStatus() {
       }
       return "connected";
     }
-    // Socket not open — check if we were previously connected
     if (currentPlayer) {
       const status = playerStatuses[currentPlayer.id];
       if (status === "reconnecting") return "reconnecting";
@@ -26,12 +25,14 @@ export default function ConnectionStatus() {
     return "disconnected";
   }, [playerStatuses, currentPlayer]);
 
+  // Small, unobtrusive dot in the corner. Colors are restrained (no bright
+  // green) to sit politely inside the theater-program aesthetic.
   const color =
     connectionState === "connected"
-      ? "#4ade80"
+      ? "#1a1a1a"
       : connectionState === "reconnecting"
-      ? "#f59e0b"
-      : "#ef4444";
+      ? "#b45309"
+      : "#b91c1c";
 
   const label =
     connectionState === "connected"
@@ -42,7 +43,7 @@ export default function ConnectionStatus() {
 
   return (
     <div
-      className={`absolute top-4 right-4 z-50 ${
+      className={`absolute top-3 right-3 z-50 ${
         connectionState === "reconnecting" ? "connection-pulse" : ""
       }`}
       title={label}

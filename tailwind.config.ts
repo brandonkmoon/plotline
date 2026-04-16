@@ -9,23 +9,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: "#06060a",
-        surface: "#0e0e14",
-        "surface-2": "#16161e",
-        border: "#252530",
-        text: "#f2ede4",
-        "text-dim": "#9a9490",
-        "text-muted": "#5c5854",
-        "gold-light": "#f5d778",
-        gold: "#d4a843",
-        "gold-dark": "#b8922d",
-        "gold-deep": "#8a6d1f",
-        "gold-highlight": "#fce89d",
+        // Playbill palette — flat theater-program aesthetic.
+        bg: "#ffffff",
+        ink: "#1a1a1a",
+        "text-dim": "#666666",
+        "text-muted": "#999999",
+        "list-border": "#d0d0d0",
+        "input-border": "#e0e0e0",
+        banner: "#fceb00",
       },
       fontFamily: {
-        display: ["var(--font-new-rocker)", "serif"],
-        serif: ["var(--font-cormorant)", "serif"],
-        sans: ["var(--font-outfit)", "sans-serif"],
+        // `display` = Playbill, logo only (loaded via <link> for this font).
+        display: ["var(--font-playbill)", "serif"],
+        // `serif` = Playfair Display — headings, section labels, buttons.
+        serif: ["var(--font-playfair)", "serif"],
+        // `body` = Lora — literary content, story prose, prompts.
+        body: ["var(--font-lora)", "serif"],
+        // `sans` = Inter — UI, labels, badges, timers.
+        sans: ["var(--font-inter)", "sans-serif"],
       },
     },
   },

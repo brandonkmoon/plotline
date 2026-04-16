@@ -8,7 +8,13 @@ interface ButtonProps {
   onClick?: () => void;
   children: React.ReactNode;
   className?: string;
+  type?: "button" | "submit" | "reset";
 }
+
+// Buttons follow the theater-program aesthetic:
+//   primary   = solid black, white text
+//   secondary = transparent, 2px black border
+// Both use Playfair Display, uppercase, wide letter-spacing.
 
 export default function Button({
   variant = "primary",
@@ -16,21 +22,19 @@ export default function Button({
   onClick,
   children,
   className = "",
+  type = "button",
 }: ButtonProps) {
+  const base =
+    "w-full font-serif font-medium uppercase cursor-pointer transition-colors disabled:cursor-not-allowed";
+
   if (variant === "primary") {
     return (
       <button
+        type={type}
         onClick={onClick}
         disabled={disabled}
-        className={`
-          gold-gradient-bg
-          text-[#0a0a08] font-sans text-[16px] font-bold uppercase tracking-widest
-          py-[22px] px-[56px] rounded-none
-          transition-opacity
-          disabled:opacity-40 disabled:cursor-not-allowed
-          ${className}
-        `}
-        style={{ borderRadius: 0 }}
+        className={`${base} text-[16px] py-4 px-6 bg-ink text-white hover:bg-[#333] disabled:bg-[#ccc] ${className}`}
+        style={{ letterSpacing: "3px", borderRadius: 0 }}
       >
         {children}
       </button>
@@ -39,18 +43,11 @@ export default function Button({
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`
-        bg-transparent border-2 border-border text-text-dim
-        font-sans text-[16px] font-bold uppercase tracking-widest
-        py-[22px] px-[56px] rounded-none
-        transition-colors
-        hover:border-gold-dark hover:text-text
-        disabled:opacity-40 disabled:cursor-not-allowed
-        ${className}
-      `}
-      style={{ borderRadius: 0 }}
+      className={`${base} text-[14px] py-3 px-6 bg-transparent text-ink border-2 border-ink hover:bg-ink hover:text-white disabled:opacity-40 ${className}`}
+      style={{ letterSpacing: "2px", borderRadius: 0 }}
     >
       {children}
     </button>

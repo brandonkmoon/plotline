@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
 import { PROMPTS } from "@/lib/game/prompts";
-import BlackletterHeading from "@/components/BlackletterHeading";
 import Button from "@/components/Button";
 import CountdownTimer from "@/components/CountdownTimer";
 import SubmissionStatus from "@/components/SubmissionStatus";
@@ -27,13 +26,11 @@ export default function PromptScreen() {
   const currentRound = room?.currentRound ?? 0;
   const prompt = PROMPTS[currentRound];
 
-  // Reset state when round changes
   useEffect(() => {
     setResponse("");
     setSubmitted(false);
   }, [currentRound]);
 
-  // Send typing status
   useEffect(() => {
     if (response.length > 0) {
       sendTypingStatus("writing");
@@ -46,7 +43,6 @@ export default function PromptScreen() {
     if (!room || !currentPlayer || !prompt || response.trim().length === 0)
       return;
 
-    // Find the story + prompt index for this player in this round
     const story = room?.stories?.find((s) =>
       s.slots?.some(
         (slot) =>
@@ -60,116 +56,82 @@ export default function PromptScreen() {
     submitPrompt(story.index, currentRound, response.trim());
     setSubmitted(true);
     sendTypingStatus("idle");
-  }, [room, currentPlayer, currentRound, prompt, response, submitPrompt, sendTypingStatus]);
+  }, [
+    room,
+    currentPlayer,
+    currentRound,
+    prompt,
+    response,
+    submitPrompt,
+    sendTypingStatus,
+  ]);
 
   if (!prompt) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6">
-      <div
-        className="flex flex-col items-center w-full"
-        style={{ maxWidth: 420 }}
-      >
-        {/* Countdown timer */}
-        <CountdownTimer
-          roundStartedAt={roundStartedAt}
-          roundDurationMs={roundDurationMs}
-          roomState={room?.state}
-        />
+    <>
+      <div className="screen anim-fade-in">
+        <hr className="rule" />
 
-        {/* Progress pips */}
-        <div className="flex gap-2 mb-6">
-          {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: 34,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor:
-                  i < currentRound
-                    ? "#d4a843"
-                    : i === currentRound
-                    ? "#b8922d"
-                    : "#252530",
-                opacity: i === currentRound ? 0.6 : 1,
-                boxShadow:
-                  i < currentRound
-                    ? "0 0 8px rgba(212,168,67,0.3)"
-                    : "none",
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Round eyebrow */}
-        <p className="font-sans text-[12px] font-semibold uppercase text-text-muted mb-6"
-          style={{ letterSpacing: "4px" }}
-        >
-          Round {currentRound + 1} of {TOTAL_ROUNDS}
+        <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
+          Act {currentRound + 1} of {TOTAL_ROUNDS}
         </p>
 
-        {/* Prompt text */}
-        <BlackletterHeading
-          size="52px"
-          className="text-center anim-prompt-in"
-        >
-          <span className="gold-text">{prompt.text}</span>
-        </BlackletterHeading>
+        <p className="font-body text-[22px] text-ink text-center leading-[1.5] mb-2">
+          {prompt.text}
+        </p>
 
-        {/* Textarea */}
-        <div className="w-full mt-8">
-          <textarea
-            value={response}
-            onChange={(e) => {
-              if (e.target.value.length <= MAX_CHARS) {
-                setResponse(e.target.value);
-              }
-            }}
-            disabled={submitted}
-            placeholder="Type your response..."
-            className="w-full bg-surface border-2 border-border font-serif text-[22px] text-text p-4 resize-none focus:border-gold-dark focus:outline-none transition-colors"
-            style={{
-              borderRadius: 0,
-              minHeight: 120,
-              boxShadow: "none",
-            }}
-            rows={3}
-          />
-          <div className="flex justify-end mt-1">
-            <span
-              className={`font-sans text-[13px] ${
-                response.length >= MAX_CHARS
-                  ? "text-red-400"
-                  : "text-text-muted"
-              }`}
-            >
-              {response.length}/{MAX_CHARS}
-            </span>
-          </div>
+        <hr className="rule" />
+
+        <p className="font-body italic text-[14px] text-text-muted text-center mb-7">
+          You can&apos;t see what anyone else wrote
+        </p>
+
+        <textarea
+          value={response}
+          onChange={(e) => {
+            if (e.target.value.length <= MAX_CHARS) {
+              setResponse(e.target.value);
+            }
+          }}
+          disabled={submitted}
+          placeholder="Type your line\u2026"
+          className="w-full font-body text-[18px] text-ink py-[14px] px-4 border-2 border-input-border focus:border-ink focus:outline-none transition-colors resize-none"
+          style={{ borderRadius: 0, minHeight: 96 }}
+          rows={3}
+        />
+
+        <div className="flex justify-end mt-1">
+          <span
+            className={`font-sans text-[12px] ${
+              response.length >= MAX_CHARS ? "text-red-600" : "text-text-muted"
+            }`}
+          >
+            {response.length}/{MAX_CHARS}
+          </span>
         </div>
 
-        {/* Submit button */}
-        <div className="w-full mt-4">
+        <div className="mt-5">
+          <CountdownTimer
+            roundStartedAt={roundStartedAt}
+            roundDurationMs={roundDurationMs}
+            roomState={room?.state}
+          />
+        </div>
+
+        <div className="mt-5">
           <Button
             variant="primary"
             onClick={handleSubmit}
             disabled={submitted || response.trim().length === 0}
-            className="w-full"
           >
             {submitted ? "Submitted" : "Submit"}
           </Button>
         </div>
 
-        {/* Hint */}
-        <p className="mt-4 font-serif italic text-[16px] text-text-dim text-center">
-          You can&apos;t see what anyone else wrote.
-        </p>
-
-        {/* Submission status */}
         <SubmissionStatus />
       </div>
       <PendingPlayersBadge />
-    </div>
+    </>
   );
 }

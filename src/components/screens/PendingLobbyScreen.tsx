@@ -1,8 +1,6 @@
 "use client";
 
 import { useRoom } from "@/lib/client/RoomContext";
-import BlackletterHeading from "@/components/BlackletterHeading";
-import GoldBar from "@/components/GoldBar";
 import Button from "@/components/Button";
 
 function describePhase(state: string | undefined, currentRound: number): string {
@@ -30,66 +28,30 @@ export default function PendingLobbyScreen() {
   const isReady = currentPendingPlayer?.ready ?? false;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6">
-      <div
-        className="flex flex-col items-center w-full text-center"
-        style={{ maxWidth: 420 }}
+    <div className="screen text-center anim-fade-in">
+      <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
+        Backstage
+      </p>
+      <h1 className="font-serif font-bold text-[28px] text-ink mb-1">
+        Game in Progress
+      </h1>
+      <p className="font-body italic text-[16px] text-text-dim">
+        {activeCount} player{activeCount !== 1 ? "s" : ""} are currently in{" "}
+        {phaseLabel}
+      </p>
+
+      <hr className="rule" />
+
+      <Button
+        variant={isReady ? "primary" : "secondary"}
+        onClick={() => setReady(!isReady)}
       >
-        <BlackletterHeading size="56px" className="anim-title-in">
-          <span className="gold-text">Game in Progress</span>
-        </BlackletterHeading>
+        {isReady ? "Ready to Join \u2713" : "Ready to Join"}
+      </Button>
 
-        <div
-          className="mt-6 anim-fade-in"
-          style={{
-            opacity: 0,
-            animationDelay: "0.2s",
-            animationFillMode: "forwards",
-          }}
-        >
-          <GoldBar />
-        </div>
-
-        <p
-          className="mt-6 font-serif italic text-[18px] text-text-dim anim-fade-in"
-          style={{
-            opacity: 0,
-            animationDelay: "0.3s",
-            animationFillMode: "forwards",
-          }}
-        >
-          {activeCount} player{activeCount !== 1 ? "s" : ""} are currently in{" "}
-          {phaseLabel}
-        </p>
-
-        <div
-          className="w-full mt-10 anim-fade-in"
-          style={{
-            opacity: 0,
-            animationDelay: "0.4s",
-            animationFillMode: "forwards",
-          }}
-        >
-          <Button
-            variant={isReady ? "primary" : "secondary"}
-            onClick={() => setReady(!isReady)}
-            className="w-full"
-          >
-            {isReady ? "Ready to Join \u2713" : "Ready to Join"}
-          </Button>
-        </div>
-
-        <p
-          className="mt-6 font-serif italic text-[16px] text-text-muted anim-fade-in"
-          style={{
-            opacity: 0,
-            animationDelay: "0.5s",
-            animationFillMode: "forwards",
-          }}
-        >
-          You&apos;ll join automatically when the next game starts.
-        </p>
-      </div>
+      <p className="mt-6 font-body italic text-[15px] text-text-muted">
+        You&apos;ll join automatically when the next game starts.
+      </p>
     </div>
   );
 }

@@ -19,12 +19,8 @@ export default function PendingPlayersBadge() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 py-2 px-4 text-center pointer-events-none"
-      style={{
-        backgroundColor: "rgba(14, 14, 20, 0.85)",
-        borderTop: "1px solid var(--border)",
-        backdropFilter: "blur(4px)",
-      }}
+      className="fixed bottom-0 left-0 right-0 py-2 px-4 text-center pointer-events-none border-t border-ink"
+      style={{ backgroundColor: "#ffffff" }}
     >
       <p className="font-sans text-[11px] uppercase tracking-[3px] text-text-muted">
         In lobby: {parts.join(", ")}
