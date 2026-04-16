@@ -84,7 +84,7 @@ class GameClient {
           case "STATE_UPDATE":
             this.playerId = msg.playerId;
             this.latestRoom = msg.room;
-            this.latestRoundStartedAt = msg.roundStartedAt;
+            this.latestRoundStartedAt = msg.roundStartedAt ?? null;
             for (const cb of this.stateListeners) cb(msg.room);
             if (!resolved) {
               resolved = true;
