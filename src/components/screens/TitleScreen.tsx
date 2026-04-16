@@ -1,12 +1,39 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/Button";
 
+// Module-level flag so the entrance animation plays once per browser
+// session. Stays true across remounts (e.g. navigating to /create or
+// /join and coming back). Resets only on a full page reload.
+let hasAnimated = false;
+
+type Phase = "pause" | "sliding" | "done";
+
 export default function TitleScreen() {
   const router = useRouter();
+  // If we've already animated once this session, jump straight to "done".
+  const [phase, setPhase] = useState<Phase>(hasAnimated ? "done" : "pause");
+
+  useEffect(() => {
+    if (hasAnimated) return;
+
+    // 0–600ms: bare banner, content invisible
+    // 600–1800ms: buttons slide in (900ms animation + 150ms stagger)
+    // 1800ms onward: text fades in, buttons become clickable
+    const t1 = setTimeout(() => setPhase("sliding"), 600);
+    const t2 = setTimeout(() => {
+      setPhase("done");
+      hasAnimated = true;
+    }, 1800);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
 
   const handleCreate = useCallback(() => {
     router.push("/create");
@@ -16,28 +43,55 @@ export default function TitleScreen() {
     router.push("/join");
   }, [router]);
 
+  const showButtons = phase !== "pause";
+  const ready = phase === "done";
+
   return (
-    <div className="screen anim-fade-in">
-      <p className="font-body text-center text-[16px] text-text-dim italic mb-6">
-        A blind collaborative storytelling game for 4&ndash;12 players.
-      </p>
-
-      <hr className="rule" />
-
-      <div className="flex flex-col gap-3 mt-8">
-        <Button variant="primary" onClick={handleCreate}>
-          Create Game
-        </Button>
-        <Button variant="secondary" onClick={handleJoin}>
-          Join Game
+    <div className="screen">
+      {/* Create — primary */}
+      <div
+        className={`title-btn-wrapper ${
+          showButtons ? "title-btn-animate" : ""
+        }`}
+      >
+        <Button variant="primary" onClick={handleCreate} disabled={!ready}>
+          <span className={`title-btn-text ${ready ? "visible" : ""}`}>
+            Create a Show
+          </span>
         </Button>
       </div>
 
-      <p className="mt-10 font-sans text-[11px] uppercase text-text-muted text-center tracking-[3px]">
+      {/* Join — secondary, staggered 150ms */}
+      <div
+        className={`title-btn-wrapper mt-3 ${
+          showButtons ? "title-btn-animate title-btn-delay" : ""
+        }`}
+      >
+        <Button variant="secondary" onClick={handleJoin} disabled={!ready}>
+          <span className={`title-btn-text ${ready ? "visible" : ""}`}>
+            Join a Show
+          </span>
+        </Button>
+      </div>
+
+      {/* Supporting text — opacity-only fade, staggered after buttons settle */}
+      <p
+        className="mt-10 font-sans text-[11px] uppercase text-text-muted text-center tracking-[3px] transition-opacity duration-500"
+        style={{
+          opacity: ready ? 1 : 0,
+          transitionDelay: ready ? "200ms" : "0ms",
+        }}
+      >
         4 &ndash; 12 Players
       </p>
 
-      <div className="text-center mt-6">
+      <div
+        className="text-center mt-6 transition-opacity duration-500"
+        style={{
+          opacity: ready ? 1 : 0,
+          transitionDelay: ready ? "400ms" : "0ms",
+        }}
+      >
         <Link
           href="/privacy"
           className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted hover:text-ink transition-colors"

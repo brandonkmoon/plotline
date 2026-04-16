@@ -11,6 +11,19 @@ import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 const MAX_CHARS = 120;
 const TOTAL_ROUNDS = 7;
 
+// Input-hint placeholders per round. Indexed by the round number the
+// server sends on STATE_UPDATE.room.currentRound. ASCII-only by design
+// (no ellipsis) so they read cleanly across fonts.
+const PLACEHOLDER_HINTS: Record<number, string> = {
+  0: "Enter a character name",
+  1: "Enter another character name",
+  2: "Describe a location",
+  3: "Describe an action",
+  4: "Write a line of dialogue",
+  5: "Write a reply",
+  6: "Write an ending",
+};
+
 export default function PromptScreen() {
   const {
     room,
@@ -95,7 +108,9 @@ export default function PromptScreen() {
             }
           }}
           disabled={submitted}
-          placeholder="Type your line\u2026"
+          placeholder={
+            PLACEHOLDER_HINTS[currentRound] ?? "Write your answer here"
+          }
           className="w-full font-body text-[18px] text-ink py-[14px] px-4 border-2 border-input-border focus:border-ink focus:outline-none transition-colors resize-none"
           style={{ borderRadius: 0, minHeight: 96 }}
           rows={3}
