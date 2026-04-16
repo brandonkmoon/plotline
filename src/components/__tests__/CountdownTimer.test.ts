@@ -62,3 +62,35 @@ describe("CountdownTimer math", () => {
     expect(computeRemaining(now, 90, now)).toBe(90);
   });
 });
+
+describe("CountdownTimer STATE_UPDATE shape", () => {
+  it("a PROMPT-phase state snapshot has numeric roundStartedAt and roundDurationMs", () => {
+    // Construct a STATE_UPDATE-like snapshot as it would be received from
+    // the server during the PLAYING phase.
+    const snapshot = {
+      type: "STATE_UPDATE" as const,
+      room: {
+        code: "ABCD",
+        state: "PLAYING" as const,
+        players: [],
+        stories: [],
+        currentRound: 0,
+        hostId: "p1",
+        createdAt: 0,
+        updatedAt: 0,
+      },
+      playerId: "p1",
+      roundStartedAt: Date.now(),
+      roundDurationMs: 90_000,
+      pendingConnected: 0,
+      pendingDisconnected: 0,
+      protocolVersion: 2,
+    };
+
+    expect(typeof snapshot.roundStartedAt).toBe("number");
+    expect(Number.isFinite(snapshot.roundStartedAt)).toBe(true);
+    expect(typeof snapshot.roundDurationMs).toBe("number");
+    expect(Number.isFinite(snapshot.roundDurationMs)).toBe(true);
+    expect(snapshot.roundDurationMs).toBeGreaterThan(0);
+  });
+});

@@ -8,10 +8,18 @@ import CountdownTimer from "@/components/CountdownTimer";
 import SubmissionStatus from "@/components/SubmissionStatus";
 
 export default function WaitingScreen() {
-  const { room, isHost, advanceAvailable, unsubmittedCount, hostAdvance, roundStartedAt } =
-    useRoom();
+  const {
+    room,
+    isHost,
+    advanceAvailable,
+    hostAdvance,
+    roundStartedAt,
+    roundDurationMs,
+    pendingConnected,
+    pendingDisconnected,
+  } = useRoom();
 
-  const waitingCount = unsubmittedCount;
+  const totalPending = pendingConnected + pendingDisconnected;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6">
@@ -36,28 +44,36 @@ export default function WaitingScreen() {
         <p className="mt-4 font-serif italic text-[18px] text-text-dim text-center anim-fade-in"
           style={{ opacity: 0, animationDelay: "0.2s", animationFillMode: "forwards" }}
         >
-          Waiting on {waitingCount || "a few"} more player{waitingCount !== 1 ? "s" : ""}&hellip;
+          Waiting on {totalPending} more player{totalPending !== 1 ? "s" : ""}&hellip;
         </p>
 
         {/* Timer */}
         <div className="mt-6 anim-fade-in"
           style={{ opacity: 0, animationDelay: "0.3s", animationFillMode: "forwards" }}
         >
-          <CountdownTimer roundStartedAt={roundStartedAt} />
+          <CountdownTimer
+            roundStartedAt={roundStartedAt}
+            roundDurationMs={roundDurationMs}
+            roomState={room?.state}
+          />
         </div>
 
         {/* Submission status */}
         <SubmissionStatus />
 
-        {/* Host advance button */}
-        {isHost && advanceAvailable && (
+        {/* Host advance button — only shown after the timer has expired,
+            and only when there's still someone to wait on. Counts are
+            always fresh from the latest STATE_UPDATE. */}
+        {isHost && advanceAvailable && totalPending > 0 && (
           <div className="w-full mt-8">
             <Button
               variant="secondary"
               onClick={hostAdvance}
               className="w-full"
             >
-              Advance Now ({unsubmittedCount} player{unsubmittedCount !== 1 ? "s" : ""} will get placeholder prompts)
+              {pendingDisconnected === 0
+                ? `Advance Now (${pendingConnected} working)`
+                : `Advance Now (${pendingConnected} working, ${pendingDisconnected} offline — all will get placeholders)`}
             </Button>
           </div>
         )}

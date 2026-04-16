@@ -11,7 +11,10 @@ import React, {
 import { gameClient } from "@/lib/multiplayer/gameClient";
 import type { RevealState } from "@/lib/multiplayer/gameClient";
 import type { Room, Player, AssembledStory } from "@/lib/game/types";
-import type { PlayerStatus } from "@/lib/multiplayer/types";
+import type {
+  PlayerStatus,
+  ConnectionErrorReason,
+} from "@/lib/multiplayer/types";
 
 interface RoomContextValue {
   room: Room | null;
@@ -22,6 +25,11 @@ interface RoomContextValue {
   unsubmittedCount: number;
   assembledStories: AssembledStory[];
   roundStartedAt: number | null;
+  roundDurationMs: number;
+  pendingConnected: number;
+  pendingDisconnected: number;
+  connectionError: ConnectionErrorReason | null;
+  clearConnectionError: () => void;
   revealState: RevealState | null;
   connect: (
     roomCode: string,
@@ -47,6 +55,8 @@ interface RoomContextValue {
 
 const RoomContext = createContext<RoomContextValue | null>(null);
 
+const DEFAULT_ROUND_DURATION_MS = 90_000;
+
 export function RoomProvider({ children }: { children: React.ReactNode }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [playerStatuses, setPlayerStatuses] = useState<
@@ -59,6 +69,13 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
   );
   const [archiveUrl, setArchiveUrl] = useState<string | null>(null);
   const [roundStartedAt, setRoundStartedAt] = useState<number | null>(null);
+  const [roundDurationMs, setRoundDurationMs] = useState<number>(
+    DEFAULT_ROUND_DURATION_MS
+  );
+  const [pendingConnected, setPendingConnected] = useState(0);
+  const [pendingDisconnected, setPendingDisconnected] = useState(0);
+  const [connectionError, setConnectionError] =
+    useState<ConnectionErrorReason | null>(null);
   const [revealState, setRevealState] = useState<RevealState | null>(null);
   const playerIdRef = useRef<string | null>(null);
 
@@ -79,6 +96,16 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         if (pid) playerIdRef.current = pid;
         setRoom(r);
         setRoundStartedAt(gameClient.getRoundStartedAt());
+        setRoundDurationMs(gameClient.getRoundDurationMs());
+        setPendingConnected(gameClient.getPendingConnected());
+        setPendingDisconnected(gameClient.getPendingDisconnected());
+        // When round advances (currentRound changes), reset the
+        // "advance available" flag since a new round means a new timer
+        setAdvanceAvailable((prev) => {
+          // We can't easily detect round change here without prior state;
+          // the server will re-emit ADVANCE_AVAILABLE after the new timer
+          return prev;
+        });
       })
     );
 
@@ -113,11 +140,33 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
       })
     );
 
+    unsubs.push(
+      gameClient.onConnectionError((reason) => {
+        setConnectionError(reason);
+      })
+    );
+
     return () => {
       unsubs.forEach((fn) => fn());
       gameClient.disconnect();
     };
   }, []);
+
+  // Reset advanceAvailable whenever the currentRound changes — new round,
+  // new timer, so the "advance" window is fresh.
+  const prevRoundRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!room) {
+      prevRoundRef.current = null;
+      return;
+    }
+    if (prevRoundRef.current !== room.currentRound) {
+      if (prevRoundRef.current !== null) {
+        setAdvanceAvailable(false);
+      }
+      prevRoundRef.current = room.currentRound;
+    }
+  }, [room]);
 
   const connect = useCallback(
     async (
@@ -146,7 +195,16 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     setAssembledStories([]);
     setArchiveUrl(null);
     setRoundStartedAt(null);
+    setRoundDurationMs(DEFAULT_ROUND_DURATION_MS);
+    setPendingConnected(0);
+    setPendingDisconnected(0);
+    setConnectionError(null);
     setRevealState(null);
+  }, []);
+
+  const clearConnectionError = useCallback(() => {
+    gameClient.clearConnectionError();
+    setConnectionError(null);
   }, []);
 
   const currentPlayer =
@@ -162,6 +220,11 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     unsubmittedCount,
     assembledStories,
     roundStartedAt,
+    roundDurationMs,
+    pendingConnected,
+    pendingDisconnected,
+    connectionError,
+    clearConnectionError,
     revealState,
     connect,
     disconnect,

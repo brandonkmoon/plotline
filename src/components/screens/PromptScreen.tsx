@@ -12,7 +12,14 @@ const MAX_CHARS = 120;
 const TOTAL_ROUNDS = 7;
 
 export default function PromptScreen() {
-  const { room, currentPlayer, submitPrompt, sendTypingStatus, roundStartedAt } = useRoom();
+  const {
+    room,
+    currentPlayer,
+    submitPrompt,
+    sendTypingStatus,
+    roundStartedAt,
+    roundDurationMs,
+  } = useRoom();
   const [response, setResponse] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -63,7 +70,11 @@ export default function PromptScreen() {
         style={{ maxWidth: 420 }}
       >
         {/* Countdown timer */}
-        <CountdownTimer roundStartedAt={roundStartedAt} />
+        <CountdownTimer
+          roundStartedAt={roundStartedAt}
+          roundDurationMs={roundDurationMs}
+          roomState={room?.state}
+        />
 
         {/* Progress pips */}
         <div className="flex gap-2 mb-6">

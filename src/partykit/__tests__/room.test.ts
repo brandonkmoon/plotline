@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Room, Player } from "@/lib/game/types";
 import type { ClientMessage, ServerMessage } from "@/lib/multiplayer/types";
+import { PROTOCOL_VERSION } from "@/lib/multiplayer/types";
 import { createRoom, gameReducer } from "@/lib/game";
+import RoomServer from "@/partykit/room";
 
 /**
  * Since PartyKit server instances are tightly coupled to the PartyKit runtime,
@@ -540,6 +542,423 @@ describe("Room Server Logic (integration with reducer)", () => {
       // The unsubmitted story's last slot should be a placeholder
       const unsubmittedStory = room.stories[3];
       expect(unsubmittedStory.slots[6].isPlaceholder).toBe(true);
+    });
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Full server instance tests — simulate connections via onMessage / onClose
+// and inspect outgoing messages / internal state.
+// -----------------------------------------------------------------------------
+
+interface MockConnection {
+  id: string;
+  sentMessages: ServerMessage[];
+  closeCalled: boolean;
+  send: (data: string) => void;
+  close: () => void;
+}
+
+function makeMockConnection(id: string): MockConnection {
+  const conn: MockConnection = {
+    id,
+    sentMessages: [],
+    closeCalled: false,
+    send(data: string) {
+      try {
+        conn.sentMessages.push(JSON.parse(data) as ServerMessage);
+      } catch {
+        // ignore
+      }
+    },
+    close() {
+      conn.closeCalled = true;
+    },
+  };
+  return conn;
+}
+
+function makeMockPartyRoom(id: string, connections: Map<string, MockConnection>) {
+  return {
+    id,
+    getConnections() {
+      return connections.values();
+    },
+  } as any;
+}
+
+function makeServer(roomCode = "TEST") {
+  const connections = new Map<string, MockConnection>();
+  const mockRoom = makeMockPartyRoom(roomCode, connections);
+  const server = new RoomServer(mockRoom);
+  return { server, connections };
+}
+
+function join(
+  server: RoomServer,
+  connections: Map<string, MockConnection>,
+  connectionId: string,
+  playerName: string,
+  opts: { playerId?: string; protocolVersion?: number } = {}
+): MockConnection {
+  const conn = makeMockConnection(connectionId);
+  connections.set(connectionId, conn);
+  const msg: ClientMessage = {
+    type: "JOIN_ROOM",
+    playerName,
+    protocolVersion: opts.protocolVersion ?? PROTOCOL_VERSION,
+    ...(opts.playerId !== undefined ? { playerId: opts.playerId } : {}),
+  };
+  server.onMessage(JSON.stringify(msg), conn as any);
+  return conn;
+}
+
+function getLatestStateUpdate(conn: MockConnection) {
+  for (let i = conn.sentMessages.length - 1; i >= 0; i--) {
+    const m = conn.sentMessages[i];
+    if (m.type === "STATE_UPDATE") return m;
+  }
+  return null;
+}
+
+function startGameViaServer(server: RoomServer, hostConn: MockConnection) {
+  server.onMessage(JSON.stringify({ type: "START_GAME" }), hostConn as any);
+}
+
+describe("RoomServer instance behavior", () => {
+  beforeEach(() => {
+    // Prevent real fetch from running if archive triggers
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 500 })
+    );
+  });
+
+  describe("Protocol version", () => {
+    it("rejects client with wrong protocol version", () => {
+      const { server, connections } = makeServer();
+      const conn = join(server, connections, "c1", "Alice", {
+        protocolVersion: 1,
+      });
+
+      const err = conn.sentMessages.find((m) => m.type === "ERROR");
+      expect(err).toBeDefined();
+      expect((err as any).reason).toBe("PROTOCOL_MISMATCH");
+      expect(conn.closeCalled).toBe(true);
+    });
+
+    it("accepts client with correct protocol version", () => {
+      const { server, connections } = makeServer();
+      const conn = join(server, connections, "c1", "Alice");
+
+      const update = getLatestStateUpdate(conn);
+      expect(update).not.toBeNull();
+      expect((update as any).protocolVersion).toBe(PROTOCOL_VERSION);
+    });
+  });
+
+  describe("STATE_UPDATE fields", () => {
+    it("includes roundDurationMs, pendingConnected, pendingDisconnected, protocolVersion", () => {
+      const { server, connections } = makeServer();
+      const conn = join(server, connections, "c1", "Alice");
+      const update = getLatestStateUpdate(conn);
+      expect(update).not.toBeNull();
+      const u = update as Extract<ServerMessage, { type: "STATE_UPDATE" }>;
+      expect(u.roundDurationMs).toBe(90_000);
+      expect(u.pendingConnected).toBe(0);
+      expect(u.pendingDisconnected).toBe(0);
+      expect(u.protocolVersion).toBe(PROTOCOL_VERSION);
+    });
+
+    it("sets roundStartedAt when game starts", () => {
+      const { server, connections } = makeServer();
+      const host = join(server, connections, "c1", "Alice");
+      const p2 = join(server, connections, "c2", "Bob");
+      const p3 = join(server, connections, "c3", "Carol");
+      const p4 = join(server, connections, "c4", "Dave");
+
+      startGameViaServer(server, host);
+
+      const update = getLatestStateUpdate(host);
+      expect(update).not.toBeNull();
+      const u = update as Extract<ServerMessage, { type: "STATE_UPDATE" }>;
+      expect(u.room.state).toBe("PLAYING");
+      expect(u.roundStartedAt).not.toBeNull();
+      expect(typeof u.roundStartedAt).toBe("number");
+    });
+  });
+
+  describe("Reconnection", () => {
+    it("rejects joining with unknown playerId", () => {
+      const { server, connections } = makeServer();
+      // First player establishes the room
+      join(server, connections, "c1", "Alice");
+
+      // New connection tries to reconnect with random player id
+      const rogue = join(server, connections, "c2", "Ghost", {
+        playerId: "this-id-does-not-exist",
+      });
+
+      const err = rogue.sentMessages.find((m) => m.type === "ERROR");
+      expect(err).toBeDefined();
+      expect((err as any).reason).toBe("UNKNOWN_PLAYER");
+      expect(rogue.closeCalled).toBe(true);
+    });
+
+    it("restores player on reconnect by playerId and preserves submissions", () => {
+      const { server, connections } = makeServer();
+      const host = join(server, connections, "c1", "Alice");
+      const p2 = join(server, connections, "c2", "Bob");
+      const p3 = join(server, connections, "c3", "Carol");
+      const p4 = join(server, connections, "c4", "Dave");
+
+      // Extract assigned playerIds from state update
+      const update = getLatestStateUpdate(host) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const roomState = update.room;
+      const aliceId = roomState.players.find((p) => p.name === "Alice")!.id;
+      const bobId = roomState.players.find((p) => p.name === "Bob")!.id;
+
+      startGameViaServer(server, host);
+
+      // Find the story/slot where Alice is assigned in round 0
+      const afterStart = getLatestStateUpdate(host) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const aliceSlot = afterStart.room.stories
+        .flatMap((s) => s.slots)
+        .find((sl) => sl.promptIndex === 0 && sl.playerId === aliceId);
+      expect(aliceSlot).toBeDefined();
+
+      // Alice submits
+      server.onMessage(
+        JSON.stringify({
+          type: "SUBMIT_PROMPT",
+          storyIndex: aliceSlot!.storyIndex,
+          promptIndex: 0,
+          response: "alice's answer",
+        }),
+        host as any
+      );
+
+      // Simulate Alice disconnecting
+      server.onClose(host as any);
+      connections.delete("c1");
+
+      // Alice reconnects with her playerId
+      const reconn = join(server, connections, "c1b", "Alice", {
+        playerId: aliceId,
+      });
+
+      // Should receive a STATE_UPDATE (not an ERROR)
+      const err = reconn.sentMessages.find((m) => m.type === "ERROR");
+      expect(err).toBeUndefined();
+      const reconnUpdate = getLatestStateUpdate(reconn) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(reconnUpdate).not.toBeNull();
+
+      // Alice's submission should still be present
+      const aliceSlotAfter = reconnUpdate.room.stories
+        .flatMap((s) => s.slots)
+        .find((sl) => sl.promptIndex === 0 && sl.playerId === aliceId);
+      expect(aliceSlotAfter?.response).toBe("alice's answer");
+
+      // Alice should be marked as connected
+      const alicePlayer = reconnUpdate.room.players.find(
+        (p) => p.id === aliceId
+      );
+      expect(alicePlayer?.isConnected).toBe(true);
+    });
+  });
+
+  describe("Reject new joiners when game is in progress", () => {
+    it("rejects a new player (no playerId) once state is PLAYING", () => {
+      const { server, connections } = makeServer();
+      const host = join(server, connections, "c1", "Alice");
+      join(server, connections, "c2", "Bob");
+      join(server, connections, "c3", "Carol");
+      join(server, connections, "c4", "Dave");
+      startGameViaServer(server, host);
+
+      // Confirm we're in PLAYING
+      const update = getLatestStateUpdate(host) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(update.room.state).toBe("PLAYING");
+
+      // New player tries to join
+      const newcomer = join(server, connections, "c5", "Eve");
+
+      const err = newcomer.sentMessages.find((m) => m.type === "ERROR");
+      expect(err).toBeDefined();
+      expect((err as any).reason).toBe("GAME_IN_PROGRESS");
+      expect(newcomer.closeCalled).toBe(true);
+    });
+  });
+
+  describe("pendingConnected / pendingDisconnected counts", () => {
+    it("starts at (4, 0) and decrements pendingConnected as submissions arrive", () => {
+      const { server, connections } = makeServer();
+      const host = join(server, connections, "c1", "Alice");
+      const c2 = join(server, connections, "c2", "Bob");
+      const c3 = join(server, connections, "c3", "Carol");
+      const c4 = join(server, connections, "c4", "Dave");
+      startGameViaServer(server, host);
+
+      let update = getLatestStateUpdate(host) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(update.room.state).toBe("PLAYING");
+      expect(update.pendingConnected).toBe(4);
+      expect(update.pendingDisconnected).toBe(0);
+
+      const players = update.room.players;
+      const byName: Record<string, string> = {};
+      for (const p of players) byName[p.name] = p.id;
+
+      // Map player -> their connection
+      const connByPlayerId: Record<string, MockConnection> = {
+        [byName["Alice"]]: host,
+        [byName["Bob"]]: c2,
+        [byName["Carol"]]: c3,
+        [byName["Dave"]]: c4,
+      };
+
+      // Submit one player at a time and check pendingConnected decreases
+      const stories = update.room.stories;
+      let expected = 4;
+      for (const story of stories) {
+        const slot = story.slots.find(
+          (s) => s.promptIndex === update.room.currentRound
+        )!;
+        const conn = connByPlayerId[slot.playerId!];
+        server.onMessage(
+          JSON.stringify({
+            type: "SUBMIT_PROMPT",
+            storyIndex: story.index,
+            promptIndex: update.room.currentRound,
+            response: `answer for ${slot.playerId}`,
+          }),
+          conn as any
+        );
+        expected--;
+        // After all 4 submit, the round auto-advances, so pendingConnected
+        // will reset to 4 for the new round. Check the intermediate state.
+        const latest = getLatestStateUpdate(host) as Extract<
+          ServerMessage,
+          { type: "STATE_UPDATE" }
+        >;
+        if (expected > 0) {
+          expect(latest.pendingConnected).toBe(expected);
+          expect(latest.pendingDisconnected).toBe(0);
+        } else {
+          // Round auto-advanced to round 1; pending is reset to 4
+          expect(latest.room.currentRound).toBe(1);
+          expect(latest.pendingConnected).toBe(4);
+          expect(latest.pendingDisconnected).toBe(0);
+        }
+      }
+    });
+
+    it("counts disconnected players as pendingDisconnected", async () => {
+      const { server, connections } = makeServer();
+      const host = join(server, connections, "c1", "Alice");
+      const c2 = join(server, connections, "c2", "Bob");
+      const c3 = join(server, connections, "c3", "Carol");
+      const c4 = join(server, connections, "c4", "Dave");
+      startGameViaServer(server, host);
+
+      let update = getLatestStateUpdate(host) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      const players = update.room.players;
+      const byName: Record<string, string> = {};
+      for (const p of players) byName[p.name] = p.id;
+
+      // Map assigned player -> connection
+      const connByPlayerId: Record<string, MockConnection> = {
+        [byName["Alice"]]: host,
+        [byName["Bob"]]: c2,
+        [byName["Carol"]]: c3,
+        [byName["Dave"]]: c4,
+      };
+
+      // 2 players submit (Alice, Bob). Carol stays unsubmitted but connected.
+      // Dave disconnects and stays unsubmitted.
+      const stories = update.room.stories;
+
+      // Find slot for Alice in round 0
+      const aliceStory = stories.find((s) =>
+        s.slots.some(
+          (sl) => sl.promptIndex === 0 && sl.playerId === byName["Alice"]
+        )
+      )!;
+      server.onMessage(
+        JSON.stringify({
+          type: "SUBMIT_PROMPT",
+          storyIndex: aliceStory.index,
+          promptIndex: 0,
+          response: "alice",
+        }),
+        host as any
+      );
+
+      const bobStory = stories.find((s) =>
+        s.slots.some(
+          (sl) => sl.promptIndex === 0 && sl.playerId === byName["Bob"]
+        )
+      )!;
+      server.onMessage(
+        JSON.stringify({
+          type: "SUBMIT_PROMPT",
+          storyIndex: bobStory.index,
+          promptIndex: 0,
+          response: "bob",
+        }),
+        c2 as any
+      );
+
+      // Dave disconnects — mark his connection closed via onClose and flip
+      // isConnected in the game state by using the internal disconnect path.
+      // We have to manually mark via onClose and then force the timeout to
+      // fire by directly calling handlePlayerDisconnected. But that's a
+      // private method. Instead, simulate the "player is disconnected"
+      // aspect by calling onClose and then setting vi timers.
+      server.onClose(c4 as any);
+      connections.delete("c4");
+
+      // Directly flip isConnected in gameState as handlePlayerDisconnected
+      // would do after the timeout. We want to inspect what the server
+      // would report if the player were already in disconnected state.
+      (server as any).gameState = {
+        ...(server as any).gameState,
+        players: (server as any).gameState.players.map((p: Player) =>
+          p.id === byName["Dave"] ? { ...p, isConnected: false } : p
+        ),
+      };
+
+      // Trigger a broadcast by having Carol send a typing status (doesn't
+      // change game state, but also doesn't force a broadcastStateUpdate).
+      // Use host->host status instead to force a state broadcast. We can
+      // directly call broadcastStateUpdate via a no-op action such as
+      // reconnecting (just ensure a state broadcast happens). Simplest:
+      // call the private method directly.
+      (server as any).broadcastStateUpdate();
+
+      const latest = getLatestStateUpdate(host) as Extract<
+        ServerMessage,
+        { type: "STATE_UPDATE" }
+      >;
+      expect(latest.pendingConnected).toBe(1); // Carol
+      expect(latest.pendingDisconnected).toBe(1); // Dave
     });
   });
 });

@@ -3,7 +3,7 @@ import { GameClient } from "@/lib/multiplayer/gameClient";
 
 // Mock PartySocket
 class MockPartySocket {
-  readyState = WebSocket.OPEN;
+  readyState: number = WebSocket.OPEN;
   private listeners: Map<string, Set<(event: any) => void>> = new Map();
   public sentMessages: string[] = [];
   public closeCallCount = 0;
@@ -84,6 +84,11 @@ describe("GameClient", () => {
         type: "STATE_UPDATE",
         room: { code: "ABCD", state: "LOBBY", players: [], stories: [], currentRound: 0, hostId: "p1", createdAt: 0, updatedAt: 0 },
         playerId: "p1",
+        roundStartedAt: null,
+        roundDurationMs: 90000,
+        pendingConnected: 0,
+        pendingDisconnected: 0,
+        protocolVersion: 2,
       });
 
       const id = await connectPromise;
@@ -106,6 +111,11 @@ describe("GameClient", () => {
         type: "STATE_UPDATE",
         room: { code: "ABCD", state: "LOBBY", players: [], stories: [], currentRound: 0, hostId: "existing-id", createdAt: 0, updatedAt: 0 },
         playerId: "existing-id",
+        roundStartedAt: null,
+        roundDurationMs: 90000,
+        pendingConnected: 0,
+        pendingDisconnected: 0,
+        protocolVersion: 2,
       });
 
       const id = await connectPromise;
@@ -136,6 +146,11 @@ describe("GameClient", () => {
         type: "STATE_UPDATE",
         room: { code: "ABCD", state: "LOBBY", players: [], stories: [], currentRound: 0, hostId: "p1", createdAt: 0, updatedAt: 0 },
         playerId: "p1",
+        roundStartedAt: null,
+        roundDurationMs: 90000,
+        pendingConnected: 0,
+        pendingDisconnected: 0,
+        protocolVersion: 2,
       });
       await connectPromise;
 
@@ -155,6 +170,11 @@ describe("GameClient", () => {
         type: "STATE_UPDATE",
         room: { code: "ABCD", state: "LOBBY", players: [], stories: [], currentRound: 0, hostId: "p1", createdAt: 0, updatedAt: 0 },
         playerId: "p1",
+        roundStartedAt: null,
+        roundDurationMs: 90000,
+        pendingConnected: 0,
+        pendingDisconnected: 0,
+        protocolVersion: 2,
       });
       await connectPromise;
       socket.sentMessages.length = 0; // clear join message
@@ -221,6 +241,11 @@ describe("GameClient", () => {
         type: "STATE_UPDATE",
         room: { code: "ABCD", state: "LOBBY", players: [], stories: [], currentRound: 0, hostId: "p1", createdAt: 0, updatedAt: 0 },
         playerId: "p1",
+        roundStartedAt: null,
+        roundDurationMs: 90000,
+        pendingConnected: 0,
+        pendingDisconnected: 0,
+        protocolVersion: 2,
       });
       await connectPromise;
       return socket;
@@ -232,7 +257,16 @@ describe("GameClient", () => {
       client.onStateUpdate(cb);
 
       const room = { code: "ABCD", state: "PLAYING", players: [], stories: [], currentRound: 0, hostId: "p1", createdAt: 0, updatedAt: 0 };
-      socket.simulateMessage({ type: "STATE_UPDATE", room, playerId: "p1" });
+      socket.simulateMessage({
+        type: "STATE_UPDATE",
+        room,
+        playerId: "p1",
+        roundStartedAt: null,
+        roundDurationMs: 90000,
+        pendingConnected: 0,
+        pendingDisconnected: 0,
+        protocolVersion: 2,
+      });
 
       expect(cb).toHaveBeenCalledWith(room);
     });
@@ -290,7 +324,16 @@ describe("GameClient", () => {
       unsub();
 
       const room = { code: "ABCD", state: "PLAYING", players: [], stories: [], currentRound: 0, hostId: "p1", createdAt: 0, updatedAt: 0 };
-      socket.simulateMessage({ type: "STATE_UPDATE", room, playerId: "p1" });
+      socket.simulateMessage({
+        type: "STATE_UPDATE",
+        room,
+        playerId: "p1",
+        roundStartedAt: null,
+        roundDurationMs: 90000,
+        pendingConnected: 0,
+        pendingDisconnected: 0,
+        protocolVersion: 2,
+      });
 
       // After unsub, no new calls should have been made
       expect(cb.mock.calls.length).toBe(callCountAfterSubscribe);

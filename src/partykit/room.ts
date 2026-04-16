@@ -5,8 +5,26 @@ import type {
   ServerMessage,
   PlayerStatus,
 } from "@/lib/multiplayer/types";
+import { PROTOCOL_VERSION } from "@/lib/multiplayer/types";
 import { gameReducer, createRoom, assembleStories } from "@/lib/game";
 import { serializeRoomForArchive } from "@/lib/archive/serialize";
+
+/**
+ * STATE_UPDATE message shape (protocol v2):
+ *   type: "STATE_UPDATE"
+ *   room:                the full Room snapshot
+ *   playerId:            the id of the recipient (per-connection)
+ *   roundStartedAt:      epoch ms when current PLAYING round started, or null
+ *   roundDurationMs:     total duration of each round in ms (default 90000)
+ *   pendingConnected:    count of current-round slots that are unsubmitted
+ *                        and whose assigned player is currently connected
+ *   pendingDisconnected: count of current-round slots that are unsubmitted
+ *                        and whose assigned player is currently offline
+ *   protocolVersion:     the server's wire-protocol version (2). If the
+ *                        client's JOIN_ROOM protocolVersion differs, the
+ *                        server responds with ERROR reason="PROTOCOL_MISMATCH"
+ *                        and closes the connection.
+ */
 
 const ROUND_TIMER_MS = 90_000;
 const RECONNECT_TIMEOUT_MS = 120_000; // 2 minutes
@@ -133,12 +151,22 @@ export default class RoomServer implements Party.Server {
   ) {
     const now = Date.now();
 
-    // Reconnection case
-    if (msg.playerId && this.gameState) {
-      const existingPlayer = this.gameState.players.find(
+    // Protocol version check first
+    if (msg.protocolVersion !== PROTOCOL_VERSION) {
+      this.sendTo(sender, {
+        type: "ERROR",
+        reason: "PROTOCOL_MISMATCH",
+      });
+      sender.close();
+      return;
+    }
+
+    // Reconnection case: client supplied a playerId
+    if (msg.playerId) {
+      const existingPlayer = this.gameState?.players.find(
         (p) => p.id === msg.playerId
       );
-      if (existingPlayer) {
+      if (existingPlayer && this.gameState) {
         // Restore connection
         this.connectionToPlayer.set(sender.id, existingPlayer.id);
         this.playerToConnection.set(existingPlayer.id, sender.id);
@@ -167,8 +195,12 @@ export default class RoomServer implements Party.Server {
           ),
         };
 
-        // Restore status
-        this.playerStatuses.set(existingPlayer.id, "idle");
+        // Restore status — if they already submitted the current round,
+        // keep them as "submitted". Otherwise, idle.
+        const currentStatus = this.playerStatuses.get(existingPlayer.id);
+        if (currentStatus !== "submitted") {
+          this.playerStatuses.set(existingPlayer.id, "idle");
+        }
 
         // Cancel room destroy timer if we have players again
         if (this.roomDestroyTimer) {
@@ -180,10 +212,32 @@ export default class RoomServer implements Party.Server {
         this.broadcastPlayerStatuses();
         return;
       }
+
+      // playerId provided but not found
+      this.sendTo(sender, {
+        type: "ERROR",
+        reason: "UNKNOWN_PLAYER",
+      });
+      sender.close();
+      return;
     }
 
-    // New player
-    const playerId = msg.playerId || crypto.randomUUID();
+    // New player joining (no playerId)
+    // Reject if game is already in progress
+    if (
+      this.gameState &&
+      this.gameState.state !== "LOBBY" &&
+      this.gameState.state !== "CREATED"
+    ) {
+      this.sendTo(sender, {
+        type: "ERROR",
+        reason: "GAME_IN_PROGRESS",
+      });
+      sender.close();
+      return;
+    }
+
+    const playerId = crypto.randomUUID();
 
     if (!this.gameState) {
       // First player creates the room
@@ -201,15 +255,16 @@ export default class RoomServer implements Party.Server {
       const action: GameAction = { type: "PLAYER_JOINED", player };
       const newState = gameReducer(this.gameState, action);
 
-      // Check if player was actually added (reducer might reject)
+      // Check if player was actually added (reducer might reject, e.g. full room)
       if (newState === this.gameState) {
         this.sendTo(sender, {
           type: "ERROR",
           reason:
             this.gameState.state !== "LOBBY"
-              ? "Game already in progress"
+              ? "GAME_IN_PROGRESS"
               : "Room is full",
         });
+        sender.close();
         return;
       }
 
@@ -694,8 +749,35 @@ export default class RoomServer implements Party.Server {
     });
   }
 
+  private computePendingCounts(): {
+    pendingConnected: number;
+    pendingDisconnected: number;
+  } {
+    let pendingConnected = 0;
+    let pendingDisconnected = 0;
+    if (!this.gameState) return { pendingConnected, pendingDisconnected };
+    if (this.gameState.state !== "PLAYING") {
+      return { pendingConnected, pendingDisconnected };
+    }
+    const currentRound = this.gameState.currentRound;
+    for (const story of this.gameState.stories) {
+      const slot = story.slots.find((s) => s.promptIndex === currentRound);
+      if (slot && slot.response === null && slot.playerId) {
+        const player = this.gameState.players.find(
+          (p) => p.id === slot.playerId
+        );
+        if (player?.isConnected) pendingConnected++;
+        else pendingDisconnected++;
+      }
+    }
+    return { pendingConnected, pendingDisconnected };
+  }
+
   private broadcastStateUpdate() {
     if (!this.gameState) return;
+
+    const { pendingConnected, pendingDisconnected } =
+      this.computePendingCounts();
 
     for (const conn of this.room.getConnections()) {
       const playerId = this.connectionToPlayer.get(conn.id);
@@ -705,6 +787,10 @@ export default class RoomServer implements Party.Server {
           room: this.gameState,
           playerId,
           roundStartedAt: this.roundStartedAt,
+          roundDurationMs: ROUND_TIMER_MS,
+          pendingConnected,
+          pendingDisconnected,
+          protocolVersion: PROTOCOL_VERSION,
         });
       }
     }

@@ -1,5 +1,7 @@
 import type { Room, AssembledStory } from "@/lib/game/types";
 
+export const PROTOCOL_VERSION = 2;
+
 export type PlayerStatus =
   | "idle"
   | "writing"
@@ -7,8 +9,19 @@ export type PlayerStatus =
   | "reconnecting"
   | "disconnected";
 
+export type ConnectionErrorReason =
+  | "GAME_IN_PROGRESS"
+  | "UNKNOWN_PLAYER"
+  | "PROTOCOL_MISMATCH"
+  | "CONNECT_TIMEOUT";
+
 export type ClientMessage =
-  | { type: "JOIN_ROOM"; playerName: string; playerId?: string }
+  | {
+      type: "JOIN_ROOM";
+      playerName: string;
+      playerId?: string;
+      protocolVersion: number;
+    }
   | { type: "START_GAME" }
   | {
       type: "SUBMIT_PROMPT";
@@ -24,7 +37,16 @@ export type ClientMessage =
   | { type: "TYPING_STATUS"; status: "writing" | "idle" };
 
 export type ServerMessage =
-  | { type: "STATE_UPDATE"; room: Room; playerId: string; roundStartedAt: number | null }
+  | {
+      type: "STATE_UPDATE";
+      room: Room;
+      playerId: string;
+      roundStartedAt: number | null;
+      roundDurationMs: number;
+      pendingConnected: number;
+      pendingDisconnected: number;
+      protocolVersion: number;
+    }
   | { type: "PLAYER_STATUS_CHANGED"; statuses: Record<string, PlayerStatus> }
   | { type: "ADVANCE_AVAILABLE"; unsubmittedCount: number }
   | { type: "ERROR"; reason: string }
