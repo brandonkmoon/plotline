@@ -13,7 +13,7 @@
   --banner: #fceb00;
 
   /* All font CSS variables are injected by next/font on <html>
-     (--font-playbill, --font-playfair, --font-lora, --font-inter). */
+     (--font-playfair, --font-lora, --font-inter). Logo is a PNG. */
 }
 
 *,

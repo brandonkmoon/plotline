@@ -19,8 +19,6 @@ const config: Config = {
         banner: "#fceb00",
       },
       fontFamily: {
-        // `display` = Playbill, logo only (loaded via <link> for this font).
-        display: ["var(--font-playbill)", "serif"],
         // `serif` = Playfair Display — headings, section labels, buttons.
         serif: ["var(--font-playfair)", "serif"],
         // `body` = Lora — literary content, story prose, prompts.

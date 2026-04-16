@@ -1,17 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Lora, Inter } from "next/font/google";
-import localFont from "next/font/local";
 import { PlausibleAnalytics } from "@/components/PlausibleAnalytics";
 import PlaybillBanner from "@/components/PlaybillBanner";
 import "./globals.css";
-
-// Display font for the banner logo. Self-hosted from public/fonts/
-// via next/font/local, exposed app-wide as --font-playbill.
-const latinBold = localFont({
-  src: "../../public/fonts/Latin CG Bold Regular.otf",
-  variable: "--font-playbill",
-  display: "swap",
-});
 
 const playfair = Playfair_Display({
   weight: ["500", "700", "900"],
@@ -75,7 +66,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${latinBold.variable} ${playfair.variable} ${lora.variable} ${inter.variable}`}
+      className={`${playfair.variable} ${lora.variable} ${inter.variable}`}
     >
       <body className="antialiased">
         <PlaybillBanner />
