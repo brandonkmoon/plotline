@@ -197,8 +197,12 @@ export default class RoomServer implements Party.Server {
       return;
     }
 
-    // Mark player as reconnecting
-    this.playerStatuses.set(playerId, "reconnecting");
+    // Mark player as reconnecting — but preserve "submitted" status so
+    // they don't see the prompt screen again if they already submitted.
+    const currentStatus = this.playerStatuses.get(playerId);
+    if (currentStatus !== "submitted") {
+      this.playerStatuses.set(playerId, "reconnecting");
+    }
     this.broadcastPlayerStatuses();
 
     // Set reconnect timeout
@@ -357,6 +361,66 @@ export default class RoomServer implements Party.Server {
       });
       sender.close();
       return;
+    }
+
+    // ── Name-based reconnection ──
+    // No playerId was supplied, but if there's a disconnected player with
+    // the exact same name, treat this as a reconnect. This covers the
+    // common case where a player closes their tab, re-enters via /join
+    // with the same name, and the client-side identity was cleared.
+    if (this.gameState && msg.playerName) {
+      const disconnectedMatch = this.gameState.players.find(
+        (p) => !p.isConnected && p.name === msg.playerName
+      );
+      if (disconnectedMatch) {
+        // Re-use the existing player slot (same logic as id-based reconnect)
+        this.connectionToPlayer.set(sender.id, disconnectedMatch.id);
+        this.playerToConnection.set(disconnectedMatch.id, sender.id);
+
+        // Clear disconnect timer
+        const timer = this.disconnectTimers.get(disconnectedMatch.id);
+        if (timer) {
+          clearTimeout(timer);
+          this.disconnectTimers.delete(disconnectedMatch.id);
+        }
+
+        // Cancel host transfer if reconnecting host
+        if (
+          this.gameState.hostId === disconnectedMatch.id &&
+          this.hostTransferTimer
+        ) {
+          clearTimeout(this.hostTransferTimer);
+          this.hostTransferTimer = null;
+        }
+
+        // Mark player as connected
+        this.gameState = {
+          ...this.gameState,
+          players: this.gameState.players.map((p) =>
+            p.id === disconnectedMatch.id ? { ...p, isConnected: true } : p
+          ),
+        };
+
+        // Restore status
+        const currentStatus = this.playerStatuses.get(disconnectedMatch.id);
+        if (currentStatus !== "submitted") {
+          this.playerStatuses.set(disconnectedMatch.id, "idle");
+        }
+
+        // Cancel room destroy timer
+        if (this.roomDestroyTimer) {
+          clearTimeout(this.roomDestroyTimer);
+          this.roomDestroyTimer = null;
+        }
+
+        console.log(
+          `[room] name-based reconnect: "${msg.playerName}" → ${disconnectedMatch.id}`
+        );
+
+        this.broadcastStateUpdate();
+        this.broadcastPlayerStatuses();
+        return;
+      }
     }
 
     // New player joining (no playerId)
