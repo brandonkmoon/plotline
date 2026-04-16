@@ -6,12 +6,20 @@ import type {
   PlayerStatus,
 } from "@/lib/multiplayer/types";
 
+export interface RevealState {
+  storyIndex: number;
+  revealedCount: number;
+  readerId: string;
+  readerName: string;
+}
+
 type StateCallback = (room: Room) => void;
 type StatusCallback = (statuses: Record<string, PlayerStatus>) => void;
 type ErrorCallback = (reason: string) => void;
 type AdvanceCallback = (count: number) => void;
 type StoriesCallback = (stories: AssembledStory[]) => void;
 type ArchiveReadyCallback = (archiveUrl: string) => void;
+type RevealStateCallback = (state: RevealState) => void;
 
 class GameClient {
   private socket: PartySocket | null = null;
@@ -22,6 +30,7 @@ class GameClient {
   private advanceListeners: Set<AdvanceCallback> = new Set();
   private storiesListeners: Set<StoriesCallback> = new Set();
   private archiveReadyListeners: Set<ArchiveReadyCallback> = new Set();
+  private revealStateListeners: Set<RevealStateCallback> = new Set();
   private messageLogListeners: Set<
     (entry: { direction: "in" | "out"; data: string; timestamp: number }) => void
   > = new Set();
@@ -30,6 +39,8 @@ class GameClient {
   private latestRoom: Room | null = null;
   private latestStatuses: Record<string, PlayerStatus> | null = null;
   private latestStories: AssembledStory[] | null = null;
+  private latestRoundStartedAt: number | null = null;
+  private latestRevealState: RevealState | null = null;
 
   async connect(
     roomCode: string,
@@ -73,6 +84,7 @@ class GameClient {
           case "STATE_UPDATE":
             this.playerId = msg.playerId;
             this.latestRoom = msg.room;
+            this.latestRoundStartedAt = msg.roundStartedAt;
             for (const cb of this.stateListeners) cb(msg.room);
             if (!resolved) {
               resolved = true;
@@ -105,6 +117,16 @@ class GameClient {
           case "ARCHIVE_READY":
             for (const cb of this.archiveReadyListeners) cb(msg.archiveUrl);
             break;
+
+          case "REVEAL_STATE":
+            this.latestRevealState = {
+              storyIndex: msg.storyIndex,
+              revealedCount: msg.revealedCount,
+              readerId: msg.readerId,
+              readerName: msg.readerName,
+            };
+            for (const cb of this.revealStateListeners) cb(this.latestRevealState);
+            break;
         }
       });
 
@@ -126,6 +148,8 @@ class GameClient {
     this.latestRoom = null;
     this.latestStatuses = null;
     this.latestStories = null;
+    this.latestRoundStartedAt = null;
+    this.latestRevealState = null;
   }
 
   // --- Actions ---
@@ -152,6 +176,14 @@ class GameClient {
   }
 
   advanceReveal(): void {
+    this.send({ type: "ADVANCE_REVEAL" });
+  }
+
+  revealAdvance(): void {
+    this.send({ type: "REVEAL_ADVANCE" });
+  }
+
+  nextStory(): void {
     this.send({ type: "ADVANCE_REVEAL" });
   }
 
@@ -203,6 +235,12 @@ class GameClient {
     return () => this.archiveReadyListeners.delete(callback);
   }
 
+  onRevealState(callback: RevealStateCallback): () => void {
+    this.revealStateListeners.add(callback);
+    if (this.latestRevealState) callback(this.latestRevealState);
+    return () => this.revealStateListeners.delete(callback);
+  }
+
   onMessageLog(
     callback: (entry: {
       direction: "in" | "out";
@@ -222,6 +260,10 @@ class GameClient {
 
   isConnected(): boolean {
     return this.socket !== null && this.socket.readyState === WebSocket.OPEN;
+  }
+
+  getRoundStartedAt(): number | null {
+    return this.latestRoundStartedAt;
   }
 
   // --- Private ---

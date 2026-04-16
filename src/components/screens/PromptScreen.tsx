@@ -5,13 +5,14 @@ import { useRoom } from "@/lib/client/RoomContext";
 import { PROMPTS } from "@/lib/game/prompts";
 import BlackletterHeading from "@/components/BlackletterHeading";
 import Button from "@/components/Button";
+import CountdownTimer from "@/components/CountdownTimer";
 import SubmissionStatus from "@/components/SubmissionStatus";
 
 const MAX_CHARS = 120;
 const TOTAL_ROUNDS = 7;
 
 export default function PromptScreen() {
-  const { room, currentPlayer, submitPrompt, sendTypingStatus } = useRoom();
+  const { room, currentPlayer, submitPrompt, sendTypingStatus, roundStartedAt } = useRoom();
   const [response, setResponse] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -61,6 +62,9 @@ export default function PromptScreen() {
         className="flex flex-col items-center w-full"
         style={{ maxWidth: 420 }}
       >
+        {/* Countdown timer */}
+        <CountdownTimer roundStartedAt={roundStartedAt} />
+
         {/* Progress pips */}
         <div className="flex gap-2 mb-6">
           {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (

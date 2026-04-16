@@ -33,6 +33,11 @@ export default class RoomServer implements Party.Server {
   hostTransferTimer: ReturnType<typeof setTimeout> | null = null;
   roomDestroyTimer: ReturnType<typeof setTimeout> | null = null;
   roundStartTime: number | null = null;
+  roundStartedAt: number | null = null;
+
+  // Reveal state tracking
+  revealStoryIndex: number = 0;
+  revealedLineCount: number = 0;
 
   constructor(room: Party.Room) {
     this.room = room;
@@ -70,6 +75,9 @@ export default class RoomServer implements Party.Server {
         break;
       case "ADVANCE_REVEAL":
         this.handleAdvanceReveal(sender);
+        break;
+      case "REVEAL_ADVANCE":
+        this.handleRevealAdvance(sender);
         break;
       case "END_GAME":
         this.handleEndGame(sender);
@@ -302,8 +310,10 @@ export default class RoomServer implements Party.Server {
     // Check if game moved to REVEAL
     if (newState.state === "REVEAL") {
       this.clearRoundTimer();
+      this.initRevealState();
       const stories = assembleStories(newState);
       this.broadcast({ type: "ASSEMBLED_STORIES", stories });
+      this.broadcastRevealState();
     } else if (newState.currentRound > prevRound && newState.state === "PLAYING") {
       // Round auto-advanced, restart timer and reset statuses
       this.resetPlayerStatusesForNewRound();
@@ -338,8 +348,10 @@ export default class RoomServer implements Party.Server {
 
     if (newState.state === "REVEAL") {
       this.clearRoundTimer();
+      this.initRevealState();
       const stories = assembleStories(newState);
       this.broadcast({ type: "ASSEMBLED_STORIES", stories });
+      this.broadcastRevealState();
     } else if (newState.currentRound > prevState.currentRound) {
       this.resetPlayerStatusesForNewRound();
       this.startRoundTimer();
@@ -365,12 +377,73 @@ export default class RoomServer implements Party.Server {
     };
     this.gameState = gameReducer(this.gameState, action);
 
+    // If there are more stories, advance to next and reset reveal state
+    const nextUnrevealed = this.gameState.stories.find((s) => !s.isRevealed);
+    if (nextUnrevealed) {
+      this.revealStoryIndex = nextUnrevealed.index;
+      this.revealedLineCount = 0;
+      this.broadcastRevealState();
+    }
+
     this.broadcastStateUpdate();
 
     // Archive when game transitions to END (all stories revealed)
     if (this.gameState.state === "END") {
       this.archiveRoom();
     }
+  }
+
+  private handleRevealAdvance(sender: Party.Connection) {
+    if (!this.gameState) return;
+    if (this.gameState.state !== "REVEAL") return;
+
+    const playerId = this.connectionToPlayer.get(sender.id);
+    if (!playerId) return;
+
+    // Verify the sender is the designated reader for the current story
+    const currentStory = this.gameState.stories[this.revealStoryIndex];
+    if (!currentStory) return;
+
+    const readerSlot = currentStory.slots.find(s => s.promptIndex === 6);
+    const readerId = readerSlot?.playerId;
+
+    if (playerId !== readerId) {
+      this.sendTo(sender, {
+        type: "ERROR",
+        reason: "Only the reader can advance the reveal",
+      });
+      return;
+    }
+
+    this.revealedLineCount++;
+
+    if (this.revealedLineCount >= 7) {
+      // Mark current story as revealed
+      const now = Date.now();
+      const action: GameAction = {
+        type: "STORY_REVEALED",
+        storyIndex: this.revealStoryIndex,
+        timestamp: now,
+      };
+      this.gameState = gameReducer(this.gameState, action);
+
+      // Check if all stories revealed
+      const nextUnrevealed = this.gameState.stories.find((s) => !s.isRevealed);
+      if (!nextUnrevealed) {
+        // All done - transition to END
+        this.broadcastRevealState();
+        this.broadcastStateUpdate();
+        this.archiveRoom();
+        return;
+      } else {
+        // Move to next story
+        this.revealStoryIndex = nextUnrevealed.index;
+        this.revealedLineCount = 0;
+      }
+    }
+
+    this.broadcastRevealState();
+    this.broadcastStateUpdate();
   }
 
   private handleEndGame(sender: Party.Connection) {
@@ -456,6 +529,7 @@ export default class RoomServer implements Party.Server {
   private startRoundTimer() {
     this.clearRoundTimer();
     this.roundStartTime = Date.now();
+    this.roundStartedAt = Date.now();
 
     this.roundTimer = setTimeout(() => {
       if (!this.gameState || this.gameState.state !== "PLAYING") return;
@@ -479,6 +553,7 @@ export default class RoomServer implements Party.Server {
       this.roundTimer = null;
     }
     this.roundStartTime = null;
+    this.roundStartedAt = null;
   }
 
   private resetPlayerStatusesForNewRound() {
@@ -595,6 +670,30 @@ export default class RoomServer implements Party.Server {
     }
   }
 
+  private initRevealState() {
+    this.revealStoryIndex = 0;
+    this.revealedLineCount = 0;
+  }
+
+  private broadcastRevealState() {
+    if (!this.gameState) return;
+    const currentStory = this.gameState.stories[this.revealStoryIndex];
+    if (!currentStory) return;
+
+    const readerSlot = currentStory.slots.find(s => s.promptIndex === 6);
+    const readerId = readerSlot?.playerId ?? "";
+    const readerPlayer = readerId ? this.gameState.players.find(p => p.id === readerId) : null;
+    const readerName = readerPlayer?.name ?? "someone";
+
+    this.broadcast({
+      type: "REVEAL_STATE",
+      storyIndex: this.revealStoryIndex,
+      revealedCount: this.revealedLineCount,
+      readerId,
+      readerName,
+    });
+  }
+
   private broadcastStateUpdate() {
     if (!this.gameState) return;
 
@@ -605,6 +704,7 @@ export default class RoomServer implements Party.Server {
           type: "STATE_UPDATE",
           room: this.gameState,
           playerId,
+          roundStartedAt: this.roundStartedAt,
         });
       }
     }

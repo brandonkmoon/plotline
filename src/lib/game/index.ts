@@ -3,6 +3,7 @@ export { generateAssignments } from "./rotation";
 export { generateRoomCode, generateUniqueRoomCode, VALID_CHARS } from "./roomCode";
 export { PROMPTS, PLACEHOLDERS, getRandomPlaceholder } from "./prompts";
 export { assembleStories } from "./storyAssembly";
+export { normalizeLocation, normalizeAction, normalizeDialogue, normalizeEnding } from "./normalize";
 export type {
   Room,
   RoomState,
@@ -12,4 +13,5 @@ export type {
   Prompt,
   GameAction,
   AssembledStory,
+  NarrativeSection,
 } from "./types";

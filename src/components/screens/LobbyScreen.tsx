@@ -8,7 +8,7 @@ import PlayerTag from "@/components/PlayerTag";
 import Button from "@/components/Button";
 
 export default function LobbyScreen() {
-  const { room, isHost, startGame } = useRoom();
+  const { room, isHost, startGame, playerStatuses } = useRoom();
 
   if (!room) return null;
 
@@ -48,13 +48,18 @@ export default function LobbyScreen() {
           className="flex flex-wrap justify-center gap-3 mt-6 anim-fade-in"
           style={{ opacity: 0, animationDelay: "0.4s", animationFillMode: "forwards" }}
         >
-          {connectedPlayers.map((player) => (
-            <PlayerTag
-              key={player.id}
-              name={player.name}
-              isHost={player.isHost}
-            />
-          ))}
+          {room.players.map((player) => {
+            const status = playerStatuses[player.id];
+            return (
+              <PlayerTag
+                key={player.id}
+                name={player.name}
+                isHost={player.isHost}
+                isReconnecting={status === "reconnecting"}
+                isDisconnected={status === "disconnected"}
+              />
+            );
+          })}
         </div>
 
         {/* Host controls / waiting message */}

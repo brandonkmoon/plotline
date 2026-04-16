@@ -2,12 +2,16 @@ interface PlayerTagProps {
   name: string;
   isHost?: boolean;
   status?: "submitted" | "pending";
+  isReconnecting?: boolean;
+  isDisconnected?: boolean;
 }
 
 export default function PlayerTag({
   name,
   isHost = false,
   status,
+  isReconnecting = false,
+  isDisconnected = false,
 }: PlayerTagProps) {
   return (
     <div
@@ -19,6 +23,8 @@ export default function PlayerTag({
             ? "border-gold-dark text-gold-light"
             : "border-border text-text-dim"
         }
+        ${isReconnecting ? "opacity-50" : ""}
+        ${isDisconnected ? "opacity-30" : ""}
       `}
       style={{
         borderRadius: 0,
@@ -27,7 +33,10 @@ export default function PlayerTag({
           : "none",
       }}
     >
-      <span>{name}</span>
+      <span className={isDisconnected ? "line-through" : ""}>{name}</span>
+      {isReconnecting && (
+        <span className="italic text-text-muted text-[11px]">(reconnecting)</span>
+      )}
       {status === "submitted" && (
         <span className="text-gold text-xs">&#10003;</span>
       )}

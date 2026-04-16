@@ -183,6 +183,20 @@ body::after {
   animation: monsterFloat 3.5s ease-in-out infinite;
 }
 
+/* Connection pulse animation */
+@keyframes connectionPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.connection-pulse {
+  animation: connectionPulse 1.5s ease-in-out infinite;
+}
+
 /* scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;

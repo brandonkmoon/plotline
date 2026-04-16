@@ -1,13 +1,23 @@
 import { describe, it, expect } from "vitest";
 import { assembleStories } from "../storyAssembly";
 import { PROMPTS, PLACEHOLDERS } from "../prompts";
-import type { Room, Story, PromptSlot } from "../types";
+import type { Room, Story, PromptSlot, Player } from "../types";
 
-function makeRoom(stories: Story[]): Room {
+function makePlayers(): Player[] {
+  return Array.from({ length: 7 }, (_, i) => ({
+    id: `player-${i}`,
+    name: `Player ${i}`,
+    isHost: i === 0,
+    isConnected: true,
+    joinedAt: 1000 + i,
+  }));
+}
+
+function makeRoom(stories: Story[], players?: Player[]): Room {
   return {
     code: "TEST",
     state: "REVEAL",
-    players: [],
+    players: players ?? makePlayers(),
     stories,
     currentRound: 7,
     hostId: "host",
@@ -20,19 +30,20 @@ function makeSlot(
   storyIndex: number,
   promptIndex: number,
   response: string | null,
+  playerId: string = "player-1",
   isPlaceholder = false
 ): PromptSlot {
   return {
     storyIndex,
     promptIndex,
-    playerId: "player-1",
+    playerId,
     response,
     isPlaceholder,
   };
 }
 
 describe("assembleStories", () => {
-  it("assembles a fully complete story", () => {
+  it("assembles a fully complete story with sections and backward-compat fields", () => {
     const responses = [
       "Bob the brave",
       "Alice the clever",
@@ -45,7 +56,7 @@ describe("assembleStories", () => {
 
     const story: Story = {
       index: 0,
-      slots: responses.map((r, i) => makeSlot(0, i, r)),
+      slots: responses.map((r, i) => makeSlot(0, i, r, `player-${i}`)),
       isRevealed: true,
     };
 
@@ -53,9 +64,26 @@ describe("assembleStories", () => {
     const assembled = assembleStories(room);
 
     expect(assembled).toHaveLength(1);
+    // Backward compat: responses and prompts still present
     expect(assembled[0].responses).toEqual(responses);
     expect(assembled[0].prompts).toHaveLength(7);
     expect(assembled[0].storyIndex).toBe(0);
+
+    // New: sections present
+    expect(assembled[0].sections).toHaveLength(7);
+    expect(assembled[0].sections[0].style).toBe("name");
+    expect(assembled[0].sections[0].text).toBe("Bob the brave");
+    expect(assembled[0].sections[1].style).toBe("name");
+    expect(assembled[0].sections[2].style).toBe("location");
+    expect(assembled[0].sections[3].style).toBe("action");
+    expect(assembled[0].sections[4].style).toBe("dialogue");
+    expect(assembled[0].sections[4].speakerName).toBe("Bob the brave");
+    expect(assembled[0].sections[5].style).toBe("dialogue");
+    expect(assembled[0].sections[5].speakerName).toBe("Alice the clever");
+    expect(assembled[0].sections[6].style).toBe("ending");
+
+    // readerName should be the player who wrote prompt 6
+    expect(assembled[0].readerName).toBe("Player 6");
   });
 
   it("substitutes placeholders for missing responses", () => {
@@ -124,5 +152,47 @@ describe("assembleStories", () => {
     const assembled = assembleStories(room);
 
     expect(assembled[0].prompts).toEqual(PROMPTS.map((p) => p.text));
+  });
+
+  it("applies narrative template correctly in sections", () => {
+    const story: Story = {
+      index: 0,
+      slots: [
+        makeSlot(0, 0, "Bob"),
+        makeSlot(0, 1, "Alice"),
+        makeSlot(0, 2, "the park"),
+        makeSlot(0, 3, "Dancing"),
+        makeSlot(0, 4, "hello"),
+        makeSlot(0, 5, "goodbye"),
+        makeSlot(0, 6, "They ran away"),
+      ],
+      isRevealed: true,
+    };
+
+    const room = makeRoom([story]);
+    const assembled = assembleStories(room);
+    const sections = assembled[0].sections;
+
+    expect(sections[0].text).toBe("Bob");
+    expect(sections[1].text).toBe("and Alice");
+    expect(sections[2].text).toBe("are in the park,");
+    expect(sections[3].text).toBe("dancing.");
+    expect(sections[4].text).toBe('Bob says, "hello."');
+    expect(sections[5].text).toBe('Alice says, "goodbye."');
+    expect(sections[6].text).toBe("Then, they ran away.");
+  });
+
+  it("returns 'someone' as readerName when no player found", () => {
+    const story: Story = {
+      index: 0,
+      slots: Array.from({ length: 7 }, (_, i) =>
+        makeSlot(0, i, `resp-${i}`, "unknown-player")
+      ),
+      isRevealed: true,
+    };
+
+    const room = makeRoom([story], []);
+    const assembled = assembleStories(room);
+    expect(assembled[0].readerName).toBe("someone");
   });
 });

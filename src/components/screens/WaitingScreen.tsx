@@ -1,32 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
 import MorphVideo from "@/components/MorphVideo";
 import BlackletterHeading from "@/components/BlackletterHeading";
 import Button from "@/components/Button";
+import CountdownTimer from "@/components/CountdownTimer";
 import SubmissionStatus from "@/components/SubmissionStatus";
 
-const ROUND_DURATION = 90;
-
 export default function WaitingScreen() {
-  const { room, isHost, advanceAvailable, unsubmittedCount, hostAdvance } =
+  const { room, isHost, advanceAvailable, unsubmittedCount, hostAdvance, roundStartedAt } =
     useRoom();
-  const [secondsLeft, setSecondsLeft] = useState(ROUND_DURATION);
-
-  // Countdown timer
-  useEffect(() => {
-    if (!room) return;
-    const interval = setInterval(() => {
-      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [room, room?.currentRound]);
-
-  // Reset timer on round change
-  useEffect(() => {
-    setSecondsLeft(ROUND_DURATION);
-  }, [room?.currentRound]);
 
   const waitingCount = unsubmittedCount;
 
@@ -57,10 +40,10 @@ export default function WaitingScreen() {
         </p>
 
         {/* Timer */}
-        <div className="mt-6 font-sans text-[14px] text-text-muted anim-fade-in"
+        <div className="mt-6 anim-fade-in"
           style={{ opacity: 0, animationDelay: "0.3s", animationFillMode: "forwards" }}
         >
-          {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")} remaining
+          <CountdownTimer roundStartedAt={roundStartedAt} />
         </div>
 
         {/* Submission status */}

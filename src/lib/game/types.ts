@@ -44,8 +44,16 @@ export interface Prompt {
   text: string;
 }
 
+export interface NarrativeSection {
+  text: string;
+  style: 'name' | 'location' | 'action' | 'dialogue' | 'ending';
+  speakerName?: string;
+}
+
 export interface AssembledStory {
   storyIndex: number;
+  sections: NarrativeSection[];
+  readerName: string;
   responses: string[];
   prompts: string[];
 }

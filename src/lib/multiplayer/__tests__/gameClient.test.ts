@@ -284,12 +284,16 @@ describe("GameClient", () => {
       const cb = vi.fn();
       const unsub = client.onStateUpdate(cb);
 
+      // cb may have been called once with cached state from connect (replay behavior)
+      const callCountAfterSubscribe = cb.mock.calls.length;
+
       unsub();
 
       const room = { code: "ABCD", state: "PLAYING", players: [], stories: [], currentRound: 0, hostId: "p1", createdAt: 0, updatedAt: 0 };
       socket.simulateMessage({ type: "STATE_UPDATE", room, playerId: "p1" });
 
-      expect(cb).not.toHaveBeenCalled();
+      // After unsub, no new calls should have been made
+      expect(cb.mock.calls.length).toBe(callCountAfterSubscribe);
     });
   });
 });

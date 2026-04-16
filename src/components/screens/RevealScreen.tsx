@@ -7,36 +7,55 @@ import GoldBar from "@/components/GoldBar";
 import Button from "@/components/Button";
 
 export default function RevealScreen() {
-  const { assembledStories, advanceReveal, room } = useRoom();
-  const [currentStoryIdx, setCurrentStoryIdx] = useState(0);
-  const [revealedLines, setRevealedLines] = useState(0);
+  const { assembledStories, advanceReveal, revealState, revealAdvance, nextStory, currentPlayer, room } = useRoom();
+
+  // Fallback local state for backward compat (no REVEAL_STATE from server)
+  const [localStoryIdx, setLocalStoryIdx] = useState(0);
+  const [localRevealedLines, setLocalRevealedLines] = useState(0);
+
+  const usingSyncedReveal = revealState !== null;
 
   const totalStories = assembledStories.length;
+  const currentStoryIdx = usingSyncedReveal ? revealState.storyIndex : localStoryIdx;
+  const revealedLines = usingSyncedReveal ? revealState.revealedCount : localRevealedLines;
+
   const story = assembledStories[currentStoryIdx];
-  const allRevealed = story ? revealedLines >= story.responses.length : false;
+  const totalLines = story ? story.sections.length : 0;
+  const allRevealed = story ? revealedLines >= totalLines : false;
+
+  const isReader = usingSyncedReveal && currentPlayer
+    ? currentPlayer.id === revealState.readerId
+    : true; // In local mode, everyone can tap
+
+  const readerName = usingSyncedReveal
+    ? revealState.readerName
+    : story?.readerName ?? "someone";
 
   const handleTap = useCallback(() => {
-    if (!story) return;
-    if (revealedLines < story.responses.length) {
-      setRevealedLines((prev) => prev + 1);
+    if (!story || allRevealed) return;
+    if (usingSyncedReveal) {
+      if (isReader) {
+        revealAdvance();
+      }
+    } else {
+      setLocalRevealedLines((prev) => prev + 1);
     }
-  }, [story, revealedLines]);
+  }, [story, allRevealed, usingSyncedReveal, isReader, revealAdvance]);
 
   const handleNextStory = useCallback(() => {
-    if (currentStoryIdx < totalStories - 1) {
-      setCurrentStoryIdx((prev) => prev + 1);
-      setRevealedLines(0);
+    if (usingSyncedReveal) {
+      nextStory();
     } else {
-      // All stories revealed, advance
-      advanceReveal();
+      if (localStoryIdx < totalStories - 1) {
+        setLocalStoryIdx((prev) => prev + 1);
+        setLocalRevealedLines(0);
+      } else {
+        advanceReveal();
+      }
     }
-  }, [currentStoryIdx, totalStories, advanceReveal]);
+  }, [usingSyncedReveal, nextStory, localStoryIdx, totalStories, advanceReveal]);
 
   if (!story || !room) return null;
-
-  // Find the "author" — the player whose story this is based on story index
-  const storyPlayer = room.players[story.storyIndex];
-  const readerName = storyPlayer?.name ?? "someone";
 
   return (
     <div
@@ -62,15 +81,31 @@ export default function RevealScreen() {
 
         <GoldBar />
 
-        {/* Story lines */}
+        {/* Reader banner */}
+        {usingSyncedReveal && (
+          <div className="mt-4 w-full text-center">
+            {isReader ? (
+              <p className="font-serif italic text-[16px] gold-text font-semibold">
+                Your turn &mdash; read this aloud!
+              </p>
+            ) : (
+              <p className="font-serif italic text-[16px] text-text-muted">
+                {readerName} is reading
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Story sections (narrative prose) */}
         <div className="mt-8 w-full space-y-4">
-          {story.responses.map((line, i) => {
+          {story.sections.map((section, i) => {
             if (i >= revealedLines) return null;
 
-            // Prompts 0,1 (character names) get gold highlight
-            const isCharacterName = i === 0 || i === 1;
-            // Prompts 4,5 (dialogue) get italic
-            const isDialogue = i === 4 || i === 5;
+            const isName = section.style === "name";
+            const isLocation = section.style === "location";
+            const isAction = section.style === "action";
+            const isDialogue = section.style === "dialogue";
+            const isEnding = section.style === "ending";
 
             return (
               <p
@@ -80,10 +115,12 @@ export default function RevealScreen() {
                   ${isDialogue ? "italic" : ""}
                 `}
               >
-                {isCharacterName ? (
-                  <span className="gold-text font-semibold">{line}</span>
+                {isName ? (
+                  <span className="gold-text font-semibold">{section.text}</span>
+                ) : isLocation || isAction || isEnding ? (
+                  <span className="gold-text">{section.text}</span>
                 ) : (
-                  <span className="text-text">{line}</span>
+                  <span className="text-text">{section.text}</span>
                 )}
               </p>
             );
@@ -93,18 +130,22 @@ export default function RevealScreen() {
         {/* Instruction or controls */}
         {!allRevealed ? (
           <p className="mt-8 font-serif italic text-[16px] text-text-muted text-center anim-fade-in">
-            Tap anywhere to reveal the next line
+            {usingSyncedReveal && !isReader
+              ? `Waiting for ${readerName} to reveal...`
+              : "Tap anywhere to reveal the next line"}
           </p>
         ) : (
           <div className="mt-8 w-full flex flex-col items-center gap-4">
             <p className="font-serif italic text-[16px] text-text-dim">
               Read aloud by {readerName}
             </p>
-            <Button variant="primary" onClick={handleNextStory} className="w-full">
-              {currentStoryIdx < totalStories - 1
-                ? "Next Story \u2192"
-                : "Continue"}
-            </Button>
+            {(isReader || !usingSyncedReveal) && (
+              <Button variant="primary" onClick={handleNextStory} className="w-full">
+                {currentStoryIdx < totalStories - 1
+                  ? "Next Story \u2192"
+                  : "Continue"}
+              </Button>
+            )}
           </div>
         )}
       </div>

@@ -3,8 +3,8 @@ import type { Prompt } from "./types";
 export const PROMPTS: Prompt[] = [
   { index: 0, text: "Name a player (optional descriptor)" },
   { index: 1, text: "Name another player (optional descriptor)" },
-  { index: 2, text: "Where are they?" },
-  { index: 3, text: "What are they doing?" },
+  { index: 2, text: "Where are they? (e.g., 'at the zoo' or 'underwater')" },
+  { index: 3, text: "What are they doing? (e.g., 'baking cookies' or 'dancing on tables')" },
   { index: 4, text: "The first one says\u2026" },
   { index: 5, text: "The second one says\u2026" },
   { index: 6, text: "Then what?" },

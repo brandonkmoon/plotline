@@ -9,25 +9,35 @@ export default function SubmissionStatus() {
 
   return (
     <div className="flex flex-wrap justify-center gap-3 mt-6">
-      {room.players
-        .filter((p) => p.isConnected)
-        .map((player) => {
-          const status = playerStatuses[player.id];
-          const submitted = status === "submitted";
-          return (
-            <div
-              key={player.id}
-              className="flex items-center gap-1.5 font-sans text-xs"
+      {room.players.map((player) => {
+        const status = playerStatuses[player.id];
+        const submitted = status === "submitted";
+        const isReconnecting = status === "reconnecting";
+        const isDisconnected = status === "disconnected";
+
+        return (
+          <div
+            key={player.id}
+            className={`flex items-center gap-1.5 font-sans text-xs ${
+              isReconnecting ? "opacity-50" : ""
+            } ${isDisconnected ? "opacity-30" : ""}`}
+          >
+            <span className={submitted ? "text-gold" : "text-text-muted"}>
+              {submitted ? "\u2713" : "\u22EF"}
+            </span>
+            <span
+              className={`${submitted ? "text-text-dim" : "text-text-muted"} ${
+                isDisconnected ? "line-through" : ""
+              }`}
             >
-              <span className={submitted ? "text-gold" : "text-text-muted"}>
-                {submitted ? "\u2713" : "\u22EF"}
-              </span>
-              <span className={submitted ? "text-text-dim" : "text-text-muted"}>
-                {player.name}
-              </span>
-            </div>
-          );
-        })}
+              {player.name}
+            </span>
+            {isReconnecting && (
+              <span className="italic text-text-muted text-[10px]">(reconnecting)</span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

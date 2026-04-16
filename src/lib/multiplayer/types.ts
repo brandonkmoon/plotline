@@ -18,17 +18,19 @@ export type ClientMessage =
     }
   | { type: "HOST_ADVANCE" }
   | { type: "ADVANCE_REVEAL" }
+  | { type: "REVEAL_ADVANCE" }
   | { type: "END_GAME" }
   | { type: "PLAY_AGAIN" }
   | { type: "TYPING_STATUS"; status: "writing" | "idle" };
 
 export type ServerMessage =
-  | { type: "STATE_UPDATE"; room: Room; playerId: string }
+  | { type: "STATE_UPDATE"; room: Room; playerId: string; roundStartedAt: number | null }
   | { type: "PLAYER_STATUS_CHANGED"; statuses: Record<string, PlayerStatus> }
   | { type: "ADVANCE_AVAILABLE"; unsubmittedCount: number }
   | { type: "ERROR"; reason: string }
   | { type: "ASSEMBLED_STORIES"; stories: AssembledStory[] }
-  | { type: "ARCHIVE_READY"; archiveUrl: string };
+  | { type: "ARCHIVE_READY"; archiveUrl: string }
+  | { type: "REVEAL_STATE"; storyIndex: number; revealedCount: number; readerId: string; readerName: string };
 
 export type RegistryMessage =
   | { type: "REGISTER"; code: string }

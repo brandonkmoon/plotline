@@ -9,6 +9,7 @@ import React, {
   useRef,
 } from "react";
 import { gameClient } from "@/lib/multiplayer/gameClient";
+import type { RevealState } from "@/lib/multiplayer/gameClient";
 import type { Room, Player, AssembledStory } from "@/lib/game/types";
 import type { PlayerStatus } from "@/lib/multiplayer/types";
 
@@ -20,6 +21,8 @@ interface RoomContextValue {
   advanceAvailable: boolean;
   unsubmittedCount: number;
   assembledStories: AssembledStory[];
+  roundStartedAt: number | null;
+  revealState: RevealState | null;
   connect: (
     roomCode: string,
     playerName: string,
@@ -34,6 +37,8 @@ interface RoomContextValue {
   ) => void;
   hostAdvance: () => void;
   advanceReveal: () => void;
+  revealAdvance: () => void;
+  nextStory: () => void;
   endGame: () => void;
   playAgain: () => void;
   sendTypingStatus: (status: "writing" | "idle") => void;
@@ -53,6 +58,8 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     []
   );
   const [archiveUrl, setArchiveUrl] = useState<string | null>(null);
+  const [roundStartedAt, setRoundStartedAt] = useState<number | null>(null);
+  const [revealState, setRevealState] = useState<RevealState | null>(null);
   const playerIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -71,6 +78,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         const pid = gameClient.getPlayerId();
         if (pid) playerIdRef.current = pid;
         setRoom(r);
+        setRoundStartedAt(gameClient.getRoundStartedAt());
       })
     );
 
@@ -96,6 +104,12 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     unsubs.push(
       gameClient.onArchiveReady((url) => {
         setArchiveUrl(url);
+      })
+    );
+
+    unsubs.push(
+      gameClient.onRevealState((state) => {
+        setRevealState(state);
       })
     );
 
@@ -131,6 +145,8 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     setUnsubmittedCount(0);
     setAssembledStories([]);
     setArchiveUrl(null);
+    setRoundStartedAt(null);
+    setRevealState(null);
   }, []);
 
   const currentPlayer =
@@ -145,6 +161,8 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     advanceAvailable,
     unsubmittedCount,
     assembledStories,
+    roundStartedAt,
+    revealState,
     connect,
     disconnect,
     startGame: () => gameClient.startGame(),
@@ -152,6 +170,8 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
       gameClient.submitPrompt(storyIndex, promptIndex, response),
     hostAdvance: () => gameClient.hostAdvance(),
     advanceReveal: () => gameClient.advanceReveal(),
+    revealAdvance: () => gameClient.revealAdvance(),
+    nextStory: () => gameClient.nextStory(),
     endGame: () => gameClient.endGame(),
     playAgain: () => gameClient.playAgain(),
     sendTypingStatus: (status) => gameClient.sendTypingStatus(status),
