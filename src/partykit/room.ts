@@ -140,6 +140,9 @@ export default class RoomServer implements Party.Server {
       case "PLAY_AGAIN":
         this.handlePlayAgain(sender);
         break;
+      case "QUEUE_NEXT_GAME":
+        this.handleQueueNextGame(sender);
+        break;
       case "NEW_ROOM":
         this.handleNewRoom(sender);
         break;
@@ -779,11 +782,12 @@ export default class RoomServer implements Party.Server {
       now
     );
 
-    // Re-add all other connected players
+    // Re-add only players who have queued for the next game
     let state = newRoom;
     for (const player of this.gameState.players) {
       if (player.id === host.id) continue;
       if (!player.isConnected) continue;
+      if (!player.queuedForNextGame) continue;
 
       const action: GameAction = {
         type: "PLAYER_JOINED",
@@ -829,6 +833,18 @@ export default class RoomServer implements Party.Server {
     this.clearRoundTimer();
     this.broadcastStateUpdate();
     this.broadcastPlayerStatuses();
+  }
+
+  private handleQueueNextGame(sender: Party.Connection) {
+    if (!this.gameState) return;
+    if (this.gameState.state !== "END") return;
+
+    const playerId = this.connectionToPlayer.get(sender.id);
+    if (!playerId) return;
+
+    const action: GameAction = { type: "PLAYER_QUEUED_NEXT", playerId };
+    this.gameState = gameReducer(this.gameState, action);
+    this.broadcastStateUpdate();
   }
 
   private handleSetReady(

@@ -443,6 +443,10 @@ class GameClient {
     this.send({ type: "NEW_ROOM" });
   }
 
+  queueNextGame(): void {
+    this.send({ type: "QUEUE_NEXT_GAME" });
+  }
+
   setReady(ready: boolean): void {
     this.send({ type: "SET_READY", ready });
   }

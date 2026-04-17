@@ -58,6 +58,7 @@ interface RoomContextValue {
   endGame: () => void;
   playAgain: () => void;
   newRoom: () => void;
+  queueNextGame: () => void;
   setReady: (ready: boolean) => void;
   sendTypingStatus: (status: "writing" | "idle") => void;
   archiveUrl: string | null;
@@ -262,6 +263,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     endGame: () => gameClient.endGame(),
     playAgain: () => gameClient.playAgain(),
     newRoom: () => gameClient.newRoom(),
+    queueNextGame: () => gameClient.queueNextGame(),
     setReady: (ready) => gameClient.setReady(ready),
     sendTypingStatus: (status) => gameClient.sendTypingStatus(status),
     archiveUrl,

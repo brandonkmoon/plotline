@@ -37,3 +37,42 @@ export function normalizeEnding(input: string): string {
   s = s.charAt(0).toLowerCase() + s.slice(1);
   return s;
 }
+
+/**
+ * Build a story card title from the two character names and the raw location
+ * response. Format: "Name1 & Name2 in [location]", truncated to ~60 chars.
+ *
+ * We work from the raw location input (before normalizeLocation prepends "in ")
+ * so we can control the preposition ourselves.
+ */
+export function generateStoryTitle(
+  name1: string,
+  name2: string,
+  rawLocation: string,
+  maxLocationChars = 40
+): string {
+  const names = `${name1} & ${name2}`;
+
+  // Strip trailing punctuation, then handle the preposition
+  let loc = rawLocation.trim().replace(/[.!?,;:]+$/, '');
+  if (!loc) return names;
+
+  const prepRegex = /^(in|at|on|under|over|inside|outside|near|beside|behind|between|beneath|above|around|through)\s/i;
+  const match = loc.match(prepRegex);
+  if (!match) {
+    // No preposition written — add "in"
+    loc = "in " + loc.charAt(0).toUpperCase() + loc.slice(1);
+  } else {
+    // Keep the preposition but capitalize what follows
+    const prep = match[1].toLowerCase();
+    const rest = loc.slice(match[1].length).trim();
+    loc = prep + " " + rest.charAt(0).toUpperCase() + rest.slice(1);
+  }
+
+  // Truncate the location portion if it's too long
+  if (loc.length > maxLocationChars) {
+    loc = loc.slice(0, maxLocationChars).trimEnd() + "…";
+  }
+
+  return `${names} ${loc}`;
+}

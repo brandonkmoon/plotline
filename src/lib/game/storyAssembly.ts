@@ -1,6 +1,6 @@
 import type { Room, AssembledStory, NarrativeSection } from "./types";
 import { PROMPTS, getRandomPlaceholder } from "./prompts";
-import { normalizeLocation, normalizeAction, normalizeDialogue, normalizeEnding } from "./normalize";
+import { normalizeLocation, normalizeAction, normalizeDialogue, normalizeEnding, generateStoryTitle } from "./normalize";
 
 /**
  * Extract just the player name from a round 0/1 response.
@@ -52,8 +52,15 @@ export function assembleStories(room: Room): AssembledStory[] {
       { text: `Then, ${ending}.`, style: 'ending' },
     ];
 
+    const title = generateStoryTitle(
+      extractName(player1Full),
+      extractName(player2Full),
+      responses[2]
+    );
+
     return {
       storyIndex: story.index,
+      title,
       sections,
       readerName,
       responses,

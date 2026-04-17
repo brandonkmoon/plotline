@@ -12,6 +12,7 @@ export interface Player {
   isHost: boolean;
   isConnected: boolean;
   joinedAt: number;
+  queuedForNextGame?: boolean;
 }
 
 export interface PendingPlayer {
@@ -60,6 +61,7 @@ export interface NarrativeSection {
 
 export interface AssembledStory {
   storyIndex: number;
+  title: string;
   sections: NarrativeSection[];
   readerName: string;
   responses: string[];
@@ -84,4 +86,5 @@ export type GameAction =
   | { type: "PENDING_PLAYER_JOINED"; player: PendingPlayer }
   | { type: "PENDING_PLAYER_LEFT"; playerId: string }
   | { type: "PENDING_PLAYER_READY_CHANGED"; playerId: string; ready: boolean }
-  | { type: "PENDING_PROMOTED"; playerIds: string[]; timestamp: number };
+  | { type: "PENDING_PROMOTED"; playerIds: string[]; timestamp: number }
+  | { type: "PLAYER_QUEUED_NEXT"; playerId: string };

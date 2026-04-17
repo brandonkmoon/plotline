@@ -32,6 +32,8 @@ export function gameReducer(state: Room, action: GameAction): Room {
       return handlePendingPlayerReadyChanged(state, action);
     case "PENDING_PROMOTED":
       return handlePendingPromoted(state, action);
+    case "PLAYER_QUEUED_NEXT":
+      return handlePlayerQueuedNext(state, action);
     default:
       return state;
   }
@@ -314,6 +316,23 @@ function handleGameEnded(
   action: Extract<GameAction, { type: "GAME_ENDED" }>
 ): Room {
   return { ...state, state: "END", updatedAt: action.timestamp };
+}
+
+function handlePlayerQueuedNext(
+  state: Room,
+  action: Extract<GameAction, { type: "PLAYER_QUEUED_NEXT" }>
+): Room {
+  if (state.state !== "END") return state;
+  const player = state.players.find((p) => p.id === action.playerId);
+  if (!player) return state;
+  if (player.queuedForNextGame) return state; // idempotent
+  return {
+    ...state,
+    players: state.players.map((p) =>
+      p.id === action.playerId ? { ...p, queuedForNextGame: true } : p
+    ),
+    updatedAt: Date.now(),
+  };
 }
 
 export function createRoom(
