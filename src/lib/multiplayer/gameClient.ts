@@ -96,6 +96,44 @@ function clearRejoinId(roomCode: string): void {
   }
 }
 
+// --- localStorage helpers (active room for TitleScreen rejoin prompt) ---
+// Stores the room code + player name so the home screen can offer a
+// one-tap "Rejoin [CODE]" button when a player navigates away mid-game.
+
+const CURRENT_ROOM_KEY = "plotline.currentRoom";
+const CURRENT_PLAYER_NAME_KEY = "plotline.currentPlayerName";
+
+function storeCurrentRoomInfo(roomCode: string, playerName: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CURRENT_ROOM_KEY, roomCode);
+    localStorage.setItem(CURRENT_PLAYER_NAME_KEY, playerName);
+  } catch {
+    // ignore
+  }
+}
+
+function clearCurrentRoomInfo(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(CURRENT_ROOM_KEY);
+    localStorage.removeItem(CURRENT_PLAYER_NAME_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function getCurrentRoomInfo(): { code: string; name: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const code = localStorage.getItem(CURRENT_ROOM_KEY);
+    const name = localStorage.getItem(CURRENT_PLAYER_NAME_KEY) ?? "";
+    return code ? { code, name } : null;
+  } catch {
+    return null;
+  }
+}
+
 class GameClient {
   private socket: PartySocket | null = null;
   private playerId: string | null = null;
@@ -150,6 +188,7 @@ class GameClient {
     if (options?.forceNewPlayer) {
       clearStoredPlayerId(roomCode);
       clearRejoinId(roomCode);
+      clearCurrentRoomInfo();
       playerIdToSend = undefined;
     } else {
       playerIdToSend =
@@ -242,6 +281,12 @@ class GameClient {
             // THIS tab is unloading, so reopening the URL can recover it.
             storePlayerId(roomCode, msg.playerId);
             this.registerRejoinOnUnload(roomCode);
+            // Store the active room info so TitleScreen can offer a rejoin
+            // prompt if the player navigates away mid-game.
+            const myName = msg.room.players.find(
+              (p) => p.id === msg.playerId
+            )?.name ?? "";
+            if (myName) storeCurrentRoomInfo(roomCode, myName);
             for (const cb of this.stateListeners) cb(msg.room);
             if (!resolved) {
               resolved = true;
@@ -276,6 +321,7 @@ class GameClient {
               if (msg.reason === "UNKNOWN_PLAYER") {
                 clearStoredPlayerId(roomCode);
                 clearRejoinId(roomCode);
+                clearCurrentRoomInfo();
               }
               this.emitConnectionError(msg.reason);
             }

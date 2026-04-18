@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/Button";
+import { getCurrentRoomInfo } from "@/lib/multiplayer/gameClient";
 
 // Module-level flag so the entrance animation plays once per browser
 // session. Stays true across remounts (e.g. navigating to /create or
@@ -16,6 +17,11 @@ export default function TitleScreen() {
   const router = useRouter();
   // If we've already animated once this session, jump straight to "done".
   const [phase, setPhase] = useState<Phase>(hasAnimated ? "done" : "pause");
+  const [rejoinInfo, setRejoinInfo] = useState<{ code: string; name: string } | null>(null);
+
+  useEffect(() => {
+    setRejoinInfo(getCurrentRoomInfo());
+  }, []);
 
   useEffect(() => {
     if (hasAnimated) return;
@@ -81,6 +87,29 @@ export default function TitleScreen() {
           </Button>
         </div>
       </div>
+
+      {/* Rejoin prompt — shown when a game is in progress */}
+      {rejoinInfo && (
+        <div
+          className={`title-btn-wrapper mt-3 ${
+            showButtons ? "title-btn-animate title-btn-delay" : ""
+          }`}
+          style={{ transitionDelay: showButtons ? "300ms" : "0ms" }}
+        >
+          <div style={{ pointerEvents: ready ? "auto" : "none" }}>
+            <button
+              onClick={() => router.push(`/room/${rejoinInfo.code}`)}
+              className="w-full border border-ink px-6 py-3 font-sans text-[13px] uppercase tracking-[2px] text-text-dim hover:text-ink hover:bg-ink/5 transition-colors"
+            >
+              <span className={`title-btn-text ${ready ? "visible" : ""}`}>
+                Rejoin{" "}
+                {rejoinInfo.name ? `as ${rejoinInfo.name} · ` : ""}
+                {rejoinInfo.code}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Supporting text — opacity-only fade, staggered after buttons settle */}
       <p
