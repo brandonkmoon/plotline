@@ -155,6 +155,71 @@ function AutoConnect() {
   return null;
 }
 
+function BackButtonGuard() {
+  const { room } = useRoom();
+  const router = useRouter();
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // Only guard during active gameplay — not lobby or end screen
+  const isActiveGame =
+    room?.state === "PLAYING" || room?.state === "REVEAL";
+
+  // Push a history guard entry and listen for popstate
+  useEffect(() => {
+    if (!isActiveGame) return;
+
+    history.pushState({ backGuard: true }, "");
+
+    const handlePopState = () => {
+      // Re-push the guard to cancel the navigation, then show the modal
+      history.pushState({ backGuard: true }, "");
+      setShowConfirm(true);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isActiveGame]);
+
+  // Warn on tab close / refresh during active gameplay
+  useEffect(() => {
+    if (!isActiveGame) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isActiveGame]);
+
+  if (!showConfirm) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-ink/60">
+      <div className="bg-white border border-ink w-full max-w-sm p-6">
+        <p className="font-serif font-bold text-[20px] text-ink mb-2">
+          Leave the show?
+        </p>
+        <p className="font-body italic text-[15px] text-text-dim mb-6">
+          You&apos;ll lose your place in the game.
+        </p>
+        <div className="flex flex-col gap-4">
+          <Button variant="primary" onClick={() => setShowConfirm(false)}>
+            Stay in the Show
+          </Button>
+          <button
+            onClick={() => router.push("/")}
+            className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
+          >
+            Leave
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RoomContent() {
   const {
     room,
@@ -231,6 +296,7 @@ export default function RoomPage() {
     <ErrorBoundary>
       <RoomProvider>
         <AutoConnect />
+        <BackButtonGuard />
         <div className="relative">
           <ConnectionStatus />
           <RoomContent />
