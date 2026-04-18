@@ -1,3 +1,16 @@
+/**
+ * Extract just the player name from a round 0/1 response.
+ * Responses may be "Dave — a retired sword swallower" or just "Dave".
+ * Returns the part before the em dash (or en dash, or " - ").
+ */
+export function extractName(nameResponse: string): string {
+  for (const sep of [" \u2014 ", " \u2013 ", " - "]) {
+    const idx = nameResponse.indexOf(sep);
+    if (idx !== -1) return nameResponse.slice(0, idx).trim();
+  }
+  return nameResponse.trim();
+}
+
 export function normalizeLocation(input: string): string {
   let s = input.trim().replace(/[.!?,;:]+$/, '');
   if (!s) return "somewhere";

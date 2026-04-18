@@ -1,20 +1,6 @@
 import type { Room, AssembledStory, NarrativeSection } from "./types";
 import { PROMPTS, getRandomPlaceholder } from "./prompts";
-import { normalizeLocation, normalizeAction, normalizeDialogue, normalizeEnding, generateStoryTitle } from "./normalize";
-
-/**
- * Extract just the player name from a round 0/1 response.
- * Responses may be "Dave — a retired sword swallower" or just "Dave".
- * Returns the part before the em dash (or en dash, or " - ").
- */
-function extractName(nameResponse: string): string {
-  // Try em dash first, then en dash, then spaced hyphen
-  for (const sep of [" \u2014 ", " \u2013 ", " - "]) {
-    const idx = nameResponse.indexOf(sep);
-    if (idx !== -1) return nameResponse.slice(0, idx).trim();
-  }
-  return nameResponse.trim();
-}
+import { normalizeLocation, normalizeAction, normalizeDialogue, normalizeEnding, generateStoryTitle, extractName } from "./normalize";
 
 export function assembleStories(room: Room): AssembledStory[] {
   return room.stories.map((story) => {

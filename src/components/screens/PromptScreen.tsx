@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
 import { PROMPTS, isNamePickerRound, DESCRIPTOR_PLACEHOLDERS, PLACEHOLDERS } from "@/lib/game/prompts";
+import { extractName } from "@/lib/game/normalize";
 import Button from "@/components/Button";
 import CountdownTimer from "@/components/CountdownTimer";
 import SubmissionStatus from "@/components/SubmissionStatus";
@@ -49,6 +50,23 @@ export default function PromptScreen() {
   const otherPlayers = room?.players.filter(
     (p) => p.id !== currentPlayer?.id
   ) ?? [];
+
+  // In round 1, find the character already picked in slot 0 of this player's
+  // assigned story. Block that name from being picked again so no story ends
+  // up with a character talking to themselves.
+  const slot0TakenName: string | null = (() => {
+    if (currentRound !== 1 || !room || !currentPlayer) return null;
+    const assignedStory = room.stories.find((s) =>
+      s.slots.some(
+        (slot) =>
+          slot.promptIndex === 1 && slot.playerId === currentPlayer.id
+      )
+    );
+    const slot0Response = assignedStory?.slots.find(
+      (slot) => slot.promptIndex === 0
+    )?.response;
+    return slot0Response ? extractName(slot0Response) : null;
+  })();
 
   // Reset state when the round changes
   useEffect(() => {
@@ -155,14 +173,21 @@ export default function PromptScreen() {
             <div className="flex flex-wrap justify-center gap-2 mb-5">
               {otherPlayers.map((player) => {
                 const isSelected = selectedName === player.name;
+                // Blocked: this person is already character 1 in this story
+                const isBlocked =
+                  slot0TakenName !== null &&
+                  player.name.toLowerCase() === slot0TakenName.toLowerCase();
+                // Dimmed: the player's own round-0 pick (soft discourage)
                 const isDimmed =
-                  currentRound === 1 && round0PickRef.current === player.name;
+                  !isBlocked &&
+                  currentRound === 1 &&
+                  round0PickRef.current === player.name;
 
                 return (
                   <button
                     key={player.id}
                     type="button"
-                    disabled={submitted || isDimmed}
+                    disabled={submitted || isBlocked || isDimmed}
                     onClick={() => {
                       if (isSelected) {
                         setSelectedName(null);
@@ -177,13 +202,19 @@ export default function PromptScreen() {
                       ${
                         isSelected
                           ? "bg-ink text-white border-ink"
-                          : isDimmed
+                          : isBlocked || isDimmed
                           ? "bg-transparent text-text-muted border-[#d0d0d0] opacity-40"
                           : "bg-transparent text-ink border-ink hover:bg-ink hover:text-white"
                       }
                     `}
                     style={{ borderRadius: 0 }}
-                    title={isDimmed ? "Already cast in the previous act" : undefined}
+                    title={
+                      isBlocked
+                        ? "Already the first character in this story"
+                        : isDimmed
+                        ? "Already cast in the previous act"
+                        : undefined
+                    }
                   >
                     {player.name}
                   </button>
