@@ -65,20 +65,19 @@ export default function HelpOverlay() {
             <div className="help-section">
               <h3 className="help-q">What is this game?</h3>
               <p className="help-a">
-                Everyone answers 7 prompts. You can&apos;t see what anyone else
-                wrote. Your answers get shuffled together into stories about
-                people in the room. Then someone reads each story out loud.
-                Chaos ensues.
+                Everyone answers 7 prompts without seeing what anyone else
+                wrote. Your answers get woven together into stories about
+                real people in the room. Then someone reads each story aloud.
+                Chaos ensues. You need 4&ndash;12 players.
               </p>
             </div>
 
             <div className="help-section">
               <h3 className="help-q">What do I do?</h3>
               <p className="help-a">
-                Each round, you&apos;ll see a prompt. Type an answer and hit
-                Submit before the timer runs out. If you don&apos;t submit in
-                time, the host can advance and a placeholder will fill in
-                for you.
+                Each act, you&apos;ll see a prompt. Answer it and hit Submit
+                before the timer runs out. If you miss the timer, the host
+                can advance and a placeholder fills in for you.
               </p>
             </div>
 
@@ -98,28 +97,19 @@ export default function HelpOverlay() {
             <div className="help-section">
               <h3 className="help-q">Wait, who am I writing about?</h3>
               <p className="help-a">
-                In Acts 1 and 2, you&apos;ll pick real people in the room by
-                tapping their name. Then you add a funny description. The rest
-                of the story is about those two characters. In the dialogue
-                rounds you won&apos;t know their names &mdash; that&apos;s
-                intentional. Just write the line; it&apos;ll make sense at the
-                reveal.
-              </p>
-            </div>
-
-            <div className="help-section">
-              <h3 className="help-q">Can other people see what I write?</h3>
-              <p className="help-a">
-                Not until the story is read aloud at the end. Everything is
-                blind until then.
+                In Acts 1 and 2 you&apos;ll tap a real person in the room and
+                give them a funny description. The rest of the story is about
+                those two. In the dialogue acts you won&apos;t know their
+                names &mdash; that&apos;s intentional. Just write the line;
+                it&apos;ll make sense at the reveal.
               </p>
             </div>
 
             <div className="help-section">
               <h3 className="help-q">What if I can&apos;t think of anything?</h3>
               <p className="help-a">
-                Write something dumb. Seriously. The dumber the better. Also
-                the input field has example text &mdash; you can riff off that.
+                Write something dumb. Seriously. The dumber the better. The
+                input field has an example &mdash; you can riff off that.
               </p>
             </div>
 
@@ -140,16 +130,19 @@ export default function HelpOverlay() {
               </p>
             </div>
 
+            <p className="help-group-label">The Reveal</p>
+
             <div className="help-section">
               <h3 className="help-q">How does the reading part work?</h3>
               <p className="help-a">
-                One player is the designated reader for each story &mdash; whoever
-                wrote the ending for that one. They tap to reveal the lines one
-                at a time and read them aloud. Everyone else sees the lines
-                appear on their screen as they&apos;re read. When all the stories
-                are done, the game ends.
+                One player reads each story aloud &mdash; whoever wrote the
+                ending for that one. They tap to reveal the lines one at a
+                time. Everyone else sees the lines appear on their screen as
+                they&apos;re read. When all stories are done, the game ends.
               </p>
             </div>
+
+            <p className="help-group-label">Connection Issues</p>
 
             <div className="help-section">
               <h3 className="help-q">I got disconnected</h3>
@@ -158,20 +151,17 @@ export default function HelpOverlay() {
                 name &mdash; you&apos;ll pick up where you left off. If you
                 see &ldquo;Room unavailable,&rdquo; that doesn&apos;t mean
                 the game is over. Try rejoining with the same name. The game
-                doesn&apos;t pause when someone drops &mdash; the host can
-                advance without you and a placeholder fills in for any
-                missing answers.
+                doesn&apos;t pause when someone drops.
               </p>
             </div>
 
             <div className="help-section">
               <h3 className="help-q">I&apos;m the host and someone disconnected</h3>
               <p className="help-a">
-                When a player goes offline, an Advance button appears once
-                everyone else has submitted. Use it to keep the game moving
-                without waiting for them. If you disconnect, hosting transfers
-                automatically to another player &mdash; they&apos;ll see a
-                banner letting them know.
+                Once everyone else has submitted, an Advance button appears.
+                Use it to keep the game moving. If you disconnect, hosting
+                transfers automatically to another player &mdash; they&apos;ll
+                see a banner letting them know.
               </p>
             </div>
 
@@ -181,14 +171,6 @@ export default function HelpOverlay() {
                 The host automatically takes over reading for that story.
                 No action needed &mdash; the host&apos;s screen will update
                 to show the lines.
-              </p>
-            </div>
-
-            <div className="help-section">
-              <h3 className="help-q">How many people do we need?</h3>
-              <p className="help-a">
-                4 minimum, 12 maximum. More people = more stories = more
-                chaos.
               </p>
             </div>
 

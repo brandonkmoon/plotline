@@ -160,7 +160,7 @@ body {
   z-index: 50;
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 0;
   border: 2px solid var(--ink);
   background: var(--bg);
   color: var(--ink);
@@ -261,12 +261,25 @@ body {
 
 .help-act {
   font-family: var(--font-lora), serif;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   color: var(--text-dim);
   display: flex;
   align-items: baseline;
   gap: 10px;
+}
+
+.help-group-label {
+  font-family: var(--font-playfair), serif;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  margin-bottom: 16px;
+  padding-top: 16px;
+  border-top: 2px solid var(--ink);
 }
 
 .help-act-num {
