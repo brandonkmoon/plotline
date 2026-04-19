@@ -686,6 +686,15 @@ export default class RoomServer implements Party.Server {
     if (!this.gameState) return;
     if (this.gameState.state !== "REVEAL") return;
 
+    const playerId = this.connectionToPlayer.get(sender.id);
+    if (!playerId || playerId !== this.gameState.hostId) {
+      this.sendTo(sender, {
+        type: "ERROR",
+        reason: "Only the host can advance to the next story",
+      });
+      return;
+    }
+
     // Mark the current story as revealed (if not already) and move on.
     const currentStory = this.gameState.stories[this.revealStoryIndex];
     const targetStoryIndex =
