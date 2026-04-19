@@ -88,6 +88,7 @@ export default function JoinScreen() {
         maxLength={4}
         autoComplete="off"
         autoCapitalize="characters"
+        autoFocus
       />
 
       <label className="block font-serif text-[13px] uppercase tracking-[2px] text-text-dim mb-2 mt-6">

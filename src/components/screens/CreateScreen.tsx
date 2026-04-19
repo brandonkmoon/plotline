@@ -68,6 +68,7 @@ export default function CreateScreen() {
         style={{ borderRadius: 0 }}
         maxLength={20}
         autoComplete="off"
+        autoFocus
       />
 
       {error && (
