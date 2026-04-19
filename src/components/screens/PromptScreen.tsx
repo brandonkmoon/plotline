@@ -169,6 +169,19 @@ export default function PromptScreen() {
         {isNameRound ? (
           /* ── Name Picker UI (rounds 1-2) ── */
           <div>
+            {/* Instruction + format preview */}
+            <p className="font-body italic text-[14px] text-text-muted text-center mb-3">
+              {currentRound === 0
+                ? "Tap a name to cast them, then write a short character description."
+                : "Tap a different name, then write their character description."}
+            </p>
+            <p className="font-sans text-[13px] text-center mb-5" style={{ color: "#bbb" }}>
+              {selectedName
+                ? <>{selectedName} &mdash; {descriptor || <span style={{ fontStyle: "italic" }}>description&hellip;</span>}</>
+                : <span style={{ fontStyle: "italic" }}>Name &mdash; a brief, funny description</span>
+              }
+            </p>
+
             {/* Name buttons */}
             <div className="flex flex-wrap justify-center gap-2 mb-5">
               {otherPlayers.map((player) => {
@@ -226,7 +239,7 @@ export default function PromptScreen() {
             {selectedName && (
               <div className="anim-fade-in">
                 <p className="font-body italic text-[13px] text-text-muted text-center mb-2">
-                  Who is {selectedName}, really?
+                  Give {selectedName} a character &mdash; one funny line.
                 </p>
                 <textarea
                   value={descriptor}
@@ -241,10 +254,7 @@ export default function PromptScreen() {
                   style={{ borderRadius: 0, minHeight: 72 }}
                   rows={2}
                 />
-                <div className="flex justify-between mt-1">
-                  <span className="font-sans text-[12px] text-text-muted">
-                    {selectedName} — {descriptor || "..."}
-                  </span>
+                <div className="flex justify-end mt-1">
                   <span
                     className={`font-sans text-[12px] ${
                       combinedValue.length >= MAX_CHARS
