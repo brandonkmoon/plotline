@@ -850,9 +850,13 @@ export default class RoomServer implements Party.Server {
 
     this.gameState = state;
 
-    // Reset statuses
+    // Rebuild playerStatuses from scratch — clearing ghost entries from
+    // players who didn't carry over to the new game. Without this,
+    // checkForEmptyRoom can see phantom "reconnecting" counts and never
+    // start the room destroy timer.
+    this.playerStatuses.clear();
     for (const p of this.gameState.players) {
-      this.playerStatuses.set(p.id, "idle");
+      this.playerStatuses.set(p.id, p.isConnected ? "idle" : "reconnecting");
     }
 
     this.clearRoundTimer();
