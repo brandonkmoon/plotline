@@ -16,6 +16,7 @@ export default function RevealScreen() {
     revealAdvance,
     nextStory,
     currentPlayer,
+    justBecameHost,
     room,
   } = useRoom();
 
@@ -146,6 +147,11 @@ export default function RevealScreen() {
     return (
       <>
         <div className="screen text-center anim-fade-in">
+          {justBecameHost && (
+            <p className="font-sans text-[12px] uppercase tracking-[2px] text-white bg-ink px-4 py-2 text-center mb-4">
+              You&rsquo;re now the host
+            </p>
+          )}
           <hr className="rule" />
           <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
             Now Playing
@@ -175,6 +181,12 @@ export default function RevealScreen() {
         className="screen cursor-pointer select-none anim-fade-in"
         onClick={!allRevealed ? handleTap : undefined}
       >
+        {justBecameHost && (
+          <p className="font-sans text-[12px] uppercase tracking-[2px] text-white bg-ink px-4 py-2 text-center mb-4">
+            You&rsquo;re now the host
+          </p>
+        )}
+
         <hr className="rule" />
 
         <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">

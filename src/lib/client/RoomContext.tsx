@@ -28,6 +28,7 @@ interface RoomContextValue {
   isPending: boolean;
   playerStatuses: Record<string, PlayerStatus>;
   isHost: boolean;
+  justBecameHost: boolean;
   advanceAvailable: boolean;
   unsubmittedCount: number;
   assembledStories: AssembledStory[];
@@ -89,7 +90,9 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     useState<ConnectionErrorReason | null>(null);
   const [revealState, setRevealState] = useState<RevealState | null>(null);
   const [roomRedirect, setRoomRedirect] = useState<string | null>(null);
+  const [justBecameHost, setJustBecameHost] = useState(false);
   const playerIdRef = useRef<string | null>(null);
+  const prevIsHostRef = useRef<boolean>(false);
 
   useEffect(() => {
     const unsubs: (() => void)[] = [];
@@ -170,6 +173,21 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Detect host transfer: when this client's isHost flips false → true,
+  // show a brief "you're now the host" notice for 4 seconds.
+  const currentPlayer =
+    room?.players.find((p) => p.id === playerIdRef.current) ?? null;
+  const isHost = currentPlayer?.isHost ?? false;
+
+  useEffect(() => {
+    if (isHost && !prevIsHostRef.current) {
+      setJustBecameHost(true);
+      const t = setTimeout(() => setJustBecameHost(false), 4000);
+      return () => clearTimeout(t);
+    }
+    prevIsHostRef.current = isHost;
+  }, [isHost]);
+
   // Reset advanceAvailable whenever the currentRound changes — new round,
   // new timer, so the "advance" window is fresh.
   const prevRoundRef = useRef<number | null>(null);
@@ -226,12 +244,9 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     setConnectionError(null);
   }, []);
 
-  const currentPlayer =
-    room?.players.find((p) => p.id === playerIdRef.current) ?? null;
   const currentPendingPlayer =
     room?.pendingPlayers?.find((p) => p.id === playerIdRef.current) ?? null;
   const isPending = currentPendingPlayer !== null;
-  const isHost = currentPlayer?.isHost ?? false;
 
   const value: RoomContextValue = {
     room,
@@ -240,6 +255,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     isPending,
     playerStatuses,
     isHost,
+    justBecameHost,
     advanceAvailable,
     unsubmittedCount,
     assembledStories,

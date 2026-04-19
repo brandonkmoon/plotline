@@ -10,6 +10,7 @@ export default function WaitingScreen() {
   const {
     room,
     isHost,
+    justBecameHost,
     advanceAvailable,
     hostAdvance,
     roundStartedAt,
@@ -25,6 +26,11 @@ export default function WaitingScreen() {
       <div className="screen anim-fade-in text-center">
         <hr className="rule" />
 
+        {justBecameHost && (
+          <p className="font-sans text-[12px] uppercase tracking-[2px] text-white bg-ink px-4 py-2 text-center mb-4">
+            You&rsquo;re now the host
+          </p>
+        )}
         <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
           Intermission
         </p>
