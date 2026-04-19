@@ -16,11 +16,11 @@ const TOTAL_ROUNDS = 7;
 // These double as tense guides — the examples model the phrasing
 // that fits the assembled story template.
 const PLACEHOLDER_HINTS: Record<number, string> = {
-  2: 'e.g., "at an IKEA at 3am"',
-  3: 'e.g., "fighting over the last pretzel"',
-  4: 'e.g., "I swear this isn\'t what it looks like."',
-  5: 'e.g., "Bold of you to assume I care."',
-  6: 'e.g., "they both pretend it never happened"',
+  2: "at an IKEA at 3am",
+  3: "fighting over the last pretzel",
+  4: "I swear this isn't what it looks like.",
+  5: "Bold of you to assume I care.",
+  6: "they both pretend it never happened",
 };
 
 export default function PromptScreen() {
@@ -172,10 +172,6 @@ export default function PromptScreen() {
 
         <hr className="rule" />
 
-        <p className="font-body italic text-[14px] text-text-muted text-center mb-7">
-          You can&apos;t see what anyone else wrote
-        </p>
-
         {isNameRound ? (
           /* ── Name Picker UI (rounds 1-2) ── */
           <div>
@@ -183,7 +179,7 @@ export default function PromptScreen() {
             <p className="font-body italic text-[14px] text-text-muted text-center mb-3">
               {currentRound === 0
                 ? "Tap a name to cast them, then write a short character description."
-                : "Tap a different name, then write their character description."}
+                : "Someone different this time \u2014 tap a name, then make something up."}
             </p>
             <p className="font-sans text-[13px] text-center mb-5" style={{ color: "#bbb" }}>
               {selectedName
@@ -281,6 +277,26 @@ export default function PromptScreen() {
         ) : (
           /* ── Free Text UI (rounds 3-7) ── */
           <div>
+            {currentRound === 2 && (
+              <p className="font-body italic text-[14px] text-text-muted text-center mb-4">
+                Location only &mdash; what they&apos;re doing comes next.
+              </p>
+            )}
+            {currentRound === 3 && (
+              <p className="font-body italic text-[14px] text-text-muted text-center mb-4">
+                An action. The more absurd the better.
+              </p>
+            )}
+            {(currentRound === 4 || currentRound === 5) && (
+              <p className="font-body italic text-[14px] text-text-muted text-center mb-4">
+                Just what they say &mdash; no actions or descriptions.
+              </p>
+            )}
+            {currentRound === 6 && (
+              <p className="font-body italic text-[14px] text-text-muted text-center mb-4">
+                One sentence, present tense. No dialogue.
+              </p>
+            )}
             <textarea
               value={response}
               onChange={(e) => {
