@@ -101,13 +101,18 @@ function clearRejoinId(roomCode: string): void {
 // one-tap "Rejoin [CODE]" button when a player navigates away mid-game.
 
 const CURRENT_ROOM_KEY = "plotline.currentRoom";
-const CURRENT_PLAYER_NAME_KEY = "plotline.currentPlayerName";
+// Player name is stored in sessionStorage keyed by room code so each tab
+// tracks its own identity. The room code itself stays in localStorage so
+// it survives a tab close and can be offered as a rejoin prompt.
+function playerNameKey(roomCode: string): string {
+  return `plotline.playerName.${roomCode}`;
+}
 
 function storeCurrentRoomInfo(roomCode: string, playerName: string): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(CURRENT_ROOM_KEY, roomCode);
-    localStorage.setItem(CURRENT_PLAYER_NAME_KEY, playerName);
+    sessionStorage.setItem(playerNameKey(roomCode), playerName);
   } catch {
     // ignore
   }
@@ -116,8 +121,11 @@ function storeCurrentRoomInfo(roomCode: string, playerName: string): void {
 function clearCurrentRoomInfo(): void {
   if (typeof window === "undefined") return;
   try {
+    const code = localStorage.getItem(CURRENT_ROOM_KEY);
+    if (code) {
+      sessionStorage.removeItem(playerNameKey(code));
+    }
     localStorage.removeItem(CURRENT_ROOM_KEY);
-    localStorage.removeItem(CURRENT_PLAYER_NAME_KEY);
   } catch {
     // ignore
   }
@@ -127,8 +135,9 @@ export function getCurrentRoomInfo(): { code: string; name: string } | null {
   if (typeof window === "undefined") return null;
   try {
     const code = localStorage.getItem(CURRENT_ROOM_KEY);
-    const name = localStorage.getItem(CURRENT_PLAYER_NAME_KEY) ?? "";
-    return code ? { code, name } : null;
+    if (!code) return null;
+    const name = sessionStorage.getItem(playerNameKey(code)) ?? "";
+    return { code, name };
   } catch {
     return null;
   }
