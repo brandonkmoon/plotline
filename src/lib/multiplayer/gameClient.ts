@@ -136,7 +136,10 @@ export function getCurrentRoomInfo(): { code: string; name: string } | null {
   try {
     const code = localStorage.getItem(CURRENT_ROOM_KEY);
     if (!code) return null;
-    const name = sessionStorage.getItem(playerNameKey(code)) ?? "";
+    const name = sessionStorage.getItem(playerNameKey(code));
+    // If this tab has no stored name, it was never part of this game —
+    // don't offer a rejoin button.
+    if (!name) return null;
     return { code, name };
   } catch {
     return null;
