@@ -714,11 +714,18 @@ export default class RoomServer implements Party.Server {
     const readerId = readerSlot?.playerId;
 
     if (playerId !== readerId) {
-      this.sendTo(sender, {
-        type: "ERROR",
-        reason: "Only the reader can advance the reveal",
-      });
-      return;
+      // If the designated reader is offline, fall back to the host so the
+      // reveal doesn't get permanently stuck.
+      const reader = this.gameState.players.find(p => p.id === readerId);
+      const readerIsOffline = !reader?.isConnected;
+      const senderIsHost = playerId === this.gameState.hostId;
+      if (!readerIsOffline || !senderIsHost) {
+        this.sendTo(sender, {
+          type: "ERROR",
+          reason: "Only the reader can advance the reveal",
+        });
+        return;
+      }
     }
 
     // Idempotent: don't increment past 7. The reader sees all 7 lines

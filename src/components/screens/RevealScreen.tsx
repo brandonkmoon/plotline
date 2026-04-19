@@ -36,10 +36,19 @@ export default function RevealScreen() {
   const totalLines = story?.sections?.length ?? SECTIONS_PER_STORY;
   const allRevealed = story ? revealedLines >= totalLines : false;
 
-  const isReader =
-    usingSyncedReveal && currentPlayer
-      ? currentPlayer.id === revealState.readerId
-      : true;
+  // If the designated reader has disconnected, the host steps in so the
+  // reveal doesn't get stuck.
+  const readerPlayer = usingSyncedReveal
+    ? room?.players.find((p) => p.id === revealState.readerId)
+    : null;
+  const readerIsOffline =
+    usingSyncedReveal && readerPlayer ? !readerPlayer.isConnected : false;
+  const isHostFallbackReader =
+    readerIsOffline && currentPlayer?.id === room?.hostId;
+
+  const isReader = usingSyncedReveal && currentPlayer
+    ? currentPlayer.id === revealState.readerId || isHostFallbackReader
+    : true;
 
   const readerName = usingSyncedReveal
     ? revealState.readerName
@@ -178,7 +187,9 @@ export default function RevealScreen() {
           Read by {readerName}
         </p>
         <p className="font-body italic text-[14px] text-[#888] text-center mb-6">
-          Your turn &mdash; read this aloud
+          {isHostFallbackReader
+            ? `${readerName} is offline \u2014 you\u2019re reading`
+            : "Your turn \u2014 read this aloud"}
         </p>
 
         <hr className="rule" />
