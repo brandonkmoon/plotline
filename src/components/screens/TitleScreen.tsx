@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Button from "@/components/Button";
 import { getCurrentRoomInfo } from "@/lib/multiplayer/gameClient";
 
@@ -133,20 +132,6 @@ export default function TitleScreen() {
         4 &ndash; 12 Players
       </p>
 
-      <div
-        className="text-center mt-6 transition-opacity duration-500"
-        style={{
-          opacity: ready ? 1 : 0,
-          transitionDelay: ready ? "400ms" : "0ms",
-        }}
-      >
-        <Link
-          href="/privacy"
-          className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted hover:text-ink transition-colors"
-        >
-          Privacy-respecting analytics &middot; No cookies
-        </Link>
-      </div>
     </div>
   );
 }
