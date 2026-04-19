@@ -155,23 +155,26 @@ export default function PromptScreen() {
 
   return (
     <>
-      <div className="screen anim-fade-in">
-        <hr className="rule" />
+      <div className="screen">
+        <hr className="rule prompt-rule-enter" />
 
-        <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
-          Act {currentRound + 1} of {TOTAL_ROUNDS}
-        </p>
+        <div className="prompt-header-enter">
+          <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
+            Act {currentRound + 1} of {TOTAL_ROUNDS}
+          </p>
 
-        <p className="font-body text-[24px] text-ink text-center leading-[1.5] mb-2">
-          {currentRound === 4
-            ? "What does the first character say?"
-            : currentRound === 5
-            ? "What does the second character say in reply?"
-            : prompt.text}
-        </p>
+          <p className="font-body text-[24px] text-ink text-center leading-[1.5] mb-2">
+            {currentRound === 4
+              ? "What does the first character say?"
+              : currentRound === 5
+              ? "What does the second character say in reply?"
+              : prompt.text}
+          </p>
+        </div>
 
-        <hr className="rule" />
+        <hr className="rule prompt-rule-enter" />
 
+        <div className="prompt-body-enter">
         {isNameRound ? (
           /* ── Name Picker UI (rounds 1-2) ── */
           <div>
@@ -344,6 +347,7 @@ export default function PromptScreen() {
         </div>
 
         <SubmissionStatus />
+        </div>{/* end prompt-body-enter */}
       </div>
       <PendingPlayersBadge />
     </>
