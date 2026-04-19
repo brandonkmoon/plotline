@@ -58,6 +58,17 @@ export default function TitleScreen() {
           clamp() keeps it reasonable on small screens. */}
       <div style={{ height: "clamp(80px, 20vh, 200px)" }} />
 
+      {/* Tagline — fades in with the rest of the content */}
+      <p
+        className="font-body italic text-[16px] text-text-dim text-center mb-8 transition-opacity duration-500"
+        style={{
+          opacity: ready ? 1 : 0,
+          transitionDelay: ready ? "100ms" : "0ms",
+        }}
+      >
+        Everyone writes. Nobody looks. Then the stories come to life.
+      </p>
+
       {/* Create — primary */}
       <div
         className={`title-btn-wrapper ${
