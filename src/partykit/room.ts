@@ -354,6 +354,7 @@ export default class RoomServer implements Party.Server {
           this.roomDestroyTimer = null;
         }
 
+        this.ensureHostIsConnected();
         this.broadcastStateUpdate();
         this.broadcastPlayerStatuses();
         return;
@@ -424,6 +425,7 @@ export default class RoomServer implements Party.Server {
           );
         }
 
+        this.ensureHostIsConnected();
         this.broadcastStateUpdate();
         this.broadcastPlayerStatuses();
         return;
@@ -530,6 +532,7 @@ export default class RoomServer implements Party.Server {
       this.roomDestroyTimer = null;
     }
 
+    this.ensureHostIsConnected();
     this.broadcastStateUpdate();
     this.broadcastPlayerStatuses();
   }
@@ -1025,6 +1028,44 @@ export default class RoomServer implements Party.Server {
     // Find earliest-joined connected player
     const connectedPlayers = this.gameState.players
       .filter((p) => p.isConnected && p.id !== oldHostId)
+      .sort((a, b) => a.joinedAt - b.joinedAt);
+
+    if (connectedPlayers.length === 0) return;
+
+    const newHost = connectedPlayers[0];
+    this.gameState = {
+      ...this.gameState,
+      hostId: newHost.id,
+      players: this.gameState.players.map((p) => ({
+        ...p,
+        isHost: p.id === newHost.id,
+      })),
+      updatedAt: Date.now(),
+    };
+
+    this.broadcastStateUpdate();
+  }
+
+  // Called after every join/reconnect. If the current host is offline
+  // (e.g. they disconnected when no one else was connected, so the
+  // timed transfer found no candidates), promote the earliest-joined
+  // connected player now that someone is back.
+  private ensureHostIsConnected() {
+    if (!this.gameState) return;
+
+    const host = this.gameState.players.find(
+      (p) => p.id === this.gameState!.hostId
+    );
+    if (host?.isConnected) return; // all good
+
+    // Cancel any pending transfer timer — we're handling it now
+    if (this.hostTransferTimer) {
+      clearTimeout(this.hostTransferTimer);
+      this.hostTransferTimer = null;
+    }
+
+    const connectedPlayers = this.gameState.players
+      .filter((p) => p.isConnected && p.id !== this.gameState!.hostId)
       .sort((a, b) => a.joinedAt - b.joinedAt);
 
     if (connectedPlayers.length === 0) return;
