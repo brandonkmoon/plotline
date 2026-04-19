@@ -36,8 +36,8 @@ export default function PendingLobbyScreen() {
         Game in Progress
       </h1>
       <p className="font-body italic text-[16px] text-text-dim">
-        {activeCount} player{activeCount !== 1 ? "s" : ""} are currently in{" "}
-        {phaseLabel}
+        {activeCount} player{activeCount !== 1 ? "s" : ""}{" "}
+        {activeCount === 1 ? "is" : "are"} currently in {phaseLabel}
       </p>
 
       <hr className="rule" />

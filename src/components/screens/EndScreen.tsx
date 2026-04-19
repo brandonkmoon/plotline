@@ -18,7 +18,7 @@ export default function EndScreen() {
     currentPlayer,
   } = useRoom();
 
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
   const [hasQueued, setHasQueued] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -126,7 +126,7 @@ export default function EndScreen() {
                         : undefined,
                   }}
                 >
-                  <span className="font-serif font-bold text-[15px] text-ink leading-snug pr-4">
+                  <span className="font-serif font-bold text-[16px] text-ink leading-snug pr-4">
                     {story.title}
                   </span>
                   <span className="font-sans text-[18px] text-text-muted flex-shrink-0">
@@ -144,10 +144,10 @@ export default function EndScreen() {
                           key={si}
                           className={
                             section.style === "name"
-                              ? "font-serif font-bold text-[15px] text-ink"
+                              ? "font-serif font-bold text-[17px] text-ink"
                               : section.style === "dialogue"
-                              ? "font-body italic text-[15px] text-ink"
-                              : "font-body text-[15px] text-ink"
+                              ? "font-body italic text-[17px] text-ink"
+                              : "font-body text-[17px] text-ink"
                           }
                           style={{ lineHeight: 1.5 }}
                         >
@@ -162,7 +162,7 @@ export default function EndScreen() {
                         <hr className="border-t border-ink/20 mb-4" />
                         <button
                           onClick={() => handleSaveImage(story.storyIndex)}
-                          className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
+                          className="font-sans text-[12px] uppercase tracking-[2px] text-ink hover:text-text-dim transition-colors"
                         >
                           Save Image ↗
                         </button>

@@ -24,13 +24,13 @@ export default function WaitingScreen() {
   return (
     <>
       <div className="screen anim-fade-in text-center">
-        <hr className="rule" />
-
         {justBecameHost && (
           <p className="font-sans text-[12px] uppercase tracking-[2px] text-white bg-ink px-4 py-2 text-center mb-4">
             You&rsquo;re now the host
           </p>
         )}
+
+        <hr className="rule" />
         <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
           Intermission
         </p>
@@ -56,8 +56,8 @@ export default function WaitingScreen() {
           <div className="mt-8">
             <Button variant="secondary" onClick={hostAdvance}>
               {pendingDisconnected === 0
-                ? `Advance Now (${pendingConnected} working)`
-                : `Advance (${pendingConnected} working, ${pendingDisconnected} offline)`}
+                ? `Advance Now (${pendingConnected} still writing)`
+                : `Advance (${pendingConnected} still writing, ${pendingDisconnected} offline)`}
             </Button>
           </div>
         )}
