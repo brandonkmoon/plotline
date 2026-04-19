@@ -51,22 +51,28 @@ export default function PromptScreen() {
     (p) => p.id !== currentPlayer?.id
   ) ?? [];
 
-  // In round 1, find the character already picked in slot 0 of this player's
-  // assigned story. Block that name from being picked again so no story ends
-  // up with a character talking to themselves.
-  const slot0TakenName: string | null = (() => {
-    if (currentRound !== 1 || !room || !currentPlayer) return null;
-    const assignedStory = room.stories.find((s) =>
-      s.slots.some(
-        (slot) =>
-          slot.promptIndex === 1 && slot.playerId === currentPlayer.id
-      )
-    );
-    const slot0Response = assignedStory?.slots.find(
-      (slot) => slot.promptIndex === 0
-    )?.response;
-    return slot0Response ? extractName(slot0Response) : null;
+  // Find the story this player is assigned to for the current round.
+  const assignedStory = room?.stories.find((s) =>
+    s.slots.some(
+      (slot) => slot.promptIndex === currentRound && slot.playerId === currentPlayer?.id
+    )
+  ) ?? null;
+
+  // Extract both character names from the assigned story (slots 0 and 1).
+  // Used to personalise the dialogue prompts (rounds 4-5) and to block
+  // duplicate picks in round 1.
+  const char1Name: string | null = (() => {
+    const r = assignedStory?.slots.find((s) => s.promptIndex === 0)?.response;
+    return r ? extractName(r) : null;
   })();
+  const char2Name: string | null = (() => {
+    const r = assignedStory?.slots.find((s) => s.promptIndex === 1)?.response;
+    return r ? extractName(r) : null;
+  })();
+
+  // In round 1, block the name already used as character 1 in this story.
+  const slot0TakenName: string | null =
+    currentRound === 1 ? char1Name : null;
 
   // Reset state when the round changes
   useEffect(() => {
@@ -157,7 +163,11 @@ export default function PromptScreen() {
         </p>
 
         <p className="font-body text-[22px] text-ink text-center leading-[1.5] mb-2">
-          {prompt.text}
+          {currentRound === 4
+            ? "What does the first character say?"
+            : currentRound === 5
+            ? "What does the second character say in reply?"
+            : prompt.text}
         </p>
 
         <hr className="rule" />
