@@ -179,6 +179,19 @@ class GameClient {
     this.roomCode = roomCode;
     this.connectionError = null;
 
+    // Close any existing socket before opening a new one. Without this,
+    // a previous rejected connection (e.g. NAME_TAKEN) can keep
+    // auto-reconnecting in the background and fire stale error events
+    // into whatever RoomProvider happens to mount next.
+    if (this.socket) {
+      try {
+        this.socket.close();
+      } catch {
+        // ignore
+      }
+      this.socket = null;
+    }
+
     // Determine which playerId to send:
     // - If forceNewPlayer is true: never reconnect, always join as new
     //   (clear both sessionStorage AND localStorage entries for this room)
@@ -309,6 +322,15 @@ class GameClient {
               msg.reason === "PLAYER_ALREADY_CONNECTED" ||
               msg.reason === "NAME_TAKEN"
             ) {
+              // Close the socket immediately on fatal errors so PartySocket
+              // doesn't auto-reconnect and fire stale error events later.
+              try {
+                this.socket?.close();
+              } catch {
+                // ignore
+              }
+              this.socket = null;
+
               // Clear stored playerId on PLAYER_ALREADY_CONNECTED so a
               // refresh doesn't repeat the conflict. Also clear the
               // localStorage rejoin id so another tab can claim the slot.
