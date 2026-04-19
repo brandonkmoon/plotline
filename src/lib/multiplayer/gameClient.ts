@@ -295,11 +295,24 @@ class GameClient {
             storePlayerId(roomCode, msg.playerId);
             this.registerRejoinOnUnload(roomCode);
             // Store the active room info so TitleScreen can offer a rejoin
-            // prompt if the player navigates away mid-game.
+            // prompt if the player navigates away mid-game. Clear it once
+            // the game ends so stale rejoin buttons don't appear after reload.
             const myName = msg.room.players.find(
               (p) => p.id === msg.playerId
             )?.name ?? "";
-            if (myName) storeCurrentRoomInfo(roomCode, myName);
+            const isActiveState =
+              msg.room.state === "LOBBY" ||
+              msg.room.state === "CREATED" ||
+              msg.room.state === "PLAYING" ||
+              msg.room.state === "REVEAL";
+            if (myName && isActiveState) {
+              storeCurrentRoomInfo(roomCode, myName);
+            } else if (
+              msg.room.state === "END" ||
+              msg.room.state === "DESTROYED"
+            ) {
+              clearCurrentRoomInfo();
+            }
             for (const cb of this.stateListeners) cb(msg.room);
             if (!resolved) {
               resolved = true;
