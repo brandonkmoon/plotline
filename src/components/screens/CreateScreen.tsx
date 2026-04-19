@@ -62,6 +62,7 @@ export default function CreateScreen() {
         type="text"
         value={name}
         onChange={handleNameChange}
+        onKeyDown={(e) => e.key === "Enter" && handleCreate()}
         placeholder="Enter your name"
         className="w-full font-body text-[18px] text-ink py-[14px] px-4 border-2 border-input-border focus:border-ink focus:outline-none transition-colors"
         style={{ borderRadius: 0 }}

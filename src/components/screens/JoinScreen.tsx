@@ -81,6 +81,7 @@ export default function JoinScreen() {
         type="text"
         value={code}
         onChange={handleCodeChange}
+        onKeyDown={(e) => e.key === "Enter" && name.length >= 2 && handleJoin()}
         placeholder="XXXX"
         className="w-full font-serif font-bold text-[32px] text-ink text-center py-[14px] px-4 border-2 border-input-border focus:border-ink focus:outline-none transition-colors"
         style={{ borderRadius: 0, letterSpacing: "clamp(4px, 3vw, 10px)" }}
@@ -96,6 +97,7 @@ export default function JoinScreen() {
         type="text"
         value={name}
         onChange={handleNameChange}
+        onKeyDown={(e) => e.key === "Enter" && handleJoin()}
         placeholder="Enter your name"
         className="w-full font-body text-[18px] text-ink py-[14px] px-4 border-2 border-input-border focus:border-ink focus:outline-none transition-colors"
         style={{ borderRadius: 0 }}
