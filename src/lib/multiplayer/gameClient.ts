@@ -150,6 +150,9 @@ class GameClient {
   private socket: PartySocket | null = null;
   private playerId: string | null = null;
   private roomCode: string | null = null;
+  private playerName: string = "";
+  private unknownPlayerRetries: number = 0;
+  private readonly MAX_UNKNOWN_PLAYER_RETRIES = 2;
   private stateListeners: Set<StateCallback> = new Set();
   private statusListeners: Set<StatusCallback> = new Set();
   private errorListeners: Set<ErrorCallback> = new Set();
@@ -189,6 +192,7 @@ class GameClient {
     options?: { forceNewPlayer?: boolean }
   ): Promise<string> {
     this.roomCode = roomCode;
+    this.playerName = playerName;
     this.connectionError = null;
 
     // Close any existing socket before opening a new one. Without this,
@@ -325,6 +329,8 @@ class GameClient {
             ) {
               clearCurrentRoomInfo();
             }
+            // Successful connection — reset the retry counter.
+            this.unknownPlayerRetries = 0;
             for (const cb of this.stateListeners) cb(msg.room);
             if (!resolved) {
               resolved = true;
@@ -363,9 +369,33 @@ class GameClient {
                 clearStoredPlayerId(roomCode);
                 clearRejoinId(roomCode);
               }
-              // UNKNOWN_PLAYER: the player id we used no longer exists
-              // on the server — clear both storages so we'll join fresh.
+              // UNKNOWN_PLAYER: retry a couple of times before giving up.
+              // The server may have just restarted and still be restoring
+              // state from durable storage. During the retry window the
+              // player sees "Connecting…" with no action required.
               if (msg.reason === "UNKNOWN_PLAYER") {
+                if (
+                  this.unknownPlayerRetries < this.MAX_UNKNOWN_PLAYER_RETRIES &&
+                  this.roomCode
+                ) {
+                  this.unknownPlayerRetries++;
+                  const delay = this.unknownPlayerRetries * 2000; // 2s, 4s
+                  setTimeout(() => {
+                    if (!this.roomCode) return;
+                    this.connect(this.roomCode, this.playerName).catch(() => {
+                      // Retry failure is handled by the ERROR handler above.
+                    });
+                  }, delay);
+                  // Don't emit error yet — keep the "Connecting…" view visible.
+                  if (!resolved) {
+                    resolved = true;
+                    clearTimeout(connectTimeout);
+                    reject(new Error(msg.reason));
+                  }
+                  break;
+                }
+                // All retries exhausted — clear stored identity and surface the error.
+                this.unknownPlayerRetries = 0;
                 clearStoredPlayerId(roomCode);
                 clearRejoinId(roomCode);
                 clearCurrentRoomInfo();

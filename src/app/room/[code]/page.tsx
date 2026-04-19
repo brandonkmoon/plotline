@@ -22,13 +22,6 @@ function ConnectionErrorView() {
   const router = useRouter();
   const code = params?.code;
 
-  // Clear stored playerId if the room is no longer available
-  useEffect(() => {
-    if (connectionError === "UNKNOWN_PLAYER" && code) {
-      gameClient.clearStoredPlayerIdForRoom(code);
-    }
-  }, [connectionError, code]);
-
   if (!connectionError) return null;
 
   let title = "";
