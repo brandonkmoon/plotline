@@ -803,10 +803,20 @@ export default class RoomServer implements Party.Server {
     if (this.gameState.state !== "REVEAL") return;
 
     const playerId = this.connectionToPlayer.get(sender.id);
-    if (!playerId || playerId !== this.gameState.hostId) {
+    if (!playerId) return;
+
+    const isHost = playerId === this.gameState.hostId;
+
+    // Also allow the current story's designated reader to advance —
+    // they're the ones running the reveal and clicking "Next Story".
+    const currentStory = this.gameState.stories[this.revealStoryIndex];
+    const readerSlot = currentStory?.slots.find((s) => s.promptIndex === 6);
+    const isReader = readerSlot?.playerId === playerId;
+
+    if (!isHost && !isReader) {
       this.sendTo(sender, {
         type: "ERROR",
-        reason: "Only the host can advance to the next story",
+        reason: "Only the host or current reader can advance to the next story",
       });
       return;
     }
