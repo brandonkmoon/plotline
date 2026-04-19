@@ -154,8 +154,33 @@ export default function HelpOverlay() {
             <div className="help-section">
               <h3 className="help-q">I got disconnected</h3>
               <p className="help-a">
-                Reopen the room link or go back through Join and enter the
-                same name. You&apos;ll pick up where you left off.
+                Reopen the room link or go back to Join and enter the same
+                name &mdash; you&apos;ll pick up where you left off. If you
+                see &ldquo;Room unavailable,&rdquo; that doesn&apos;t mean
+                the game is over. Try rejoining with the same name. The game
+                doesn&apos;t pause when someone drops &mdash; the host can
+                advance without you and a placeholder fills in for any
+                missing answers.
+              </p>
+            </div>
+
+            <div className="help-section">
+              <h3 className="help-q">I&apos;m the host and someone disconnected</h3>
+              <p className="help-a">
+                When a player goes offline, an Advance button appears once
+                everyone else has submitted. Use it to keep the game moving
+                without waiting for them. If you disconnect, hosting transfers
+                automatically to another player &mdash; they&apos;ll see a
+                banner letting them know.
+              </p>
+            </div>
+
+            <div className="help-section">
+              <h3 className="help-q">The reader disconnected during the reveal</h3>
+              <p className="help-a">
+                The host automatically takes over reading for that story.
+                No action needed &mdash; the host&apos;s screen will update
+                to show the lines.
               </p>
             </div>
 
