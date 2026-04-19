@@ -16,6 +16,35 @@ import Button from "@/components/Button";
 import { gameClient } from "@/lib/multiplayer/gameClient";
 import { registerLeaveGuard, clearLeaveGuard } from "@/lib/client/leaveGuard";
 
+// Small room-code badge overlaid on the banner — always visible so players
+// can share the code at any point during the game.
+function RoomCodeBadge() {
+  const { room } = useRoom();
+  const [flash, setFlash] = useState(false);
+
+  if (!room?.code) return null;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(room.code).then(() => {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 1200);
+    });
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      aria-label="Copy room code"
+      style={{ position: "fixed", top: 10, right: 14, zIndex: 50 }}
+      className={`font-sans text-[11px] uppercase tracking-[2px] transition-colors ${
+        flash ? "text-ink" : "text-ink/50"
+      }`}
+    >
+      {flash ? "Copied!" : room.code}
+    </button>
+  );
+}
+
 function ConnectionErrorView() {
   const { connectionError } = useRoom();
   const params = useParams<{ code: string }>();
@@ -365,6 +394,7 @@ export default function RoomPage() {
       <RoomProvider>
         <AutoConnect />
         <BackButtonGuard />
+        <RoomCodeBadge />
         <div className="relative">
           <ConnectionStatus />
           <RoomContent />
