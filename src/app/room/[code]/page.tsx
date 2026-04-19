@@ -186,9 +186,12 @@ function BackButtonGuard() {
   // Defaults to navigating home; overridden when the logo is clicked.
   const onConfirmRef = useRef<(() => void) | null>(null);
 
-  // Only guard during active gameplay — not lobby or end screen
+  // Guard during lobby and active gameplay — not end screen
   const isActiveGame =
-    room?.state === "PLAYING" || room?.state === "REVEAL";
+    room?.state === "LOBBY" ||
+    room?.state === "CREATED" ||
+    room?.state === "PLAYING" ||
+    room?.state === "REVEAL";
 
   const showModal = (onConfirm?: () => void) => {
     onConfirmRef.current = onConfirm ?? (() => router.push("/"));
@@ -250,7 +253,9 @@ function BackButtonGuard() {
           Leave the show?
         </p>
         <p className="font-body italic text-[15px] text-text-dim mb-6">
-          You&apos;ll lose your place in the game.
+          {room?.state === "LOBBY" || room?.state === "CREATED"
+            ? "You'll be removed from the lobby."
+            : "You\u2019ll lose your place in the game."}
         </p>
         <div className="flex flex-col gap-4">
           <Button variant="primary" onClick={() => setShowConfirm(false)}>
