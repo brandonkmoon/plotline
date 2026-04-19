@@ -14,7 +14,7 @@ export default function PendingPlayersBadge() {
   if (pending.length === 0) return null;
 
   const parts = pending.map(
-    (p) => `${p.name} (${p.ready ? "ready" : "waiting"})`
+    (p) => `${p.name} ${p.ready ? "✓" : "···"}`
   );
 
   return (
@@ -23,7 +23,7 @@ export default function PendingPlayersBadge() {
       style={{ backgroundColor: "#ffffff" }}
     >
       <p className="font-sans text-[11px] uppercase tracking-[3px] text-text-muted">
-        In lobby: {parts.join(", ")}
+        Watching: {parts.join(", ")}
       </p>
     </div>
   );

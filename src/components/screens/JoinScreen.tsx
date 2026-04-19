@@ -53,11 +53,15 @@ export default function JoinScreen() {
       trackEvent("room_joined");
       router.push(`/room/${code}`);
     } catch (err) {
-      const reason = err instanceof Error ? err.message : "Failed to join room";
+      const reason = err instanceof Error ? err.message : "";
       if (reason === "NAME_TAKEN") {
         setError("That name is already taken. Try a different one.");
+      } else if (reason === "GAME_IN_PROGRESS") {
+        setError("This game is already in progress. Ask the host to let you in after.");
+      } else if (reason === "CONNECT_TIMEOUT") {
+        setError("Couldn't reach the server. Check your connection and try again.");
       } else {
-        setError(reason);
+        setError("Couldn't join. Double-check the room code and try again.");
       }
       setLoading(false);
     }

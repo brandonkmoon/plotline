@@ -13,7 +13,6 @@ export default function EndScreen() {
     assembledStories,
     playAgain,
     queueNextGame,
-    isHost,
     archiveUrl,
     currentPlayer,
     currentPendingPlayer,
@@ -37,21 +36,13 @@ export default function EndScreen() {
   if (!room) return null;
 
   const storyCount = assembledStories?.length ?? 0;
-  const connectedPlayers = room.players.filter((p) => p.isConnected);
-  const totalPlayers = connectedPlayers.length;
-  const hostName = room.players.find((p) => p.isHost)?.name ?? "the host";
+  const totalPlayers = room.players.filter((p) => p.isConnected).length;
   const queuedCount = room.players.filter((p) => p.queuedForNextGame).length;
   const iAmQueued =
     hasQueued ||
     !!room.players.find((p) => p.id === currentPlayer?.id)?.queuedForNextGame;
-  const hostIsQueued = !!room.players.find((p) => p.isHost)?.queuedForNextGame;
   const canStartNextGame =
-    isHost && hostIsQueued && queuedCount >= MIN_PLAYERS_TO_START;
-
-  // Names of connected players who haven't queued yet (for waiting message)
-  const unqueuedNames = room.players
-    .filter((p) => p.isConnected && !p.queuedForNextGame)
-    .map((p) => p.name);
+    iAmQueued && queuedCount >= MIN_PLAYERS_TO_START;
 
   const handleQueueNextGame = () => {
     if (hasQueued) return;
@@ -318,8 +309,8 @@ export default function EndScreen() {
               </div>
             )}
 
-            {/* Host-only start button */}
-            {isHost && iAmQueued && (
+            {/* Start button — visible to any queued player once threshold is met */}
+            {iAmQueued && (
               canStartNextGame ? (
                 <Button variant="primary" onClick={handlePlayAgain}>
                   Start Next Game
@@ -332,21 +323,6 @@ export default function EndScreen() {
               )
             )}
 
-            {/* Non-host waiting messages */}
-            {!isHost && iAmQueued && !hostIsQueued && (
-              <p className="font-body italic text-[14px] text-text-dim text-center">
-                {unqueuedNames.length === 1
-                  ? `Waiting for ${unqueuedNames[0]} to join\u2026`
-                  : unqueuedNames.length === 2
-                  ? `Waiting for ${unqueuedNames[0]} and ${unqueuedNames[1]} to join\u2026`
-                  : `Waiting for ${unqueuedNames.length} more players to join\u2026`}
-              </p>
-            )}
-            {!isHost && iAmQueued && hostIsQueued && (
-              <p className="font-body italic text-[14px] text-text-dim text-center">
-                Waiting for {hostName} to start&hellip;
-              </p>
-            )}
           </div>
         )}
       </div>

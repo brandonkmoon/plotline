@@ -142,6 +142,29 @@ export default function HelpOverlay() {
               </p>
             </div>
 
+            <p className="help-group-label">Joining Late</p>
+
+            <div className="help-section">
+              <h3 className="help-q">I joined while the game was already going</h3>
+              <p className="help-a">
+                You&apos;re in spectator mode. You can watch the current game
+                unfold &mdash; the timer, submissions, and reveal all show on
+                your screen. Tap &ldquo;Join Next Game&rdquo; to confirm
+                you&apos;re in for the next round, and you&apos;ll be added
+                automatically when it starts.
+              </p>
+            </div>
+
+            <div className="help-section">
+              <h3 className="help-q">What can I see as a spectator?</h3>
+              <p className="help-a">
+                During the writing phase you&apos;ll see the countdown and
+                who&apos;s submitted. During the reveal you&apos;ll see the
+                stories as they&apos;re read aloud. You just can&apos;t
+                submit answers for the current game.
+              </p>
+            </div>
+
             <p className="help-group-label">Connection Issues</p>
 
             <div className="help-section">

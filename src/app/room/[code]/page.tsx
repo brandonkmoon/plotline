@@ -11,7 +11,6 @@ import PromptScreen from "@/components/screens/PromptScreen";
 import WaitingScreen from "@/components/screens/WaitingScreen";
 import RevealScreen from "@/components/screens/RevealScreen";
 import EndScreen from "@/components/screens/EndScreen";
-import PendingLobbyScreen from "@/components/screens/PendingLobbyScreen";
 import SpectatorScreen from "@/components/screens/SpectatorScreen";
 import Button from "@/components/Button";
 import { gameClient } from "@/lib/multiplayer/gameClient";
