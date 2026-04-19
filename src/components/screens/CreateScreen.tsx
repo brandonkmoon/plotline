@@ -47,7 +47,7 @@ export default function CreateScreen() {
   return (
     <div className="screen anim-fade-in">
       <h1 className="font-serif font-bold text-[28px] text-ink text-center mb-2">
-        Create Game
+        Create a Show
       </h1>
       <p className="font-body italic text-[15px] text-text-dim text-center mb-4">
         Start a new room and invite your players.
