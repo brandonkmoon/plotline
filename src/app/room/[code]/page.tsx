@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { RoomProvider, useRoom } from "@/lib/client/RoomContext";
@@ -14,6 +14,7 @@ import EndScreen from "@/components/screens/EndScreen";
 import PendingLobbyScreen from "@/components/screens/PendingLobbyScreen";
 import Button from "@/components/Button";
 import { gameClient } from "@/lib/multiplayer/gameClient";
+import { registerLeaveGuard, clearLeaveGuard } from "@/lib/client/leaveGuard";
 
 function ConnectionErrorView() {
   const { connectionError } = useRoom();
@@ -159,10 +160,29 @@ function BackButtonGuard() {
   const { room } = useRoom();
   const router = useRouter();
   const [showConfirm, setShowConfirm] = useState(false);
+  // Stores what to do when the player confirms they want to leave.
+  // Defaults to navigating home; overridden when the logo is clicked.
+  const onConfirmRef = useRef<(() => void) | null>(null);
 
   // Only guard during active gameplay — not lobby or end screen
   const isActiveGame =
     room?.state === "PLAYING" || room?.state === "REVEAL";
+
+  const showModal = (onConfirm?: () => void) => {
+    onConfirmRef.current = onConfirm ?? (() => router.push("/"));
+    setShowConfirm(true);
+  };
+
+  // Register with the module-level guard so PlaybillBanner can trigger it
+  useEffect(() => {
+    if (!isActiveGame) {
+      clearLeaveGuard();
+      return;
+    }
+    registerLeaveGuard((onConfirm) => showModal(onConfirm));
+    return () => clearLeaveGuard();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActiveGame]);
 
   // Push a history guard entry and listen for popstate
   useEffect(() => {
@@ -171,13 +191,13 @@ function BackButtonGuard() {
     history.pushState({ backGuard: true }, "");
 
     const handlePopState = () => {
-      // Re-push the guard to cancel the navigation, then show the modal
       history.pushState({ backGuard: true }, "");
-      setShowConfirm(true);
+      showModal();
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActiveGame]);
 
   // Warn on tab close / refresh during active gameplay
@@ -192,6 +212,12 @@ function BackButtonGuard() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isActiveGame]);
+
+  const handleLeave = () => {
+    setShowConfirm(false);
+    onConfirmRef.current?.();
+    onConfirmRef.current = null;
+  };
 
   if (!showConfirm) return null;
 
@@ -209,7 +235,7 @@ function BackButtonGuard() {
             Stay in the Show
           </Button>
           <button
-            onClick={() => router.push("/")}
+            onClick={handleLeave}
             className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
           >
             Leave

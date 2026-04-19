@@ -1,17 +1,31 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { requestLeave } from "@/lib/client/leaveGuard";
+
 // Persistent masthead shown at the top of every page. The yellow Playbill
 // banner is part of the shared layout, not per-screen.
 // Title is a pre-rendered PNG to avoid font-loading flash (FOUT).
 export default function PlaybillBanner() {
+  const router = useRouter();
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    requestLeave(() => router.push("/"));
+  };
+
   return (
     <div className="banner">
-      <img
-        src="/plotline-title.png"
-        alt="Plotline"
-        className="banner-title-img"
-        width={355}
-        height={44}
-        draggable={false}
-      />
+      <a href="/" onClick={handleLogoClick} aria-label="Go to home">
+        <img
+          src="/plotline-title.png"
+          alt="Plotline"
+          className="banner-title-img"
+          width={355}
+          height={44}
+          draggable={false}
+        />
+      </a>
       <div className="banner-subtitle">The Collaborative Storytelling Game</div>
     </div>
   );
