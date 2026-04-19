@@ -270,6 +270,27 @@ export default function EndScreen() {
               </li>
             );
           })}
+          {/* Spectators (pending/late-join players) — show their ready status */}
+          {(room.pendingPlayers ?? []).map((pending) => (
+            <li
+              key={pending.id}
+              className="font-body text-[15px] py-2 flex justify-between items-center border-b border-list-border last:border-b-0"
+            >
+              <span>
+                {pending.name}
+                <span className="ml-2 font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
+                  Watching
+                </span>
+              </span>
+              <span
+                className={`font-sans text-[13px] ${
+                  pending.ready ? "text-ink" : "text-text-muted"
+                }`}
+              >
+                {pending.ready ? "Ready \u2713" : "\u22EF"}
+              </span>
+            </li>
+          ))}
         </ul>
 
         {/* ── Queue / next game controls ───────────────────────── */}

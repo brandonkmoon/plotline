@@ -295,7 +295,10 @@ function ScreenTransition({
     setExiting(true);
   }, [screenKey]);
 
-  const handleAnimationEnd = () => {
+  const handleAnimationEnd = (e: React.AnimationEvent<HTMLDivElement>) => {
+    // Ignore animationend events that bubble up from children — only act on
+    // the wrapper div's own fade-out animation finishing.
+    if (e.target !== e.currentTarget) return;
     setDisplayed(childrenRef.current);
     setExiting(false);
   };
