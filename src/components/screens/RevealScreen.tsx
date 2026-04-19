@@ -169,34 +169,9 @@ export default function RevealScreen() {
           </p>
           <hr className="rule" />
 
-          {revealedLines === 0 ? (
-            <p className="mt-6 font-body italic text-[16px] text-text-muted text-center">
-              Listening&hellip;
-            </p>
-          ) : (
-            <div className="mt-2 space-y-3">
-              {(story?.sections ?? []).map((section, i) => {
-                if (i >= revealedLines) return null;
-                const isDialogue = section.style === "dialogue";
-                return (
-                  <p
-                    key={i}
-                    className={`font-body text-[18px] text-ink leading-[1.7] pl-4 border-l-2 ${
-                      isDialogue ? "italic" : ""
-                    }`}
-                    style={{ borderLeftColor: "#FCEB00" }}
-                  >
-                    {section.text}
-                  </p>
-                );
-              })}
-              {allRevealed && (
-                <p className="font-body italic text-[14px] text-text-muted mt-4 text-center">
-                  Story complete.
-                </p>
-              )}
-            </div>
-          )}
+          <p className="mt-6 font-body italic text-[16px] text-text-muted text-center">
+            Listening&hellip;
+          </p>
         </div>
         <PendingPlayersBadge />
       </>
@@ -252,13 +227,14 @@ export default function RevealScreen() {
           {(story?.sections ?? []).map((section, i) => {
             if (i >= revealedLines) return null;
             const isDialogue = section.style === "dialogue";
+            const isNewest = i === revealedLines - 1;
 
             return (
               <p
                 key={i}
                 className={`font-body text-[18px] text-ink leading-[1.7] pl-4 border-l-2 ${
                   isDialogue ? "italic" : ""
-                }`}
+                } ${isNewest ? "line-reveal-anim" : ""}`}
                 style={{ borderLeftColor: "#FCEB00" }}
               >
                 {section.text}
@@ -266,18 +242,22 @@ export default function RevealScreen() {
             );
           })}
 
-          {!allRevealed && (
-            <p
-              className="font-body text-[18px] leading-[1.7] pl-4 border-l-2"
-              style={{
-                opacity: 0.3,
-                borderLeftColor: "#e0e0e0",
-                color: "#999",
-              }}
-            >
-              Tap to reveal the next line&hellip;
-            </p>
-          )}
+          {!allRevealed && (() => {
+            const next = story.sections[revealedLines];
+            if (!next) return null;
+            return (
+              <div className="line-preview">
+                <p
+                  className={`line-preview-text font-body text-[18px] leading-[1.7] pl-4 border-l-2 ${
+                    next.style === "dialogue" ? "italic" : ""
+                  }`}
+                  style={{ borderLeftColor: "#e0e0e0" }}
+                >
+                  {next.text}
+                </p>
+              </div>
+            );
+          })()}
         </div>
 
         {allRevealed && (
