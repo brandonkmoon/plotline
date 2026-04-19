@@ -806,11 +806,12 @@ export default class RoomServer implements Party.Server {
       now
     );
 
-    // Re-add only players who have queued for the next game
+    // Re-add players who queued for the next game, connected or not.
+    // A disconnected player who queued will appear in the new lobby as
+    // disconnected and rejoin automatically when their socket reconnects.
     let state = newRoom;
     for (const player of this.gameState.players) {
       if (player.id === host.id) continue;
-      if (!player.isConnected) continue;
       if (!player.queuedForNextGame) continue;
 
       const action: GameAction = {
@@ -819,7 +820,7 @@ export default class RoomServer implements Party.Server {
           id: player.id,
           name: player.name,
           isHost: false,
-          isConnected: true,
+          isConnected: player.isConnected,
           joinedAt: now,
         },
       };
