@@ -50,9 +50,19 @@ export default function CountdownTimer({
 
   if (remainingMs === null) {
     if (roomState === "PLAYING") {
-      return <div className={`${baseClass} text-text-muted`}>0:00</div>;
+      return (
+        <div className="text-center">
+          <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted mb-1">Time</p>
+          <div className={`${baseClass} text-text-muted`}>0:00</div>
+        </div>
+      );
     }
-    return <div className={`${baseClass} text-text-muted`}>--:--</div>;
+    return (
+      <div className="text-center">
+        <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted mb-1">Time</p>
+        <div className={`${baseClass} text-text-muted`}>--:--</div>
+      </div>
+    );
   }
 
   const totalSeconds = Math.ceil(remainingMs / 1000);
@@ -61,11 +71,18 @@ export default function CountdownTimer({
   const display = `${minutes}:${String(seconds).padStart(2, "0")}`;
 
   let colorClass = "text-ink";
+  let animClass = "";
   if (totalSeconds <= 10) {
-    colorClass = "text-red-600 connection-pulse";
-  } else if (totalSeconds <= 20) {
-    colorClass = "text-ink";
+    colorClass = "text-red-600";
+    animClass = "timer-pulse";
+  } else if (totalSeconds <= 30) {
+    colorClass = "text-amber-600";
   }
 
-  return <div className={`${baseClass} ${colorClass}`}>{display}</div>;
+  return (
+    <div className="text-center">
+      <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted mb-1">Time</p>
+      <div className={`${baseClass} ${colorClass} ${animClass}`}>{display}</div>
+    </div>
+  );
 }
