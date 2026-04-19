@@ -326,6 +326,28 @@ export default class RoomServer implements Party.Server {
     }
     this.broadcastPlayerStatuses();
 
+    // Broadcast updated state so clients immediately get fresh
+    // pendingConnected/pendingDisconnected counts reflecting the lost socket.
+    // Also check if all remaining open-socket players have now submitted —
+    // if so, the host can advance without waiting for the timer.
+    if (this.gameState?.state === "PLAYING") {
+      this.broadcastStateUpdate();
+      const currentRound = this.gameState.currentRound;
+      const allSocketSubmitted = this.gameState.stories.every((s) => {
+        const slot = s.slots[currentRound];
+        if (!slot || slot.response !== null) return true;
+        return !this.playerToConnection.has(slot.playerId ?? "");
+      });
+      if (allSocketSubmitted) {
+        const unsubmittedCount = this.gameState.stories.filter(
+          (s) => s.slots[currentRound]?.response === null
+        ).length;
+        if (unsubmittedCount > 0) {
+          this.broadcast({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
+        }
+      }
+    }
+
     // Set reconnect timeout
     const disconnectTimer = setTimeout(() => {
       this.handlePlayerDisconnected(playerId);
@@ -748,8 +770,8 @@ export default class RoomServer implements Party.Server {
       const allConnectedSubmitted = newState.stories.every((s) => {
         const slot = s.slots[currentRound];
         if (!slot || slot.response !== null) return true;
-        const player = newState.players.find((p) => p.id === slot.playerId);
-        return !player?.isConnected; // disconnected players don't block
+        // Players without an open socket don't block the advance.
+        return !this.playerToConnection.has(slot.playerId ?? "");
       });
       if (allConnectedSubmitted) {
         const unsubmittedCount = newState.stories.filter(
@@ -919,16 +941,27 @@ export default class RoomServer implements Party.Server {
       return;
 
     const senderPlayerId = this.connectionToPlayer.get(sender.id);
-    if (!senderPlayerId || senderPlayerId !== this.gameState.hostId) {
+    const senderPlayer = senderPlayerId
+      ? this.gameState.players.find((p) => p.id === senderPlayerId)
+      : null;
+
+    // Any player who has queued for the next game can trigger the start —
+    // not just the host. This lets the group move forward even if the
+    // original host is slow or absent.
+    if (!senderPlayer || !senderPlayer.queuedForNextGame) {
       this.sendTo(sender, {
         type: "ERROR",
-        reason: "Only the host can start the next round",
+        reason: "Only a queued player can start the next game",
       });
       return;
     }
 
     const now = Date.now();
-    const host = this.gameState.players.find((p) => p.isHost);
+
+    // New game host: original host if they queued; otherwise whoever started.
+    const originalHost = this.gameState.players.find((p) => p.isHost);
+    const host =
+      originalHost?.queuedForNextGame ? originalHost : senderPlayer;
     if (!host) return;
 
     const readyPending = (this.gameState.pendingPlayers ?? []).filter(
@@ -1350,10 +1383,10 @@ export default class RoomServer implements Party.Server {
     for (const story of this.gameState.stories) {
       const slot = story.slots.find((s) => s.promptIndex === currentRound);
       if (slot && slot.response === null && slot.playerId) {
-        const player = this.gameState.players.find(
-          (p) => p.id === slot.playerId
-        );
-        if (player?.isConnected) pendingConnected++;
+        // Use playerToConnection (active socket) rather than player.isConnected
+        // so that reconnecting players (socket gone, 2-min timer pending) are
+        // counted as disconnected immediately rather than blocking the advance.
+        if (this.playerToConnection.has(slot.playerId)) pendingConnected++;
         else pendingDisconnected++;
       }
     }

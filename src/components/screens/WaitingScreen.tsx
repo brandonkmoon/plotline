@@ -52,10 +52,12 @@ export default function WaitingScreen() {
 
         <SubmissionStatus />
 
-        {isHost && advanceAvailable && totalPending > 0 && (
+        {isHost && (advanceAvailable || pendingConnected === 0) && totalPending > 0 && (
           <div className="mt-8">
             <Button variant="secondary" onClick={hostAdvance}>
-              {pendingDisconnected === 0
+              {pendingConnected === 0
+                ? `Advance (${pendingDisconnected} offline)`
+                : pendingDisconnected === 0
                 ? `Advance Now (${pendingConnected} still writing)`
                 : `Advance (${pendingConnected} still writing, ${pendingDisconnected} offline)`}
             </Button>
