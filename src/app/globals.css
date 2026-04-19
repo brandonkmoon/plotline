@@ -5,11 +5,11 @@
 :root {
   --bg: #ffffff;
   --ink: #1a1a1a;
-  --text-dim: #666666;
-  --text-muted: #999999;
+  --text-dim: #555555;
+  --text-muted: #777777;
   --rule: #1a1a1a;
-  --list-border: #d0d0d0;
-  --input-border: #e0e0e0;
+  --list-border: #b8b8b8;
+  --input-border: #cccccc;
   --banner: #fceb00;
 
   /* All font CSS variables are injected by next/font on <html>

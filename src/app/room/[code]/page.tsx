@@ -35,10 +35,18 @@ function RoomCodeBadge() {
     <button
       onClick={handleCopy}
       aria-label="Copy room code"
-      style={{ position: "fixed", top: 10, right: 14, zIndex: 50 }}
-      className={`font-sans text-[11px] uppercase tracking-[2px] transition-colors ${
-        flash ? "text-ink" : "text-ink/50"
-      }`}
+      style={{
+        position: "fixed",
+        top: 12,
+        right: 14,
+        zIndex: 50,
+        background: flash ? "var(--ink)" : "var(--bg)",
+        color: flash ? "var(--bg)" : "var(--ink)",
+        border: "1.5px solid var(--ink)",
+        padding: "4px 10px",
+        transition: "background 0.15s, color 0.15s",
+      }}
+      className="font-sans text-[13px] uppercase tracking-[2px]"
     >
       {flash ? "Copied!" : room.code}
     </button>
