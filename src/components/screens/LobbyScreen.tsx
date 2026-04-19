@@ -56,7 +56,7 @@ export default function LobbyScreen() {
           {connectedPlayers.length !== 1 ? "s" : ""}
         </p>
 
-        <p className="font-body italic text-[14px] text-[#888] text-center mb-8">
+        <p className="font-body italic text-[16px] text-text-muted text-center mb-8">
           Share the room code to invite more players
         </p>
 

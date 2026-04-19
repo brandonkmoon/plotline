@@ -160,7 +160,7 @@ export default function RevealScreen() {
             Story {currentStoryIdx + 1} of {totalStories}
           </h1>
           {story.title && (
-            <p className="font-serif font-bold text-[16px] text-ink text-center mb-1">
+            <p className="font-serif font-bold text-[21px] text-ink text-center mb-1">
               &ldquo;{story.title}&rdquo;
             </p>
           )}
@@ -227,14 +227,14 @@ export default function RevealScreen() {
           Story {currentStoryIdx + 1} of {totalStories}
         </h1>
         {story.title && (
-          <p className="font-serif font-bold text-[16px] text-ink text-center mb-1">
+          <p className="font-serif font-bold text-[21px] text-ink text-center mb-1">
             &ldquo;{story.title}&rdquo;
           </p>
         )}
         <p className="font-body italic text-[16px] text-text-dim text-center mb-1">
           Read by {readerName}
         </p>
-        <p className="font-body italic text-[14px] text-[#888] text-center mb-6">
+        <p className="font-body italic text-[16px] text-text-muted text-center mb-6">
           {isHostFallbackReader
             ? `${readerName} is offline \u2014 you\u2019re reading`
             : "Your turn \u2014 read this aloud"}

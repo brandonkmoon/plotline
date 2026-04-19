@@ -162,7 +162,7 @@ export default function PromptScreen() {
           Act {currentRound + 1} of {TOTAL_ROUNDS}
         </p>
 
-        <p className="font-body text-[22px] text-ink text-center leading-[1.5] mb-2">
+        <p className="font-body text-[24px] text-ink text-center leading-[1.5] mb-2">
           {currentRound === 4
             ? "What does the first character say?"
             : currentRound === 5
