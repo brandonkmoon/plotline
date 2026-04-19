@@ -878,7 +878,7 @@ export default class RoomServer implements Party.Server {
 
   private handleQueueNextGame(sender: Party.Connection) {
     if (!this.gameState) return;
-    if (this.gameState.state !== "END") return;
+    if (this.gameState.state !== "END" && this.gameState.state !== "REVEAL") return;
 
     const playerId = this.connectionToPlayer.get(sender.id);
     if (!playerId) return;

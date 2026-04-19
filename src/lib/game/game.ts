@@ -322,7 +322,9 @@ function handlePlayerQueuedNext(
   state: Room,
   action: Extract<GameAction, { type: "PLAYER_QUEUED_NEXT" }>
 ): Room {
-  if (state.state !== "END") return state;
+  // Allow queueing during REVEAL too — the host can start a new game
+  // from REVEAL, and players need a way to opt in before that happens.
+  if (state.state !== "END" && state.state !== "REVEAL") return state;
   const player = state.players.find((p) => p.id === action.playerId);
   if (!player) return state;
   if (player.queuedForNextGame) return state; // idempotent
