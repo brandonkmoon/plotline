@@ -134,7 +134,7 @@ export default function RevealScreen() {
             Story {nextStoryNumber} of {totalStories}
           </h1>
           <p className="font-body italic text-[16px] text-text-dim">
-            {nextReaderName} is reading next
+            {nextReaderName} will read the next story aloud
           </p>
         </div>
         <PendingPlayersBadge />
@@ -142,30 +142,61 @@ export default function RevealScreen() {
     );
   }
 
-  // ── Non-reader view (clean, static) ──────────────────────
+  // ── Non-reader view ───────────────────────────────────────
   if (!isReader && usingSyncedReveal) {
     return (
       <>
-        <div className="screen text-center anim-fade-in">
+        <div className="screen anim-fade-in">
           {justBecameHost && (
             <p className="font-sans text-[12px] uppercase tracking-[2px] text-white bg-ink px-4 py-2 text-center mb-4">
               You&rsquo;re now the host
             </p>
           )}
           <hr className="rule" />
-          <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
+          <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
             Now Playing
           </p>
-          <h1 className="font-serif font-bold text-[24px] text-ink mb-1">
+          <h1 className="font-serif font-bold text-[24px] text-ink text-center mb-1">
             Story {currentStoryIdx + 1} of {totalStories}
           </h1>
-          <p className="font-body italic text-[16px] text-text-dim">
+          {story.title && (
+            <p className="font-serif font-bold text-[16px] text-ink text-center mb-1">
+              &ldquo;{story.title}&rdquo;
+            </p>
+          )}
+          <p className="font-body italic text-[16px] text-text-dim text-center mb-6">
             Read by {readerName}
           </p>
           <hr className="rule" />
-          <p className="mt-6 font-body italic text-[16px] text-text-muted">
-            Listening&hellip;
-          </p>
+
+          {revealedLines === 0 ? (
+            <p className="mt-6 font-body italic text-[16px] text-text-muted text-center">
+              Listening&hellip;
+            </p>
+          ) : (
+            <div className="mt-2 space-y-3">
+              {(story?.sections ?? []).map((section, i) => {
+                if (i >= revealedLines) return null;
+                const isDialogue = section.style === "dialogue";
+                return (
+                  <p
+                    key={i}
+                    className={`font-body text-[18px] text-ink leading-[1.7] pl-4 border-l-2 ${
+                      isDialogue ? "italic" : ""
+                    }`}
+                    style={{ borderLeftColor: "#FCEB00" }}
+                  >
+                    {section.text}
+                  </p>
+                );
+              })}
+              {allRevealed && (
+                <p className="font-body italic text-[14px] text-text-muted mt-4 text-center">
+                  Story complete.
+                </p>
+              )}
+            </div>
+          )}
         </div>
         <PendingPlayersBadge />
       </>
@@ -195,6 +226,11 @@ export default function RevealScreen() {
         <h1 className="font-serif font-bold text-[24px] text-ink text-center mb-1">
           Story {currentStoryIdx + 1} of {totalStories}
         </h1>
+        {story.title && (
+          <p className="font-serif font-bold text-[16px] text-ink text-center mb-1">
+            &ldquo;{story.title}&rdquo;
+          </p>
+        )}
         <p className="font-body italic text-[16px] text-text-dim text-center mb-1">
           Read by {readerName}
         </p>
@@ -205,6 +241,12 @@ export default function RevealScreen() {
         </p>
 
         <hr className="rule" />
+
+        {revealedLines === 0 && (
+          <p className="font-body italic text-[14px] text-text-muted text-center mt-4 mb-2">
+            Tap anywhere to reveal each line one at a time.
+          </p>
+        )}
 
         <div className="mt-2 space-y-3">
           {(story?.sections ?? []).map((section, i) => {
