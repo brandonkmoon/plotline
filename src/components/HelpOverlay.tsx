@@ -89,8 +89,8 @@ export default function HelpOverlay() {
                 <div className="help-act"><span className="help-act-num">2</span> Pick someone else &mdash; same thing</div>
                 <div className="help-act"><span className="help-act-num">3</span> Where are they?</div>
                 <div className="help-act"><span className="help-act-num">4</span> What are they doing?</div>
-                <div className="help-act"><span className="help-act-num">5</span> What does the first one say?</div>
-                <div className="help-act"><span className="help-act-num">6</span> What does the other say back?</div>
+                <div className="help-act"><span className="help-act-num">5</span> What does the first character say?</div>
+                <div className="help-act"><span className="help-act-num">6</span> What does the second character say in reply?</div>
                 <div className="help-act"><span className="help-act-num">7</span> How does it end?</div>
               </div>
             </div>
@@ -100,7 +100,10 @@ export default function HelpOverlay() {
               <p className="help-a">
                 In Acts 1 and 2, you&apos;ll pick real people in the room by
                 tapping their name. Then you add a funny description. The rest
-                of the story is about those two characters.
+                of the story is about those two characters. In the dialogue
+                rounds you won&apos;t know their names &mdash; that&apos;s
+                intentional. Just write the line; it&apos;ll make sense at the
+                reveal.
               </p>
             </div>
 
@@ -140,10 +143,11 @@ export default function HelpOverlay() {
             <div className="help-section">
               <h3 className="help-q">How does the reading part work?</h3>
               <p className="help-a">
-                One player is the designated reader for each story. They see
-                the lines one at a time and read them aloud to the group.
-                Everyone else just watches. When all the stories are done,
-                the game ends.
+                One player is the designated reader for each story &mdash; whoever
+                wrote the ending for that one. They tap to reveal the lines one
+                at a time and read them aloud. Everyone else sees the lines
+                appear on their screen as they&apos;re read. When all the stories
+                are done, the game ends.
               </p>
             </div>
 
