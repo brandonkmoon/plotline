@@ -16,11 +16,18 @@ export default function EndScreen() {
     isHost,
     archiveUrl,
     currentPlayer,
+    currentPendingPlayer,
     playerStatuses,
+    setReady,
   } = useRoom();
+
+  const isSpectator = currentPendingPlayer !== null;
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
   const [hasQueued, setHasQueued] = useState(false);
+  const [spectatorReady, setSpectatorReady] = useState(
+    currentPendingPlayer?.ready ?? false
+  );
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -275,50 +282,73 @@ export default function EndScreen() {
         </ul>
 
         {/* ── Queue / next game controls ───────────────────────── */}
-        <div className="flex flex-col gap-3">
-          {!iAmQueued ? (
-            <Button variant="secondary" onClick={handleQueueNextGame}>
-              Join Next Game
+        {isSpectator ? (
+          /* Spectator controls — uses setReady, not queue mechanic */
+          <div className="flex flex-col gap-3">
+            <Button
+              variant={spectatorReady ? "primary" : "secondary"}
+              onClick={() => {
+                const next = !spectatorReady;
+                setSpectatorReady(next);
+                setReady(next);
+              }}
+            >
+              {spectatorReady
+                ? "Confirmed for Next Game \u2713"
+                : "Join Next Game"}
             </Button>
-          ) : (
-            <div className="border border-ink px-4 py-3 text-center">
-              <p className="font-sans text-[13px] uppercase tracking-[2px] text-text-muted">
-                {queuedCount} of {totalPlayers}{" "}
-                {totalPlayers === 1 ? "player" : "players"} ready
+            {!spectatorReady && (
+              <p className="font-body italic text-[13px] text-text-muted text-center">
+                Tap to confirm you&rsquo;re in for the next game
               </p>
-            </div>
-          )}
-
-          {/* Host-only start button */}
-          {isHost && iAmQueued && (
-            canStartNextGame ? (
-              <Button variant="primary" onClick={handlePlayAgain}>
-                Start Next Game
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {!iAmQueued ? (
+              <Button variant="secondary" onClick={handleQueueNextGame}>
+                Join Next Game
               </Button>
             ) : (
-              <p className="font-body italic text-[14px] text-text-dim text-center">
-                Waiting for {MIN_PLAYERS_TO_START - queuedCount} more{" "}
-                {MIN_PLAYERS_TO_START - queuedCount === 1 ? "player" : "players"}&hellip;
-              </p>
-            )
-          )}
+              <div className="border border-ink px-4 py-3 text-center">
+                <p className="font-sans text-[13px] uppercase tracking-[2px] text-text-muted">
+                  {queuedCount} of {totalPlayers}{" "}
+                  {totalPlayers === 1 ? "player" : "players"} ready
+                </p>
+              </div>
+            )}
 
-          {/* Non-host waiting messages */}
-          {!isHost && iAmQueued && !hostIsQueued && (
-            <p className="font-body italic text-[14px] text-text-dim text-center">
-              {unqueuedNames.length === 1
-                ? `Waiting for ${unqueuedNames[0]} to join\u2026`
-                : unqueuedNames.length === 2
-                ? `Waiting for ${unqueuedNames[0]} and ${unqueuedNames[1]} to join\u2026`
-                : `Waiting for ${unqueuedNames.length} more players to join\u2026`}
-            </p>
-          )}
-          {!isHost && iAmQueued && hostIsQueued && (
-            <p className="font-body italic text-[14px] text-text-dim text-center">
-              Waiting for {hostName} to start&hellip;
-            </p>
-          )}
-        </div>
+            {/* Host-only start button */}
+            {isHost && iAmQueued && (
+              canStartNextGame ? (
+                <Button variant="primary" onClick={handlePlayAgain}>
+                  Start Next Game
+                </Button>
+              ) : (
+                <p className="font-body italic text-[14px] text-text-dim text-center">
+                  Waiting for {MIN_PLAYERS_TO_START - queuedCount} more{" "}
+                  {MIN_PLAYERS_TO_START - queuedCount === 1 ? "player" : "players"}&hellip;
+                </p>
+              )
+            )}
+
+            {/* Non-host waiting messages */}
+            {!isHost && iAmQueued && !hostIsQueued && (
+              <p className="font-body italic text-[14px] text-text-dim text-center">
+                {unqueuedNames.length === 1
+                  ? `Waiting for ${unqueuedNames[0]} to join\u2026`
+                  : unqueuedNames.length === 2
+                  ? `Waiting for ${unqueuedNames[0]} and ${unqueuedNames[1]} to join\u2026`
+                  : `Waiting for ${unqueuedNames.length} more players to join\u2026`}
+              </p>
+            )}
+            {!isHost && iAmQueued && hostIsQueued && (
+              <p className="font-body italic text-[14px] text-text-dim text-center">
+                Waiting for {hostName} to start&hellip;
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

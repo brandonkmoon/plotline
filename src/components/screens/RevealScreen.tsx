@@ -96,8 +96,11 @@ export default function RevealScreen() {
   const isHostFallbackReader =
     readerIsOffline && currentPlayer?.id === room?.hostId;
 
-  const isReader = usingSyncedReveal && currentPlayer
-    ? currentPlayer.id === revealState.readerId || isHostFallbackReader
+  // Spectators (pending players) have no currentPlayer — they are never readers.
+  // In local (non-synced) mode everyone controls the reveal themselves.
+  const isReader = usingSyncedReveal
+    ? !!currentPlayer &&
+      (currentPlayer.id === revealState.readerId || isHostFallbackReader)
     : true;
 
   const readerName = usingSyncedReveal

@@ -12,6 +12,7 @@ import WaitingScreen from "@/components/screens/WaitingScreen";
 import RevealScreen from "@/components/screens/RevealScreen";
 import EndScreen from "@/components/screens/EndScreen";
 import PendingLobbyScreen from "@/components/screens/PendingLobbyScreen";
+import SpectatorScreen from "@/components/screens/SpectatorScreen";
 import Button from "@/components/Button";
 import { gameClient } from "@/lib/multiplayer/gameClient";
 import { registerLeaveGuard, clearLeaveGuard } from "@/lib/client/leaveGuard";
@@ -337,7 +338,6 @@ function RoomContent() {
   const screenKey = (() => {
     if (connectionError) return "error";
     if (!room) return "connecting";
-    if (isPending) return "pending";
     switch (room.state) {
       case "LOBBY":
       case "CREATED":
@@ -357,7 +357,16 @@ function RoomContent() {
   const screen = (() => {
     if (connectionError) return <ConnectionErrorView />;
     if (!room) return <ConnectingView />;
-    if (isPending) return <PendingLobbyScreen />;
+
+    // Spectators (pending/late-join players) get contextual views:
+    // REVEAL → full non-reader RevealScreen (isReader fixed for null currentPlayer)
+    // END    → full EndScreen with spectator queue controls
+    // else   → SpectatorScreen (handles PLAYING + LOBBY/CREATED)
+    if (isPending) {
+      if (room.state === "REVEAL") return <RevealScreen />;
+      if (room.state === "END" || room.state === "DESTROYED") return <EndScreen />;
+      return <SpectatorScreen />;
+    }
 
     switch (room.state) {
       case "LOBBY":
