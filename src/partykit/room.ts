@@ -616,9 +616,26 @@ export default class RoomServer implements Party.Server {
       this.broadcast({ type: "ASSEMBLED_STORIES", stories });
       this.broadcastRevealState();
     } else if (newState.currentRound > prevRound && newState.state === "PLAYING") {
-      // Round auto-advanced, restart timer and reset statuses
+      // Round auto-advanced (all slots filled), restart timer and reset statuses
       this.resetPlayerStatusesForNewRound();
       this.startRoundTimer();
+    } else if (newState.state === "PLAYING" && newState.currentRound === prevRound) {
+      // Round didn't auto-advance — check if the only remaining nulls belong
+      // to disconnected players. If so, signal the host immediately rather
+      // than making everyone wait 90 seconds for the timer.
+      const currentRound = newState.currentRound;
+      const allConnectedSubmitted = newState.stories.every((s) => {
+        const slot = s.slots[currentRound];
+        if (!slot || slot.response !== null) return true;
+        const player = newState.players.find((p) => p.id === slot.playerId);
+        return !player?.isConnected; // disconnected players don't block
+      });
+      if (allConnectedSubmitted) {
+        const unsubmittedCount = newState.stories.filter(
+          (s) => s.slots[currentRound]?.response === null
+        ).length;
+        this.broadcast({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
+      }
     }
 
     this.broadcastStateUpdate();
