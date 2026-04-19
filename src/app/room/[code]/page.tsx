@@ -239,6 +239,43 @@ function BackButtonGuard() {
   );
 }
 
+// Holds the outgoing screen visible while it fades out, then swaps in the
+// new screen (which carries its own anim-fade-in). screenKey must change
+// whenever a meaningfully different screen should be shown.
+function ScreenTransition({
+  screenKey,
+  children,
+}: {
+  screenKey: string;
+  children: React.ReactNode;
+}) {
+  const [displayed, setDisplayed] = useState<React.ReactNode>(children);
+  const [exiting, setExiting] = useState(false);
+  const childrenRef = useRef(children);
+  childrenRef.current = children;
+  const prevKeyRef = useRef(screenKey);
+
+  useEffect(() => {
+    if (screenKey === prevKeyRef.current) return;
+    prevKeyRef.current = screenKey;
+    setExiting(true);
+  }, [screenKey]);
+
+  const handleAnimationEnd = () => {
+    setDisplayed(childrenRef.current);
+    setExiting(false);
+  };
+
+  return (
+    <div
+      className={exiting ? "screen-exit" : ""}
+      onAnimationEnd={exiting ? handleAnimationEnd : undefined}
+    >
+      {displayed}
+    </div>
+  );
+}
+
 function RoomContent() {
   const {
     room,
@@ -262,52 +299,64 @@ function RoomContent() {
     }
   }, [roomRedirect, router]);
 
-  if (connectionError) {
-    return <ConnectionErrorView />;
-  }
+  const hasSubmitted = !!(
+    currentPlayer && playerStatuses[currentPlayer.id] === "submitted"
+  );
 
-  if (!room) {
-    return <ConnectingView />;
-  }
-
-  // Pending players (late joiners) see a dedicated waiting screen
-  if (isPending) {
-    return <PendingLobbyScreen />;
-  }
-
-  switch (room.state) {
-    case "LOBBY":
-    case "CREATED":
-      return <LobbyScreen />;
-
-    case "PLAYING": {
-      // Check if current player has submitted for the current round
-      const hasSubmitted = currentPlayer
-        ? playerStatuses[currentPlayer.id] === "submitted"
-        : false;
-
-      if (hasSubmitted) {
-        return <WaitingScreen />;
-      }
-      return <PromptScreen />;
+  // Derive a stable key for the current screen so ScreenTransition knows
+  // when to animate a crossfade.
+  const screenKey = (() => {
+    if (connectionError) return "error";
+    if (!room) return "connecting";
+    if (isPending) return "pending";
+    switch (room.state) {
+      case "LOBBY":
+      case "CREATED":
+        return "lobby";
+      case "PLAYING":
+        return hasSubmitted ? "waiting" : `prompt-${room.currentRound}`;
+      case "REVEAL":
+        return "reveal";
+      case "END":
+      case "DESTROYED":
+        return "end";
+      default:
+        return "unknown";
     }
+  })();
 
-    case "REVEAL":
-      return <RevealScreen />;
+  const screen = (() => {
+    if (connectionError) return <ConnectionErrorView />;
+    if (!room) return <ConnectingView />;
+    if (isPending) return <PendingLobbyScreen />;
 
-    case "END":
-    case "DESTROYED":
-      return <EndScreen />;
+    switch (room.state) {
+      case "LOBBY":
+      case "CREATED":
+        return <LobbyScreen />;
 
-    default:
-      return (
-        <div className="screen text-center">
-          <p className="font-body italic text-[16px] text-text-dim">
-            Unknown state
-          </p>
-        </div>
-      );
-  }
+      case "PLAYING":
+        return hasSubmitted ? <WaitingScreen /> : <PromptScreen />;
+
+      case "REVEAL":
+        return <RevealScreen />;
+
+      case "END":
+      case "DESTROYED":
+        return <EndScreen />;
+
+      default:
+        return (
+          <div className="screen text-center">
+            <p className="font-body italic text-[16px] text-text-dim">
+              Unknown state
+            </p>
+          </div>
+        );
+    }
+  })();
+
+  return <ScreenTransition screenKey={screenKey}>{screen}</ScreenTransition>;
 }
 
 export default function RoomPage() {

@@ -93,6 +93,24 @@ body {
   animation: fadeIn 0.4s ease-out forwards;
 }
 
+/* ── Screen exit (used by ScreenTransition in the room page) ── */
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.screen-exit {
+  animation: fadeOut 0.25s ease-in forwards;
+  pointer-events: none;
+}
+
 /* ── Title screen entrance animation ───────────────────────── */
 
 /* The banner must cover the buttons as they slide down from above. */
