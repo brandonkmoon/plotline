@@ -473,6 +473,7 @@ export default class RoomServer implements Party.Server {
         this.ensureHostIsConnected();
         this.broadcastStateUpdate();
         this.broadcastPlayerStatuses();
+        this.sendRevealSnapshotTo(sender);
         return;
       }
 
@@ -544,6 +545,7 @@ export default class RoomServer implements Party.Server {
         this.ensureHostIsConnected();
         this.broadcastStateUpdate();
         this.broadcastPlayerStatuses();
+        this.sendRevealSnapshotTo(sender);
         return;
       }
     }
@@ -1285,6 +1287,34 @@ export default class RoomServer implements Party.Server {
   private initRevealState() {
     this.revealStoryIndex = 0;
     this.revealedLineCount = 0;
+  }
+
+  // Send assembled stories + current reveal position to a single reconnecting
+  // player. Called when a player reconnects mid-reveal so they don't get a
+  // blank screen waiting for a broadcast that already happened.
+  private sendRevealSnapshotTo(conn: Party.Connection) {
+    if (!this.gameState || this.gameState.state !== "REVEAL") return;
+
+    const stories = assembleStories(this.gameState);
+    this.sendTo(conn, { type: "ASSEMBLED_STORIES", stories });
+
+    const currentStory = this.gameState.stories[this.revealStoryIndex];
+    if (!currentStory) return;
+
+    const readerSlot = currentStory.slots.find((s) => s.promptIndex === 6);
+    const readerId = readerSlot?.playerId ?? "";
+    const readerPlayer = readerId
+      ? this.gameState.players.find((p) => p.id === readerId)
+      : null;
+    const readerName = readerPlayer?.name ?? "someone";
+
+    this.sendTo(conn, {
+      type: "REVEAL_STATE",
+      storyIndex: this.revealStoryIndex,
+      revealedCount: this.revealedLineCount,
+      readerId,
+      readerName,
+    });
   }
 
   private broadcastRevealState() {
