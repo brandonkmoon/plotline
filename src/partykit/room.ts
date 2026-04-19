@@ -824,7 +824,6 @@ export default class RoomServer implements Party.Server {
     }
 
     // Mark the current story as revealed (if not already) and move on.
-    const currentStory = this.gameState.stories[this.revealStoryIndex];
     const targetStoryIndex =
       currentStory && !currentStory.isRevealed
         ? currentStory.index
