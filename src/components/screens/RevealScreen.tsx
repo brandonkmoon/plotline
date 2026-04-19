@@ -8,6 +8,54 @@ import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 const SECTIONS_PER_STORY = 7;
 const TRANSITION_MS = 2000;
 
+function PlayerConnectionList({
+  players,
+  playerStatuses,
+}: {
+  players: { id: string; name: string; isHost: boolean }[];
+  playerStatuses: Record<string, string>;
+}) {
+  return (
+    <ul className="w-full mt-6 list-none">
+      {players.map((player) => {
+        const status = playerStatuses[player.id];
+        const isDisconnected = status === "disconnected";
+        const isReconnecting = status === "reconnecting";
+        const dim = isDisconnected
+          ? "opacity-30"
+          : isReconnecting
+          ? "opacity-50"
+          : "";
+        return (
+          <li
+            key={player.id}
+            className={`font-body text-[15px] py-2 flex justify-between items-center border-b border-list-border last:border-b-0 ${dim}`}
+          >
+            <span className={isDisconnected ? "line-through" : ""}>
+              {player.name}
+              {player.isHost && (
+                <span className="ml-2 font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
+                  Host
+                </span>
+              )}
+              {isReconnecting && (
+                <span className="ml-2 font-sans italic text-[12px] text-text-muted">
+                  reconnecting
+                </span>
+              )}
+            </span>
+            {isDisconnected && (
+              <span className="font-sans text-[12px] text-text-muted">
+                offline
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export default function RevealScreen() {
   const {
     assembledStories,
@@ -17,6 +65,7 @@ export default function RevealScreen() {
     nextStory,
     currentPlayer,
     justBecameHost,
+    playerStatuses,
     room,
   } = useRoom();
 
@@ -172,6 +221,8 @@ export default function RevealScreen() {
           <p className="mt-6 font-body italic text-[16px] text-text-muted text-center">
             Listening&hellip;
           </p>
+
+          <PlayerConnectionList players={room.players} playerStatuses={playerStatuses} />
         </div>
         <PendingPlayersBadge />
       </>
@@ -259,6 +310,8 @@ export default function RevealScreen() {
             );
           })()}
         </div>
+
+        <PlayerConnectionList players={room.players} playerStatuses={playerStatuses} />
 
         {allRevealed && (
           <div className="mt-8">
