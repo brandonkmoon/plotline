@@ -57,8 +57,124 @@ export default class RoomServer implements Party.Server {
   revealStoryIndex: number = 0;
   revealedLineCount: number = 0;
 
+  // Set when a round timer expired during a server restart — broadcast
+  // ADVANCE_AVAILABLE to the first player who reconnects.
+  private pendingAdvanceAvailable: boolean = false;
+
   constructor(room: Party.Room) {
     this.room = room;
+  }
+
+  // ── Lifecycle ──────────────────────────────────────────────────────────
+
+  async onStart() {
+    // Restore persisted state after a cold start or server migration.
+    // Connection maps are rebuilt as players send JOIN_ROOM.
+    try {
+      const stored = await this.room.storage.get<{
+        gameState: Room;
+        playerStatuses: Record<string, PlayerStatus>;
+        roundStartedAt: number | null;
+        revealStoryIndex: number;
+        revealedLineCount: number;
+      }>("snapshot");
+
+      if (!stored?.gameState) return;
+
+      this.gameState = {
+        ...stored.gameState,
+        // Mark everyone as disconnected — connections are gone after restart.
+        // They'll be restored to true as players send JOIN_ROOM.
+        players: stored.gameState.players.map((p) => ({
+          ...p,
+          isConnected: false,
+        })),
+      };
+
+      if (stored.playerStatuses) {
+        this.playerStatuses = new Map(Object.entries(stored.playerStatuses));
+      }
+
+      this.revealStoryIndex = stored.revealStoryIndex ?? 0;
+      this.revealedLineCount = stored.revealedLineCount ?? 0;
+
+      // Restore round timer with however much time remains.
+      if (
+        this.gameState.state === "PLAYING" &&
+        stored.roundStartedAt !== null &&
+        stored.roundStartedAt !== undefined
+      ) {
+        this.roundStartedAt = stored.roundStartedAt;
+        const elapsed = Date.now() - stored.roundStartedAt;
+        const remaining = ROUND_TIMER_MS - elapsed;
+
+        if (remaining > 0) {
+          this.roundTimer = setTimeout(() => {
+            if (!this.gameState || this.gameState.state !== "PLAYING") return;
+            const currentRound = this.gameState.currentRound;
+            const unsubmittedCount = this.gameState.stories.filter(
+              (s) => s.slots[currentRound]?.response === null
+            ).length;
+            this.broadcast({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
+          }, remaining);
+        } else {
+          // Timer already expired during downtime — signal on first reconnect.
+          this.pendingAdvanceAvailable = true;
+        }
+      }
+
+      // Restart disconnect timers for any active player who isn't submitted.
+      if (
+        this.gameState.state === "PLAYING" ||
+        this.gameState.state === "REVEAL"
+      ) {
+        for (const player of this.gameState.players) {
+          const status = this.playerStatuses.get(player.id);
+          if (status !== "submitted") {
+            this.playerStatuses.set(player.id, "reconnecting");
+            const timer = setTimeout(() => {
+              this.handlePlayerDisconnected(player.id);
+            }, RECONNECT_TIMEOUT_MS);
+            this.disconnectTimers.set(player.id, timer);
+          }
+        }
+
+        // Restart host transfer timer since host will need to reconnect too.
+        if (this.gameState.hostId) {
+          this.hostTransferTimer = setTimeout(() => {
+            this.transferHost(this.gameState!.hostId);
+          }, HOST_TRANSFER_TIMEOUT_MS);
+        }
+      }
+
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `[room] restored state: ${this.gameState.state} round=${this.gameState.currentRound} players=${this.gameState.players.length}`
+        );
+      }
+    } catch (err) {
+      console.error("[room] Failed to restore state from storage:", err);
+    }
+  }
+
+  // Persist critical state to durable storage after every mutation.
+  // Fire-and-forget — we never block the synchronous game loop on I/O.
+  private saveState(): void {
+    if (!this.gameState) {
+      this.room.storage.deleteAll().catch(() => {});
+      return;
+    }
+    this.room.storage
+      .put("snapshot", {
+        gameState: this.gameState,
+        playerStatuses: Object.fromEntries(this.playerStatuses),
+        roundStartedAt: this.roundStartedAt,
+        revealStoryIndex: this.revealStoryIndex,
+        revealedLineCount: this.revealedLineCount,
+      })
+      .catch((err) => {
+        console.error("[room] Failed to save state:", err);
+      });
   }
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
@@ -1162,6 +1278,7 @@ export default class RoomServer implements Party.Server {
   }
 
   private broadcastRevealState() {
+    this.saveState();
     if (!this.gameState) return;
     const currentStory = this.gameState.stories[this.revealStoryIndex];
     if (!currentStory) return;
@@ -1206,6 +1323,18 @@ export default class RoomServer implements Party.Server {
 
   private broadcastStateUpdate() {
     if (!this.gameState) return;
+
+    // If the round timer expired during a server restart, notify everyone now.
+    if (this.pendingAdvanceAvailable && this.gameState.state === "PLAYING") {
+      this.pendingAdvanceAvailable = false;
+      const currentRound = this.gameState.currentRound;
+      const unsubmittedCount = this.gameState.stories.filter(
+        (s) => s.slots[currentRound]?.response === null
+      ).length;
+      this.broadcast({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
+    }
+
+    this.saveState();
 
     const { pendingConnected, pendingDisconnected } =
       this.computePendingCounts();
@@ -1256,6 +1385,7 @@ export default class RoomServer implements Party.Server {
   }
 
   private broadcastPlayerStatuses() {
+    this.saveState();
     const statuses: Record<string, PlayerStatus> = {};
     for (const [id, status] of this.playerStatuses) {
       statuses[id] = status;
