@@ -20,6 +20,19 @@ export default function EndScreen() {
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [hasQueued, setHasQueued] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    if (!archiveUrl) return;
+    const full = archiveUrl.startsWith("http")
+      ? archiveUrl
+      : `${window.location.origin}${archiveUrl}`;
+    navigator.clipboard.writeText(full).then(() => {
+      setCopied(true);
+      trackEvent("copied_archive_link");
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   useEffect(() => {
     trackEvent("game_completed");
@@ -160,6 +173,32 @@ export default function EndScreen() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Archive / share link */}
+      {archiveUrl && (
+        <div className="border border-ink px-4 py-4 mb-3">
+          <p className="font-serif font-medium text-[11px] uppercase tracking-[2.5px] text-text-muted mb-3">
+            Share This Game
+          </p>
+          <div className="flex items-center gap-3">
+            <p className="font-sans text-[13px] text-text-dim truncate flex-1">
+              {archiveUrl.startsWith("http")
+                ? archiveUrl
+                : `${typeof window !== "undefined" ? window.location.origin : ""}${archiveUrl}`}
+            </p>
+            <button
+              onClick={handleCopyLink}
+              className="font-sans text-[12px] uppercase tracking-[2px] flex-shrink-0 border border-ink px-3 py-1 transition-colors"
+              style={{
+                background: copied ? "var(--ink)" : "transparent",
+                color: copied ? "var(--bg)" : "var(--ink)",
+              }}
+            >
+              {copied ? "Copied ✓" : "Copy Link"}
+            </button>
+          </div>
         </div>
       )}
 
