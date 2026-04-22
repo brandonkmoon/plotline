@@ -56,22 +56,23 @@ export default function EndScreen() {
     playAgain();
   };
 
-  const handleShare = (story: { storyIndex: number; title?: string }) => {
-    if (!archiveUrl) return;
-    const full = archiveUrl.startsWith("http")
-      ? archiveUrl
-      : `${window.location.origin}${archiveUrl}`;
+  const handleShare = (story: { storyIndex: number; title?: string; sections?: { text: string }[] }) => {
+    const full = archiveUrl
+      ? (archiveUrl.startsWith("http") ? archiveUrl : `${window.location.origin}${archiveUrl}`)
+      : null;
+    const storyText = story.sections?.map((s) => s.text).join("\n\n") ?? "";
     trackEvent("share_story_card");
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator
         .share({
           title: story.title ?? "A Plotline story",
-          text: `"${story.title}" — a story from Plotline`,
-          url: full,
+          text: `"${story.title}" — a story from Plotline\n\n${storyText}`,
+          ...(full ? { url: full } : {}),
         })
         .catch(() => {});
     } else {
-      navigator.clipboard.writeText(full).then(() => {
+      const toCopy = full ?? storyText;
+      navigator.clipboard.writeText(toCopy).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       });
@@ -176,25 +177,23 @@ export default function EndScreen() {
                         ))}
                       </div>
 
-                      {archiveUrl && (
-                        <>
-                          <hr className="border-t border-ink/20 mb-4" />
-                          <div className="flex items-center justify-between">
-                            <button
-                              onClick={() => handleShare(story)}
-                              className="font-sans text-[12px] uppercase tracking-[2px] text-ink hover:text-text-dim transition-colors"
-                            >
-                              Share ↗
-                            </button>
-                            <button
-                              onClick={() => handleSaveImage(story.storyIndex)}
-                              className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
-                            >
-                              Save Image ↗
-                            </button>
-                          </div>
-                        </>
-                      )}
+                      <hr className="border-t border-ink/20 mb-4" />
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => handleShare(story)}
+                          className="font-sans text-[12px] uppercase tracking-[2px] text-ink hover:text-text-dim transition-colors"
+                        >
+                          Share ↗
+                        </button>
+                        {archiveUrl && (
+                          <button
+                            onClick={() => handleSaveImage(story.storyIndex)}
+                            className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
+                          >
+                            Save Image ↗
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
