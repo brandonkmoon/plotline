@@ -1302,7 +1302,7 @@ export default class RoomServer implements Party.Server {
     if (!this.gameState) return;
     try {
       const archiveData = serializeRoomForArchive(this.gameState);
-      const apiHost = process.env.APP_URL || "http://localhost:3000";
+      const apiHost = (this.room.env.APP_URL as string) || process.env.APP_URL || "http://localhost:3000";
       const response = await fetch(`${apiHost}/api/archive`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
