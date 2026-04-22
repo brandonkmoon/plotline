@@ -38,6 +38,7 @@ export type ClientMessage =
   | { type: "PLAY_AGAIN" }
   | { type: "NEW_ROOM" }
   | { type: "QUEUE_NEXT_GAME" }
+  | { type: "CREATE_NEXT_ROOM" }
   | { type: "SET_READY"; ready: boolean }
   | { type: "TYPING_STATUS"; status: "writing" | "idle" };
 

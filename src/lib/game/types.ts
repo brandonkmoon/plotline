@@ -46,6 +46,7 @@ export interface Room {
   createdAt: number;
   updatedAt: number;
   pendingPlayers: PendingPlayer[];
+  nextRoomCode?: string;
 }
 
 export interface Prompt {
@@ -87,4 +88,5 @@ export type GameAction =
   | { type: "PENDING_PLAYER_LEFT"; playerId: string }
   | { type: "PENDING_PLAYER_READY_CHANGED"; playerId: string; ready: boolean }
   | { type: "PENDING_PROMOTED"; playerIds: string[]; timestamp: number }
-  | { type: "PLAYER_QUEUED_NEXT"; playerId: string };
+  | { type: "PLAYER_QUEUED_NEXT"; playerId: string }
+  | { type: "NEXT_ROOM_CREATED"; nextRoomCode: string };

@@ -259,6 +259,9 @@ export default class RoomServer implements Party.Server {
       case "QUEUE_NEXT_GAME":
         this.handleQueueNextGame(sender);
         break;
+      case "CREATE_NEXT_ROOM":
+        this.handleCreateNextRoom(sender);
+        break;
       case "NEW_ROOM":
         this.handleNewRoom(sender);
         break;
@@ -1045,6 +1048,25 @@ export default class RoomServer implements Party.Server {
 
     const action: GameAction = { type: "PLAYER_QUEUED_NEXT", playerId };
     this.gameState = gameReducer(this.gameState, action);
+    this.broadcastStateUpdate();
+  }
+
+  private handleCreateNextRoom(sender: Party.Connection) {
+    if (!this.gameState) return;
+    if (this.gameState.state !== "END" && this.gameState.state !== "REVEAL") return;
+
+    // Idempotent: if a next room code already exists, just resend state
+    if (this.gameState.nextRoomCode) {
+      this.broadcastStateUpdate();
+      return;
+    }
+
+    const nextRoomCode = generateRoomCode();
+    const action: GameAction = { type: "NEXT_ROOM_CREATED", nextRoomCode };
+    const newState = gameReducer(this.gameState, action);
+    if (newState === this.gameState) return;
+
+    this.gameState = newState;
     this.broadcastStateUpdate();
   }
 

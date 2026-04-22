@@ -1,18 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useRoom } from "@/lib/client/RoomContext";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
-
-const MIN_PLAYERS_TO_START = 4;
 
 export default function EndScreen() {
   const {
     room,
     assembledStories,
-    playAgain,
-    queueNextGame,
+    createNextRoom,
     archiveUrl,
     currentPlayer,
     currentPendingPlayer,
@@ -20,10 +18,11 @@ export default function EndScreen() {
     setReady,
   } = useRoom();
 
+  const router = useRouter();
   const isSpectator = currentPendingPlayer !== null;
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
-  const [hasQueued, setHasQueued] = useState(false);
+  const [creatingLobby, setCreatingLobby] = useState(false);
   const [spectatorReady, setSpectatorReady] = useState(
     currentPendingPlayer?.ready ?? false
   );
@@ -33,27 +32,29 @@ export default function EndScreen() {
     trackEvent("game_completed");
   }, []);
 
+  // Once nextRoomCode appears after we triggered creation, navigate there
+  useEffect(() => {
+    if (creatingLobby && room?.nextRoomCode) {
+      router.push(`/room/${room.nextRoomCode}`);
+    }
+  }, [creatingLobby, room?.nextRoomCode, router]);
+
   if (!room) return null;
 
   const storyCount = assembledStories?.length ?? 0;
   const totalPlayers = room.players.filter((p) => p.isConnected).length;
-  const queuedCount = room.players.filter((p) => p.queuedForNextGame).length;
-  const iAmQueued =
-    hasQueued ||
-    !!room.players.find((p) => p.id === currentPlayer?.id)?.queuedForNextGame;
-  const canStartNextGame =
-    iAmQueued && queuedCount >= MIN_PLAYERS_TO_START;
 
-  const handleQueueNextGame = () => {
-    if (hasQueued) return;
-    setHasQueued(true);
-    queueNextGame();
-    trackEvent("queued_next_game");
+  const handleCreateLobby = () => {
+    if (creatingLobby) return;
+    setCreatingLobby(true);
+    createNextRoom();
+    trackEvent("create_next_lobby");
   };
 
-  const handlePlayAgain = () => {
-    trackEvent("play_again");
-    playAgain();
+  const handleJoinLobby = () => {
+    if (!room.nextRoomCode) return;
+    trackEvent("join_next_lobby");
+    router.push(`/room/${room.nextRoomCode}`);
   };
 
   const handleShare = (story: { storyIndex: number; title?: string; sections?: { text: string }[] }) => {
@@ -196,7 +197,6 @@ export default function EndScreen() {
             const status = playerStatuses[player.id];
             const isDisconnected = status === "disconnected";
             const isReconnecting = status === "reconnecting";
-            const isQueued = player.queuedForNextGame;
             const dim = isDisconnected
               ? "opacity-30"
               : isReconnecting
@@ -221,17 +221,15 @@ export default function EndScreen() {
                     </span>
                   )}
                 </span>
-                <span
-                  className={`font-sans text-[13px] ${
-                    isQueued ? "text-ink" : "text-text-muted"
-                  }`}
-                >
-                  {isDisconnected ? "offline" : isQueued ? "Ready \u2713" : "\u22EF"}
-                </span>
+                {isDisconnected && (
+                  <span className="font-sans text-[13px] text-text-muted">
+                    offline
+                  </span>
+                )}
               </li>
             );
           })}
-          {/* Spectators (pending/late-join players) — show their ready status */}
+          {/* Spectators (pending/late-join players) */}
           {(room.pendingPlayers ?? []).map((pending) => (
             <li
               key={pending.id}
@@ -243,68 +241,78 @@ export default function EndScreen() {
                   Watching
                 </span>
               </span>
-              <span
-                className={`font-sans text-[13px] ${
-                  pending.ready ? "text-ink" : "text-text-muted"
-                }`}
-              >
-                {pending.ready ? "Ready \u2713" : "\u22EF"}
-              </span>
             </li>
           ))}
         </ul>
 
-        {/* ── Queue / next game controls ───────────────────────── */}
+        {/* ── Next game controls ───────────────────────────────── */}
         {isSpectator ? (
-          /* Spectator controls — uses setReady, not queue mechanic */
+          /* Spectator — use setReady to signal they want to join next game,
+             but also show the lobby button if one has been created */
           <div className="flex flex-col gap-3">
-            <Button
-              variant={spectatorReady ? "primary" : "secondary"}
-              onClick={() => {
-                const next = !spectatorReady;
-                setSpectatorReady(next);
-                setReady(next);
-              }}
-            >
-              {spectatorReady
-                ? "Confirmed for Next Game \u2713"
-                : "Join Next Game"}
-            </Button>
-            {!spectatorReady && (
-              <p className="font-body italic text-[13px] text-text-muted text-center">
-                Tap to confirm you&rsquo;re in for the next game
-              </p>
+            {room.nextRoomCode ? (
+              <Button variant="primary" onClick={handleJoinLobby}>
+                Join Lobby →
+              </Button>
+            ) : (
+              <Button
+                variant={spectatorReady ? "primary" : "secondary"}
+                onClick={() => {
+                  const next = !spectatorReady;
+                  setSpectatorReady(next);
+                  setReady(next);
+                }}
+              >
+                {spectatorReady
+                  ? "Ready for Next Game \u2713"
+                  : "Join Next Game"}
+              </Button>
+            )}
+            {room.nextRoomCode && (
+              <div className="border border-ink px-4 py-3 text-center">
+                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">
+                  New Room Code
+                </p>
+                <p className="font-serif font-bold text-[22px] text-ink tracking-widest">
+                  {room.nextRoomCode}
+                </p>
+              </div>
             )}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {!iAmQueued ? (
-              <Button variant="secondary" onClick={handleQueueNextGame}>
-                Join Next Game
-              </Button>
-            ) : (
-              <div className="border border-ink px-4 py-3 text-center">
-                <p className="font-sans text-[13px] uppercase tracking-[2px] text-text-muted">
-                  {queuedCount} of {totalPlayers}{" "}
-                  {totalPlayers === 1 ? "player" : "players"} ready
-                </p>
-              </div>
-            )}
-
-            {/* Start button — visible to any queued player once threshold is met */}
-            {iAmQueued && (
-              canStartNextGame ? (
-                <Button variant="primary" onClick={handlePlayAgain}>
-                  Start Next Game
+            {room.nextRoomCode ? (
+              /* Lobby already created — show join button + code */
+              <>
+                <Button variant="primary" onClick={handleJoinLobby}>
+                  Join Lobby →
                 </Button>
-              ) : (
-                <p className="font-body italic text-[14px] text-text-dim text-center">
-                  Waiting for {MIN_PLAYERS_TO_START - queuedCount} more{" "}
-                  {MIN_PLAYERS_TO_START - queuedCount === 1 ? "player" : "players"}&hellip;
+                <div className="border border-ink px-4 py-3 text-center">
+                  <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">
+                    New Room Code
+                  </p>
+                  <p className="font-serif font-bold text-[22px] text-ink tracking-widest">
+                    {room.nextRoomCode}
+                  </p>
+                </div>
+                <p className="font-body italic text-[13px] text-text-muted text-center">
+                  Share this code so friends can join
                 </p>
-              )
+              </>
+            ) : (
+              /* No lobby yet — first person to click creates it */
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={handleCreateLobby}
+                >
+                  {creatingLobby ? "Creating lobby\u2026" : "Play Again"}
+                </Button>
+                <p className="font-body italic text-[13px] text-text-muted text-center">
+                  Start a fresh lobby &mdash; others can join with the new code
+                </p>
+              </>
             )}
-
           </div>
         )}
       </div>

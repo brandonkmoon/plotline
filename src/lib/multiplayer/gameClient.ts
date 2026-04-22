@@ -570,6 +570,10 @@ class GameClient {
     this.send({ type: "QUEUE_NEXT_GAME" });
   }
 
+  createNextRoom(): void {
+    this.send({ type: "CREATE_NEXT_ROOM" });
+  }
+
   setReady(ready: boolean): void {
     this.send({ type: "SET_READY", ready });
   }
