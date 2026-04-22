@@ -4,5 +4,8 @@
   "parties": {
     "registry": "src/partykit/registry.ts"
   },
-  "compatibilityDate": "2024-01-01"
+  "compatibilityDate": "2024-01-01",
+  "vars": {
+    "APP_URL": "https://plotlinegame.com"
+  }
 }
