@@ -80,7 +80,6 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
   const [assembledStories, setAssembledStories] = useState<AssembledStory[]>(
     []
   );
-  const [archiveUrl, setArchiveUrl] = useState<string | null>(null);
   const [roundStartedAt, setRoundStartedAt] = useState<number | null>(null);
   const [roundDurationMs, setRoundDurationMs] = useState<number>(
     DEFAULT_ROUND_DURATION_MS
@@ -141,12 +140,6 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     unsubs.push(
       gameClient.onAssembledStories((stories) => {
         setAssembledStories(stories);
-      })
-    );
-
-    unsubs.push(
-      gameClient.onArchiveReady((url) => {
-        setArchiveUrl(url);
       })
     );
 
@@ -230,7 +223,6 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     setAdvanceAvailable(false);
     setUnsubmittedCount(0);
     setAssembledStories([]);
-    setArchiveUrl(null);
     setRoundStartedAt(null);
     setRoundDurationMs(DEFAULT_ROUND_DURATION_MS);
     setPendingConnected(0);
@@ -284,7 +276,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     createNextRoom: () => gameClient.createNextRoom(),
     setReady: (ready) => gameClient.setReady(ready),
     sendTypingStatus: (status) => gameClient.sendTypingStatus(status),
-    archiveUrl,
+    archiveUrl: room?.archiveUrl ?? null,
   };
 
   return <RoomContext.Provider value={value}>{children}</RoomContext.Provider>;

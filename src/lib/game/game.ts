@@ -36,6 +36,8 @@ export function gameReducer(state: Room, action: GameAction): Room {
       return handlePlayerQueuedNext(state, action);
     case "NEXT_ROOM_CREATED":
       return handleNextRoomCreated(state, action);
+    case "ARCHIVE_URL_SET":
+      return handleArchiveUrlSet(state, action);
     default:
       return state;
   }
@@ -337,6 +339,14 @@ function handlePlayerQueuedNext(
     ),
     updatedAt: Date.now(),
   };
+}
+
+function handleArchiveUrlSet(
+  state: Room,
+  action: Extract<GameAction, { type: "ARCHIVE_URL_SET" }>
+): Room {
+  if (state.archiveUrl) return state; // idempotent
+  return { ...state, archiveUrl: action.archiveUrl, updatedAt: Date.now() };
 }
 
 function handleNextRoomCreated(

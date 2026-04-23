@@ -32,11 +32,22 @@ export default function EndScreen() {
     trackEvent("game_completed");
   }, []);
 
+  // Store our name for the new room before navigating so AutoConnect
+  // can join with the correct name (new room has no stored playerId).
+  const storeNameForNextRoom = (nextCode: string) => {
+    const name = currentPlayer?.name ?? currentPendingPlayer?.name ?? "";
+    if (name) {
+      try { sessionStorage.setItem(`plotline.nextJoin.${nextCode}`, name); } catch {}
+    }
+  };
+
   // Once nextRoomCode appears after we triggered creation, navigate there
   useEffect(() => {
     if (creatingLobby && room?.nextRoomCode) {
+      storeNameForNextRoom(room.nextRoomCode);
       router.push(`/room/${room.nextRoomCode}`);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creatingLobby, room?.nextRoomCode, router]);
 
   if (!room) return null;
@@ -54,6 +65,7 @@ export default function EndScreen() {
   const handleJoinLobby = () => {
     if (!room.nextRoomCode) return;
     trackEvent("join_next_lobby");
+    storeNameForNextRoom(room.nextRoomCode);
     router.push(`/room/${room.nextRoomCode}`);
   };
 

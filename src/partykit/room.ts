@@ -1310,9 +1310,16 @@ export default class RoomServer implements Party.Server {
       });
       if (response.ok) {
         const { archiveUrl } = await response.json();
-        this.broadcast({ type: "ARCHIVE_READY", archiveUrl });
+        // Store in game state so every future STATE_UPDATE carries it —
+        // players who reconnect or refresh still see the archive link.
+        if (this.gameState) {
+          const action: GameAction = { type: "ARCHIVE_URL_SET", archiveUrl };
+          this.gameState = gameReducer(this.gameState, action);
+        }
+        this.broadcastStateUpdate();
       } else {
-        console.error("Archive API returned", response.status);
+        const text = await response.text().catch(() => "");
+        console.error("Archive API returned", response.status, text);
       }
     } catch (error) {
       console.error("Failed to archive room:", error);

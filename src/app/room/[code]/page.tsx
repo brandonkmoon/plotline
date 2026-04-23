@@ -178,7 +178,19 @@ function AutoConnect() {
   useEffect(() => {
     if (!code) return;
     if (gameClient.isConnected()) return;
-    gameClient.connect(code, "", undefined).catch(() => {
+
+    // If we navigated here from the EndScreen "Join Lobby" button, the
+    // player's name was stashed in sessionStorage (keyed by new room
+    // code). Use it so they join the brand-new room with the right name.
+    // There is no stored playerId for a new room code yet.
+    let playerName = "";
+    try {
+      const key = `plotline.nextJoin.${code}`;
+      playerName = sessionStorage.getItem(key) ?? "";
+      if (playerName) sessionStorage.removeItem(key);
+    } catch {}
+
+    gameClient.connect(code, playerName, undefined).catch(() => {
       // Errors surface via onConnectionError → ConnectionErrorView
     });
   }, [code]);
