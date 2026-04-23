@@ -3,7 +3,7 @@
 import { useRoom } from "@/lib/client/RoomContext";
 import Button from "@/components/Button";
 import CountdownTimer from "@/components/CountdownTimer";
-import SubmissionStatus from "@/components/SubmissionStatus";
+import PlayerList from "@/components/PlayerList";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
 export default function WaitingScreen() {
@@ -17,6 +17,7 @@ export default function WaitingScreen() {
     roundDurationMs,
     pendingConnected,
     pendingDisconnected,
+    playerStatuses,
   } = useRoom();
 
   const totalPending = pendingConnected + pendingDisconnected;
@@ -62,7 +63,7 @@ export default function WaitingScreen() {
           </div>
         )}
 
-        <SubmissionStatus />
+        <PlayerList players={room?.players ?? []} playerStatuses={playerStatuses} showSubmissionStatus />
       </div>
       <PendingPlayersBadge />
     </>

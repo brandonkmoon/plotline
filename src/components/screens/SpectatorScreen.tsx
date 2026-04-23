@@ -3,7 +3,7 @@
 import { useRoom } from "@/lib/client/RoomContext";
 import Button from "@/components/Button";
 import CountdownTimer from "@/components/CountdownTimer";
-import SubmissionStatus from "@/components/SubmissionStatus";
+import PlayerList from "@/components/PlayerList";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
 const TOTAL_ROUNDS = 7;
@@ -15,6 +15,7 @@ export default function SpectatorScreen() {
     setReady,
     roundStartedAt,
     roundDurationMs,
+    playerStatuses,
   } = useRoom();
 
   if (!room) return null;
@@ -82,7 +83,7 @@ export default function SpectatorScreen() {
           />
         </div>
 
-        <SubmissionStatus />
+        <PlayerList players={room?.players ?? []} playerStatuses={playerStatuses} showSubmissionStatus />
 
         <div className="mt-8">
           <Button

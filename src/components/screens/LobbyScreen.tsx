@@ -3,7 +3,7 @@
 import { useRoom } from "@/lib/client/RoomContext";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
-import PlayerTag from "@/components/PlayerTag";
+import PlayerList from "@/components/PlayerList";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
 export default function LobbyScreen() {
@@ -58,25 +58,12 @@ export default function LobbyScreen() {
         <hr className="rule" />
 
         {/* Cast */}
-        <p className="font-serif font-medium text-[14px] uppercase tracking-[3px] text-text-muted mb-4">
+        <p className="font-serif font-medium text-[14px] uppercase tracking-[3px] text-text-muted mb-[-16px]">
           Cast
         </p>
-        <ul className="list-none mb-2">
-          {(room?.players ?? []).map((player) => {
-            const status = playerStatuses[player.id];
-            return (
-              <PlayerTag
-                key={player.id}
-                name={player.name}
-                isHost={player.isHost}
-                isReconnecting={status === "reconnecting"}
-                isDisconnected={status === "disconnected"}
-              />
-            );
-          })}
-        </ul>
+        <PlayerList players={room?.players ?? []} playerStatuses={playerStatuses} />
 
-        <p className="font-sans text-[13px] text-text-muted text-center mt-1 mb-2">
+        <p className="font-sans text-[13px] text-text-muted text-center mt-2 mb-2">
           {connectedPlayers.length} player
           {connectedPlayers.length !== 1 ? "s" : ""}
         </p>

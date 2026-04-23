@@ -3,66 +3,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
 import Button from "@/components/Button";
+import PlayerList from "@/components/PlayerList";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
 const SECTIONS_PER_STORY = 7;
 const TRANSITION_MS = 2000;
-
-function PlayerConnectionList({
-  players,
-  playerStatuses,
-  readerId,
-}: {
-  players: { id: string; name: string; isHost: boolean }[];
-  playerStatuses: Record<string, string>;
-  readerId?: string;
-}) {
-  return (
-    <ul className="w-full mt-6 list-none">
-      {players.map((player) => {
-        const status = playerStatuses[player.id];
-        const isDisconnected = status === "disconnected";
-        const isReconnecting = status === "reconnecting";
-        const isReader = player.id === readerId;
-        const dim = isDisconnected
-          ? "opacity-30"
-          : isReconnecting
-          ? "opacity-50"
-          : "";
-        return (
-          <li
-            key={player.id}
-            className={`font-body text-[15px] py-2 flex justify-between items-center border-b border-list-border last:border-b-0 ${dim}`}
-          >
-            <span className={isDisconnected ? "line-through" : ""}>
-              {player.name}
-              {isReader && (
-                <span className="ml-2 font-sans text-[10px] font-semibold uppercase tracking-[1px] bg-ink text-white px-2 py-[1px] rounded-[3px]">
-                  Reading
-                </span>
-              )}
-              {player.isHost && !isReader && (
-                <span className="ml-2 font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
-                  Host
-                </span>
-              )}
-              {isReconnecting && (
-                <span className="ml-2 font-sans italic text-[12px] text-text-muted">
-                  reconnecting
-                </span>
-              )}
-            </span>
-            {isDisconnected && (
-              <span className="font-sans text-[12px] text-text-muted">
-                offline
-              </span>
-            )}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
 
 export default function RevealScreen() {
   const {
@@ -252,7 +197,7 @@ export default function RevealScreen() {
             </div>
           )}
 
-          <PlayerConnectionList players={room.players} playerStatuses={playerStatuses} readerId={usingSyncedReveal ? revealState.readerId : undefined} />
+          <PlayerList players={room.players} playerStatuses={playerStatuses} readerId={usingSyncedReveal ? revealState.readerId : undefined} />
         </div>
         <PendingPlayersBadge />
       </>
@@ -348,7 +293,7 @@ export default function RevealScreen() {
           </div>
         )}
 
-        <PlayerConnectionList players={room.players} playerStatuses={playerStatuses} />
+        <PlayerList players={room.players} playerStatuses={playerStatuses} readerId={usingSyncedReveal ? revealState.readerId : undefined} />
       </div>
       <PendingPlayersBadge />
     </>

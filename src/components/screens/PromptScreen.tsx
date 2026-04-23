@@ -6,7 +6,7 @@ import { PROMPTS, isNamePickerRound, DESCRIPTOR_PLACEHOLDERS, PLACEHOLDERS } fro
 import { extractName } from "@/lib/game/normalize";
 import Button from "@/components/Button";
 import CountdownTimer from "@/components/CountdownTimer";
-import SubmissionStatus from "@/components/SubmissionStatus";
+import PlayerList from "@/components/PlayerList";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
 const MAX_CHARS = 120;
@@ -31,6 +31,7 @@ export default function PromptScreen() {
     sendTypingStatus,
     roundStartedAt,
     roundDurationMs,
+    playerStatuses,
   } = useRoom();
   const [response, setResponse] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -329,7 +330,7 @@ export default function PromptScreen() {
           </Button>
         </div>
 
-        <SubmissionStatus />
+        <PlayerList players={room?.players ?? []} playerStatuses={playerStatuses} showSubmissionStatus />
         </div>{/* end prompt-body-enter */}
       </div>
       <PendingPlayersBadge />
