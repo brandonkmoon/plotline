@@ -19,3 +19,4 @@ public/sw.js
 public/sw*.js
 public/workbox-*.js
 .partykit/
+.vercel
