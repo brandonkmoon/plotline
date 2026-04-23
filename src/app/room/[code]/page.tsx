@@ -425,7 +425,27 @@ function RoomContent() {
     }
   })();
 
-  return <ScreenTransition screenKey={screenKey}>{screen}</ScreenTransition>;
+  const playerName = currentPlayer?.name ?? null;
+  const showIdentity =
+    playerName !== null &&
+    room !== null &&
+    room.state !== "LOBBY" &&
+    room.state !== "CREATED" &&
+    !connectionError;
+
+  return (
+    <>
+      {showIdentity && (
+        <div className="bg-ink py-[6px] px-4 text-center">
+          <span className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted">
+            Playing as{" "}
+            <span className="font-semibold text-white">{playerName}</span>
+          </span>
+        </div>
+      )}
+      <ScreenTransition screenKey={screenKey}>{screen}</ScreenTransition>
+    </>
+  );
 }
 
 export default function RoomPage() {
