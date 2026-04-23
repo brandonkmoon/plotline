@@ -11,9 +11,11 @@ const TRANSITION_MS = 2000;
 function PlayerConnectionList({
   players,
   playerStatuses,
+  readerId,
 }: {
   players: { id: string; name: string; isHost: boolean }[];
   playerStatuses: Record<string, string>;
+  readerId?: string;
 }) {
   return (
     <ul className="w-full mt-6 list-none">
@@ -21,6 +23,7 @@ function PlayerConnectionList({
         const status = playerStatuses[player.id];
         const isDisconnected = status === "disconnected";
         const isReconnecting = status === "reconnecting";
+        const isReader = player.id === readerId;
         const dim = isDisconnected
           ? "opacity-30"
           : isReconnecting
@@ -33,7 +36,12 @@ function PlayerConnectionList({
           >
             <span className={isDisconnected ? "line-through" : ""}>
               {player.name}
-              {player.isHost && (
+              {isReader && (
+                <span className="ml-2 font-sans text-[10px] font-semibold uppercase tracking-[1px] bg-ink text-white px-2 py-[1px] rounded-[3px]">
+                  Reading
+                </span>
+              )}
+              {player.isHost && !isReader && (
                 <span className="ml-2 font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
                   Host
                 </span>
@@ -232,7 +240,7 @@ export default function RevealScreen() {
             Listening&hellip;
           </p>
 
-          <PlayerConnectionList players={room.players} playerStatuses={playerStatuses} />
+          <PlayerConnectionList players={room.players} playerStatuses={playerStatuses} readerId={usingSyncedReveal ? revealState.readerId : undefined} />
         </div>
         <PendingPlayersBadge />
       </>
