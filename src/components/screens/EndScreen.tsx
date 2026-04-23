@@ -27,10 +27,39 @@ export default function EndScreen() {
     currentPendingPlayer?.ready ?? false
   );
   const [copied, setCopied] = useState(false);
+  const [archived, setArchived] = useState(!!archiveUrl);
 
   useEffect(() => {
     trackEvent("game_completed");
   }, []);
+
+  // Client-side archive fallback. If the PartyKit server's archive POST
+  // failed (wrong URL, redirect, timeout, etc.), we archive directly from
+  // the browser so the Save Image / Share features still work.
+  useEffect(() => {
+    if (archived || !room || assembledStories.length === 0) return;
+    // Also treat archiveUrl arriving later (from server) as success
+    if (archiveUrl) { setArchived(true); return; }
+
+    const timer = setTimeout(async () => {
+      try {
+        const { serializeRoomForArchive } = await import(
+          "@/lib/archive/serialize"
+        );
+        const data = serializeRoomForArchive(room);
+        const res = await fetch("/api/archive", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) setArchived(true);
+      } catch {
+        // Best effort — if this also fails, Save Image won't work
+      }
+    }, 3000); // wait 3s for the server-side archive to arrive first
+
+    return () => clearTimeout(timer);
+  }, [archived, archiveUrl, room, assembledStories]);
 
   // Store our name for the new room before navigating so AutoConnect
   // can join with the correct name (new room has no stored playerId).
@@ -93,11 +122,9 @@ export default function EndScreen() {
   };
 
   const handleSaveImage = (storyIndex: number) => {
-    if (!archiveUrl) return;
-    const code = archiveUrl.split("/").pop();
-    if (!code) return;
+    if (!room?.code) return;
     trackEvent("save_story_card");
-    window.open(`/api/og/${code}/${storyIndex}`, "_blank");
+    window.open(`/api/og/${room.code}/${storyIndex}`, "_blank");
   };
 
   const toggleCard = (index: number) => {
@@ -186,14 +213,12 @@ export default function EndScreen() {
                         >
                           Share ↗
                         </button>
-                        {archiveUrl && (
-                          <button
-                            onClick={() => handleSaveImage(story.storyIndex)}
-                            className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
-                          >
-                            Save Image ↗
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleSaveImage(story.storyIndex)}
+                          className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
+                        >
+                          {archived ? "Save Image ↗" : "Saving..."}
+                        </button>
                       </div>
                     </div>
                   )}
