@@ -39,9 +39,6 @@ export default function PromptScreen() {
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [descriptor, setDescriptor] = useState("");
 
-  // Remember which name was picked in round 0 so we can dim it in round 1
-  const round0PickRef = useRef<string | null>(null);
-
   const currentRound = room?.currentRound ?? 0;
   const prompt = PROMPTS[currentRound];
   const isNameRound = isNamePickerRound(currentRound);
@@ -81,13 +78,6 @@ export default function PromptScreen() {
     setSelectedName(null);
     setSubmitted(false);
   }, [currentRound]);
-
-  // Save round 0 pick for dimming in round 1
-  useEffect(() => {
-    if (currentRound === 0 && selectedName && submitted) {
-      round0PickRef.current = selectedName;
-    }
-  }, [currentRound, selectedName, submitted]);
 
   // Typing status
   useEffect(() => {
@@ -199,17 +189,12 @@ export default function PromptScreen() {
                 const isBlocked =
                   slot0TakenName !== null &&
                   player.name.toLowerCase() === slot0TakenName.toLowerCase();
-                // Dimmed: the player's own round-0 pick (soft discourage)
-                const isDimmed =
-                  !isBlocked &&
-                  currentRound === 1 &&
-                  round0PickRef.current === player.name;
 
                 return (
                   <button
                     key={player.id}
                     type="button"
-                    disabled={submitted || isBlocked || isDimmed}
+                    disabled={submitted || isBlocked}
                     onClick={() => {
                       if (isSelected) {
                         setSelectedName(null);
@@ -224,7 +209,7 @@ export default function PromptScreen() {
                       ${
                         isSelected
                           ? "bg-ink text-white border-ink"
-                          : isBlocked || isDimmed
+                          : isBlocked
                           ? "bg-transparent text-text-muted border-[#d0d0d0] opacity-40"
                           : "bg-transparent text-ink border-ink hover:bg-ink hover:text-white"
                       }
@@ -233,8 +218,6 @@ export default function PromptScreen() {
                     title={
                       isBlocked
                         ? "Already the first character in this story"
-                        : isDimmed
-                        ? "Already cast in the previous act"
                         : undefined
                     }
                   >

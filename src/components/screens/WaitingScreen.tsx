@@ -50,8 +50,6 @@ export default function WaitingScreen() {
           roomState={room?.state}
         />
 
-        <SubmissionStatus />
-
         {isHost && (advanceAvailable || pendingConnected === 0) && totalPending > 0 && (
           <div className="mt-8">
             <Button variant="secondary" onClick={hostAdvance}>
@@ -63,6 +61,8 @@ export default function WaitingScreen() {
             </Button>
           </div>
         )}
+
+        <SubmissionStatus />
       </div>
       <PendingPlayersBadge />
     </>

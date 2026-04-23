@@ -32,31 +32,7 @@ export default function LobbyScreen() {
 
         <hr className="rule" />
 
-        {/* Cast */}
-        <p className="font-serif font-medium text-[14px] uppercase tracking-[3px] text-text-muted mb-4">
-          Cast
-        </p>
-        <ul className="list-none mb-2">
-          {(room?.players ?? []).map((player) => {
-            const status = playerStatuses[player.id];
-            return (
-              <PlayerTag
-                key={player.id}
-                name={player.name}
-                isHost={player.isHost}
-                isReconnecting={status === "reconnecting"}
-                isDisconnected={status === "disconnected"}
-              />
-            );
-          })}
-        </ul>
-
-        <p className="font-sans text-[13px] text-text-muted text-center mt-1 mb-6">
-          {connectedPlayers.length} player
-          {connectedPlayers.length !== 1 ? "s" : ""}
-        </p>
-
-        <p className="font-body italic text-[16px] text-text-muted text-center mb-8">
+        <p className="font-body italic text-[14px] text-text-muted text-center mb-6">
           Share the room code to invite more players
         </p>
 
@@ -78,6 +54,32 @@ export default function LobbyScreen() {
             waiting for the host&hellip;
           </p>
         )}
+
+        <hr className="rule" />
+
+        {/* Cast */}
+        <p className="font-serif font-medium text-[14px] uppercase tracking-[3px] text-text-muted mb-4">
+          Cast
+        </p>
+        <ul className="list-none mb-2">
+          {(room?.players ?? []).map((player) => {
+            const status = playerStatuses[player.id];
+            return (
+              <PlayerTag
+                key={player.id}
+                name={player.name}
+                isHost={player.isHost}
+                isReconnecting={status === "reconnecting"}
+                isDisconnected={status === "disconnected"}
+              />
+            );
+          })}
+        </ul>
+
+        <p className="font-sans text-[13px] text-text-muted text-center mt-1 mb-2">
+          {connectedPlayers.length} player
+          {connectedPlayers.length !== 1 ? "s" : ""}
+        </p>
       </div>
       <PendingPlayersBadge />
     </>

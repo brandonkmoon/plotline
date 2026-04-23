@@ -56,6 +56,7 @@ export default class RoomServer implements Party.Server {
   // Reveal state tracking
   revealStoryIndex: number = 0;
   revealedLineCount: number = 0;
+  revealOrder: number[] = []; // shuffled story indices for reveal
 
   // Set when a round timer expired during a server restart — broadcast
   // ADVANCE_AVAILABLE to the first player who reconnects.
@@ -852,7 +853,7 @@ export default class RoomServer implements Party.Server {
     const targetStoryIndex =
       currentStory && !currentStory.isRevealed
         ? currentStory.index
-        : this.gameState.stories.find((s) => !s.isRevealed)?.index;
+        : undefined;
 
     if (targetStoryIndex === undefined) return;
 
@@ -864,10 +865,11 @@ export default class RoomServer implements Party.Server {
     };
     this.gameState = gameReducer(this.gameState, action);
 
-    // If there are more stories, advance to next and reset reveal state
-    const nextUnrevealed = this.gameState.stories.find((s) => !s.isRevealed);
-    if (nextUnrevealed) {
-      this.revealStoryIndex = nextUnrevealed.index;
+    // Advance to the next story in the shuffled reveal order
+    const currentPos = this.revealOrder.indexOf(this.revealStoryIndex);
+    const nextIdx = this.revealOrder[currentPos + 1];
+    if (nextIdx !== undefined) {
+      this.revealStoryIndex = nextIdx;
       this.revealedLineCount = 0;
       this.broadcastRevealState();
     }
@@ -1346,7 +1348,16 @@ export default class RoomServer implements Party.Server {
   }
 
   private initRevealState() {
-    this.revealStoryIndex = 0;
+    // Shuffle story reveal order (Fisher-Yates) so the sequence isn't
+    // tied to join order / rotation index.
+    const count = this.gameState?.stories.length ?? 0;
+    const order = Array.from({ length: count }, (_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    this.revealOrder = order;
+    this.revealStoryIndex = order[0] ?? 0;
     this.revealedLineCount = 0;
   }
 

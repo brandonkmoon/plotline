@@ -314,8 +314,6 @@ export default function RevealScreen() {
           })()}
         </div>
 
-        <PlayerConnectionList players={room.players} playerStatuses={playerStatuses} />
-
         {allRevealed && (
           <div className="mt-8">
             <Button variant="secondary" onClick={handleNextStory}>
@@ -323,6 +321,8 @@ export default function RevealScreen() {
             </Button>
           </div>
         )}
+
+        <PlayerConnectionList players={room.players} playerStatuses={playerStatuses} />
       </div>
       <PendingPlayersBadge />
     </>

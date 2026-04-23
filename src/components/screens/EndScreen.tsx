@@ -228,60 +228,6 @@ export default function EndScreen() {
           </div>
         )}
 
-        {/* ── Player status list ───────────────────────────────── */}
-        <ul className="w-full mb-6 list-none">
-          {room.players.map((player) => {
-            const status = playerStatuses[player.id];
-            const isDisconnected = status === "disconnected";
-            const isReconnecting = status === "reconnecting";
-            const dim = isDisconnected
-              ? "opacity-30"
-              : isReconnecting
-              ? "opacity-50"
-              : "";
-
-            return (
-              <li
-                key={player.id}
-                className={`font-body text-[15px] py-2 flex justify-between items-center border-b border-list-border last:border-b-0 ${dim}`}
-              >
-                <span className={isDisconnected ? "line-through" : ""}>
-                  {player.name}
-                  {player.isHost && (
-                    <span className="ml-2 font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
-                      Host
-                    </span>
-                  )}
-                  {isReconnecting && (
-                    <span className="ml-2 font-sans italic text-[12px] text-text-muted">
-                      reconnecting
-                    </span>
-                  )}
-                </span>
-                {isDisconnected && (
-                  <span className="font-sans text-[13px] text-text-muted">
-                    offline
-                  </span>
-                )}
-              </li>
-            );
-          })}
-          {/* Spectators (pending/late-join players) */}
-          {(room.pendingPlayers ?? []).map((pending) => (
-            <li
-              key={pending.id}
-              className="font-body text-[15px] py-2 flex justify-between items-center border-b border-list-border last:border-b-0"
-            >
-              <span>
-                {pending.name}
-                <span className="ml-2 font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
-                  Watching
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-
         {/* ── Next game controls ───────────────────────────────── */}
         {isSpectator ? (
           /* Spectator — use setReady to signal they want to join next game,
@@ -352,6 +298,59 @@ export default function EndScreen() {
             )}
           </div>
         )}
+
+        {/* ── Player status list ───────────────────────────────── */}
+        <ul className="w-full mt-6 mb-6 list-none">
+          {room.players.map((player) => {
+            const status = playerStatuses[player.id];
+            const isDisconnected = status === "disconnected";
+            const isReconnecting = status === "reconnecting";
+            const dim = isDisconnected
+              ? "opacity-30"
+              : isReconnecting
+              ? "opacity-50"
+              : "";
+
+            return (
+              <li
+                key={player.id}
+                className={`font-body text-[15px] py-2 flex justify-between items-center border-b border-list-border last:border-b-0 ${dim}`}
+              >
+                <span className={isDisconnected ? "line-through" : ""}>
+                  {player.name}
+                  {player.isHost && (
+                    <span className="ml-2 font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
+                      Host
+                    </span>
+                  )}
+                  {isReconnecting && (
+                    <span className="ml-2 font-sans italic text-[12px] text-text-muted">
+                      reconnecting
+                    </span>
+                  )}
+                </span>
+                {isDisconnected && (
+                  <span className="font-sans text-[13px] text-text-muted">
+                    offline
+                  </span>
+                )}
+              </li>
+            );
+          })}
+          {(room.pendingPlayers ?? []).map((pending) => (
+            <li
+              key={pending.id}
+              className="font-body text-[15px] py-2 flex justify-between items-center border-b border-list-border last:border-b-0"
+            >
+              <span>
+                {pending.name}
+                <span className="ml-2 font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
+                  Watching
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
