@@ -242,9 +242,12 @@ export default function RevealScreen() {
           </p>
 
           {isHost && (
-            <div className="mt-6">
+            <div className="mt-8">
+              <p className="font-body italic text-[13px] text-text-muted text-center mb-2">
+                If {readerName} isn&rsquo;t reading, you can skip ahead.
+              </p>
               <Button variant="secondary" onClick={() => advanceReveal()}>
-                Skip Story &rarr;
+                Skip This Story
               </Button>
             </div>
           )}
