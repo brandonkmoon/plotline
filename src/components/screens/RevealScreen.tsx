@@ -72,6 +72,7 @@ export default function RevealScreen() {
     revealAdvance,
     nextStory,
     currentPlayer,
+    isHost,
     justBecameHost,
     playerStatuses,
     room,
@@ -239,6 +240,14 @@ export default function RevealScreen() {
           <p className="mt-6 font-body italic text-[16px] text-text-muted text-center">
             Listening&hellip;
           </p>
+
+          {isHost && (
+            <div className="mt-6">
+              <Button variant="secondary" onClick={() => advanceReveal()}>
+                Skip Story &rarr;
+              </Button>
+            </div>
+          )}
 
           <PlayerConnectionList players={room.players} playerStatuses={playerStatuses} readerId={usingSyncedReveal ? revealState.readerId : undefined} />
         </div>

@@ -925,15 +925,13 @@ export default class RoomServer implements Party.Server {
     const readerId = readerSlot?.playerId;
 
     if (playerId !== readerId) {
-      // If the designated reader is offline, fall back to the host so the
-      // reveal doesn't get permanently stuck.
-      const reader = this.gameState.players.find(p => p.id === readerId);
-      const readerIsOffline = !reader?.isConnected;
+      // Allow the host to reveal lines too — covers both "reader is
+      // offline" and "reader is connected but idle/AFK" cases.
       const senderIsHost = playerId === this.gameState.hostId;
-      if (!readerIsOffline || !senderIsHost) {
+      if (!senderIsHost) {
         this.sendTo(sender, {
           type: "ERROR",
-          reason: "Only the reader can advance the reveal",
+          reason: "Only the reader or host can advance the reveal",
         });
         return;
       }
