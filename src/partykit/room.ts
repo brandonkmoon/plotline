@@ -58,6 +58,11 @@ export default class RoomServer implements Party.Server {
   revealedLineCount: number = 0;
   revealOrder: number[] = []; // shuffled story indices for reveal
 
+  // If this room was created from the "Play Again" flow, this is the
+  // name of the host from the previous game. The first player to join
+  // gets temporary host; when this player arrives, host transfers to them.
+  preferredHostName: string | null = null;
+
   // Set when a round timer expired during a server restart — broadcast
   // ADVANCE_AVAILABLE to the first player who reconnects.
   private pendingAdvanceAvailable: boolean = false;
@@ -634,6 +639,11 @@ export default class RoomServer implements Party.Server {
 
     const playerId = crypto.randomUUID();
 
+    // Track the preferred host from the previous game (first message wins)
+    if (msg.previousHostName && this.preferredHostName === null) {
+      this.preferredHostName = msg.previousHostName;
+    }
+
     if (!this.gameState) {
       // First player creates the room
       this.gameState = createRoom(this.room.id, { id: playerId, name: msg.playerName }, now);
@@ -666,6 +676,24 @@ export default class RoomServer implements Party.Server {
     // Map connection to player
     this.connectionToPlayer.set(sender.id, playerId);
     this.playerToConnection.set(playerId, sender.id);
+
+    // If the previous game's host just joined, transfer host to them
+    if (
+      this.preferredHostName &&
+      msg.playerName.toLowerCase() === this.preferredHostName.toLowerCase() &&
+      this.gameState.hostId !== playerId
+    ) {
+      this.gameState = {
+        ...this.gameState,
+        hostId: playerId,
+        players: this.gameState.players.map((p) => ({
+          ...p,
+          isHost: p.id === playerId,
+        })),
+        updatedAt: Date.now(),
+      };
+      this.preferredHostName = null; // consumed
+    }
 
     // Set initial status
     this.playerStatuses.set(playerId, "idle");

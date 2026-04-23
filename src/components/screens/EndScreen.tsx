@@ -61,12 +61,17 @@ export default function EndScreen() {
     return () => clearTimeout(timer);
   }, [archived, archiveUrl, room, assembledStories]);
 
-  // Store our name for the new room before navigating so AutoConnect
-  // can join with the correct name (new room has no stored playerId).
+  // Store our name + the previous host name for the new room so
+  // AutoConnect can join with the right name and the server can
+  // transfer host to the original host when they arrive.
   const storeNameForNextRoom = (nextCode: string) => {
     const name = currentPlayer?.name ?? currentPendingPlayer?.name ?? "";
     if (name) {
       try { sessionStorage.setItem(`plotline.nextJoin.${nextCode}`, name); } catch {}
+    }
+    const hostName = room?.players.find((p) => p.isHost)?.name ?? "";
+    if (hostName) {
+      try { sessionStorage.setItem(`plotline.prevHost.${nextCode}`, hostName); } catch {}
     }
   };
 

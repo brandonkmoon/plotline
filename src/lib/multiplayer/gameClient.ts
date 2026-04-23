@@ -189,7 +189,7 @@ class GameClient {
     roomCode: string,
     playerName: string,
     existingPlayerId?: string,
-    options?: { forceNewPlayer?: boolean }
+    options?: { forceNewPlayer?: boolean; previousHostName?: string }
   ): Promise<string> {
     this.roomCode = roomCode;
     this.playerName = playerName;
@@ -260,6 +260,7 @@ class GameClient {
           playerName,
           protocolVersion: PROTOCOL_VERSION,
           ...(playerIdToSend ? { playerId: playerIdToSend } : {}),
+          ...(options?.previousHostName ? { previousHostName: options.previousHostName } : {}),
         };
         this.send(joinMsg);
       });

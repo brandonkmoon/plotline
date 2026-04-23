@@ -23,6 +23,7 @@ export type ClientMessage =
       playerName: string;
       playerId?: string;
       protocolVersion: number;
+      previousHostName?: string;
     }
   | { type: "START_GAME" }
   | {

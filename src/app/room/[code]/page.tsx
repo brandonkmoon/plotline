@@ -184,13 +184,17 @@ function AutoConnect() {
     // code). Use it so they join the brand-new room with the right name.
     // There is no stored playerId for a new room code yet.
     let playerName = "";
+    let previousHostName = "";
     try {
-      const key = `plotline.nextJoin.${code}`;
-      playerName = sessionStorage.getItem(key) ?? "";
-      if (playerName) sessionStorage.removeItem(key);
+      const nameKey = `plotline.nextJoin.${code}`;
+      const hostKey = `plotline.prevHost.${code}`;
+      playerName = sessionStorage.getItem(nameKey) ?? "";
+      previousHostName = sessionStorage.getItem(hostKey) ?? "";
+      if (playerName) sessionStorage.removeItem(nameKey);
+      if (previousHostName) sessionStorage.removeItem(hostKey);
     } catch {}
 
-    gameClient.connect(code, playerName, undefined).catch(() => {
+    gameClient.connect(code, playerName, undefined, { previousHostName: previousHostName || undefined }).catch(() => {
       // Errors surface via onConnectionError → ConnectionErrorView
     });
   }, [code]);
