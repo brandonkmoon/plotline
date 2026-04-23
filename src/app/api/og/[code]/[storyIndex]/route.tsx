@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
+import { readFile } from "fs/promises";
+import { join } from "path";
 import { getDb, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import {
@@ -28,35 +30,14 @@ function extractName(nameResponse: string): string {
   return nameResponse.trim();
 }
 
-async function loadFont(url: string): Promise<ArrayBuffer | null> {
-  try {
-    const res = await fetch(url);
-    return res.arrayBuffer();
-  } catch {
-    return null;
-  }
-}
+// Fonts are bundled alongside this route (src/app/api/og/fonts/) so we
+// don't depend on fetching from Google at runtime — which fails on Vercel
+// because the Googlebot UA trick doesn't reliably return font URLs.
+const FONT_DIR = join(process.cwd(), "src/app/api/og/fonts");
 
-async function getGoogleFontBuffer(
-  family: string,
-  params: string
-): Promise<ArrayBuffer | null> {
-  try {
-    const cssUrl = `https://fonts.googleapis.com/css2?family=${family}:${params}&display=swap`;
-    const css = await fetch(cssUrl, {
-      headers: {
-        // Use a UA that gets woff2 back; we'll parse the first URL
-        "User-Agent":
-          "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
-      },
-    }).then((r) => r.text());
-
-    const match = css.match(/src:\s*url\(([^)]+)\)\s*format\(['"]?woff2['"]?\)/);
-    if (!match) return null;
-    return loadFont(match[1]);
-  } catch {
-    return null;
-  }
+async function loadBundledFont(filename: string): Promise<ArrayBuffer> {
+  const buf = await readFile(join(FONT_DIR, filename));
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }
 
 export async function GET(
@@ -70,19 +51,25 @@ export async function GET(
     return new Response("Invalid story index", { status: 400 });
   }
 
-  // Fetch fonts in parallel
-  const [playfairBold, loraRegular, loraItalic] = await Promise.all([
-    getGoogleFontBuffer("Playfair+Display", "wght@700"),
-    getGoogleFontBuffer("Lora", "ital,wght@0,400"),
-    getGoogleFontBuffer("Lora", "ital,wght@1,400"),
-  ]);
-
+  // Load bundled fonts
   type Weight = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
   type FontOption = { name: string; data: ArrayBuffer; weight: Weight; style: "normal" | "italic" };
-  const fonts: FontOption[] = [];
-  if (playfairBold) fonts.push({ name: "Playfair", data: playfairBold, weight: 700, style: "normal" });
-  if (loraRegular) fonts.push({ name: "Lora", data: loraRegular, weight: 400, style: "normal" });
-  if (loraItalic) fonts.push({ name: "Lora", data: loraItalic, weight: 400, style: "italic" });
+  let fonts: FontOption[] = [];
+  try {
+    const [playfairBold, loraRegular, loraItalic] = await Promise.all([
+      loadBundledFont("PlayfairDisplay-Bold.woff2"),
+      loadBundledFont("Lora-Regular.woff2"),
+      loadBundledFont("Lora-Italic.woff2"),
+    ]);
+    fonts = [
+      { name: "Playfair", data: playfairBold, weight: 700, style: "normal" },
+      { name: "Lora", data: loraRegular, weight: 400, style: "normal" },
+      { name: "Lora", data: loraItalic, weight: 400, style: "italic" },
+    ];
+  } catch (err) {
+    console.error("Failed to load bundled fonts:", err);
+    return new Response("Font loading failed", { status: 500 });
+  }
 
   // Fetch story from DB
   let storyData: {
