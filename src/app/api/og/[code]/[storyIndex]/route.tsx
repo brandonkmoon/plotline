@@ -147,6 +147,7 @@ export async function GET(
   const headingFont = fonts.length > 0 ? "Playfair" : "Georgia, serif";
   const bodyFont = fonts.length > 1 ? "Lora" : "Georgia, serif";
 
+  try {
   return new ImageResponse(
     (
       <div
@@ -283,4 +284,11 @@ export async function GET(
       fonts,
     }
   );
+  } catch (err) {
+    console.error("OG image generation failed:", err);
+    return new Response(
+      `Image generation error: ${err instanceof Error ? err.message : String(err)}`,
+      { status: 500 }
+    );
+  }
 }

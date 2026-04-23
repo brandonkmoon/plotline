@@ -133,16 +133,20 @@ export default function RevealScreen() {
     }
   }, [story, isReader, revealedLines, usingSyncedReveal, revealAdvance]);
 
+  // Count already-revealed stories from game state (not by index, since
+  // reveal order is now shuffled). If every story except the current one
+  // is revealed, this is the last.
+  const storiesAlreadyRevealed =
+    room?.stories?.filter((s) => s.isRevealed).length ?? 0;
+  const isFinalStory = storiesAlreadyRevealed >= totalStories - 1;
+
   const handleNextStory = useCallback(() => {
     if (!assembledStories) return;
 
-    const isFinal = currentStoryIdx >= totalStories - 1;
-
     if (usingSyncedReveal) {
-      if (!isFinal) {
-        const next = assembledStories[currentStoryIdx + 1];
-        setNextReaderName(next?.readerName ?? "someone");
-        setNextStoryNumber(currentStoryIdx + 2);
+      if (!isFinalStory) {
+        setNextReaderName(null); // server will tell us
+        setNextStoryNumber(storiesAlreadyRevealed + 2);
         setTransitioning(true);
         if (transitionTimeoutRef.current) {
           clearTimeout(transitionTimeoutRef.current);
@@ -169,7 +173,8 @@ export default function RevealScreen() {
     totalStories,
     advanceReveal,
     assembledStories,
-    currentStoryIdx,
+    isFinalStory,
+    storiesAlreadyRevealed,
   ]);
 
   if (!story || !room) return null;
@@ -186,7 +191,9 @@ export default function RevealScreen() {
             Story {nextStoryNumber} of {totalStories}
           </h1>
           <p className="font-body italic text-[16px] text-text-dim">
-            {nextReaderName} will read the next story aloud
+            {nextReaderName
+              ? `${nextReaderName} will read the next story aloud`
+              : "Get ready for the next story"}
           </p>
         </div>
         <PendingPlayersBadge />
@@ -233,7 +240,6 @@ export default function RevealScreen() {
   }
 
   // ── Reader view ──────────────────────────────────────────
-  const isFinalStory = currentStoryIdx >= totalStories - 1;
 
   return (
     <>
