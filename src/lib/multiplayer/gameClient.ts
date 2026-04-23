@@ -255,11 +255,15 @@ class GameClient {
       });
 
       this.socket.addEventListener("open", () => {
+        // On auto-reconnect, use the playerId from the first successful
+        // STATE_UPDATE — not the original playerIdToSend which may be
+        // undefined when forceNewPlayer was true.
+        const idToSend = this.playerId ?? playerIdToSend;
         const joinMsg: ClientMessage = {
           type: "JOIN_ROOM",
           playerName,
           protocolVersion: PROTOCOL_VERSION,
-          ...(playerIdToSend ? { playerId: playerIdToSend } : {}),
+          ...(idToSend ? { playerId: idToSend } : {}),
           ...(options?.previousHostName ? { previousHostName: options.previousHostName } : {}),
         };
         this.send(joinMsg);
