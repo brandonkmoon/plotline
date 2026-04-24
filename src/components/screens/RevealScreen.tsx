@@ -52,20 +52,24 @@ export default function RevealScreen() {
   const isHostFallbackReader =
     readerIsOffline && currentPlayer?.id === room?.hostId;
 
+  const [transitioning, setTransitioning] = useState(false);
+  const [nextReaderName, setNextReaderName] = useState<string | null>(null);
+  const [nextStoryNumber, setNextStoryNumber] = useState<number | null>(null);
+  const [hostTookOver, setHostTookOver] = useState(false);
+
+  // Reset takeover when story changes
+  useEffect(() => { setHostTookOver(false); }, [currentStoryIdx]);
+
   // Spectators (pending players) have no currentPlayer — they are never readers.
   // In local (non-synced) mode everyone controls the reveal themselves.
   const isReader = usingSyncedReveal
     ? !!currentPlayer &&
-      (currentPlayer.id === revealState.readerId || isHostFallbackReader)
+      (currentPlayer.id === revealState.readerId || isHostFallbackReader || hostTookOver)
     : true;
 
   const readerName = usingSyncedReveal
     ? revealState.readerName
     : story?.readerName ?? "someone";
-
-  const [transitioning, setTransitioning] = useState(false);
-  const [nextReaderName, setNextReaderName] = useState<string | null>(null);
-  const [nextStoryNumber, setNextStoryNumber] = useState<number | null>(null);
   const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
@@ -191,10 +195,10 @@ export default function RevealScreen() {
           {isHost && (
             <div className="mt-8">
               <p className="font-body italic text-[13px] text-text-muted text-center mb-2">
-                If {readerName} isn&rsquo;t reading, you can skip ahead.
+                If {readerName} isn&rsquo;t reading, you can take over.
               </p>
-              <Button variant="secondary" onClick={() => advanceReveal()}>
-                Skip This Story
+              <Button variant="secondary" onClick={() => setHostTookOver(true)}>
+                Read on Their Behalf
               </Button>
             </div>
           )}

@@ -939,6 +939,16 @@ export default class RoomServer implements Party.Server {
       return;
     }
 
+    // If voting just closed for this story, use the voting-specific
+    // advance path (which clears voting state properly).
+    if (
+      this.gameState.votingState?.phase === "closed" &&
+      this.gameState.votingState.storyIndex === this.revealStoryIndex
+    ) {
+      this.advanceAfterVoting();
+      return;
+    }
+
     // Mark the current story as revealed (if not already) and move on.
     const targetStoryIndex =
       currentStory && !currentStory.isRevealed
@@ -1834,47 +1844,53 @@ export default class RoomServer implements Party.Server {
       },
     };
 
-    // Broadcast that voting is closed (no results yet — saved for scoreboard)
+    // Broadcast that voting is closed — host/reader must manually
+    // advance to the next story via ADVANCE_REVEAL. No auto-advance,
+    // because skipping gives an advantage to players who didn't vote.
     this.broadcast({ type: "VOTING_CLOSED", storyIndex });
+    this.broadcastStateUpdate();
+  }
 
-    // Auto-advance to the next story after a short pause so clients
-    // see the "closed" state briefly before transitioning.
-    setTimeout(() => {
-      if (!this.gameState || this.gameState.state !== "REVEAL") return;
+  // Called by handleAdvanceReveal when voting is closed and the host
+  // advances to the next story. Handles the story-revealed transition
+  // that used to be in the auto-advance timeout.
+  private advanceAfterVoting() {
+    if (!this.gameState || this.gameState.state !== "REVEAL") return;
 
-      // Mark current story as revealed
-      const action: GameAction = {
-        type: "STORY_REVEALED",
-        storyIndex,
-        timestamp: Date.now(),
-      };
-      this.gameState = gameReducer(this.gameState, action);
+    const storyIndex = this.revealStoryIndex;
 
-      // Clear voting state
-      this.gameState = {
-        ...this.gameState,
-        votingState: undefined,
-      };
+    // Mark current story as revealed
+    const action: GameAction = {
+      type: "STORY_REVEALED",
+      storyIndex,
+      timestamp: Date.now(),
+    };
+    this.gameState = gameReducer(this.gameState, action);
 
-      // Advance to next story in shuffled order
-      const currentPos = this.revealOrder.indexOf(this.revealStoryIndex);
-      const nextIdx = this.revealOrder[currentPos + 1];
-      if (nextIdx !== undefined) {
-        this.revealStoryIndex = nextIdx;
-        this.revealedLineCount = 0;
-        this.broadcastRevealState();
+    // Clear voting state
+    this.gameState = {
+      ...this.gameState,
+      votingState: undefined,
+    };
+
+    // Advance to next story in shuffled order
+    const currentPos = this.revealOrder.indexOf(this.revealStoryIndex);
+    const nextIdx = this.revealOrder[currentPos + 1];
+    if (nextIdx !== undefined) {
+      this.revealStoryIndex = nextIdx;
+      this.revealedLineCount = 0;
+      this.broadcastRevealState();
+    }
+
+    this.broadcastStateUpdate();
+
+    // If all stories revealed → END
+    if (this.gameState.state === "END") {
+      this.archiveRoom();
+      if (this.gameState.gameMode === "competitive") {
+        this.computeAndBroadcastScores();
       }
-
-      this.broadcastStateUpdate();
-
-      // If all stories revealed → END
-      if (this.gameState.state === "END") {
-        this.archiveRoom();
-        if (this.gameState.gameMode === "competitive") {
-          this.computeAndBroadcastScores();
-        }
-      }
-    }, 1500);
+    }
   }
 
   private clearVotingTimer() {

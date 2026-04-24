@@ -411,7 +411,7 @@ function RoomContent() {
         return hasSubmitted ? <WaitingScreen /> : <PromptScreen />;
 
       case "REVEAL":
-        return votingOpen ? <VotingScreen /> : <RevealScreen />;
+        return room.votingState ? <VotingScreen /> : <RevealScreen />;
 
       case "END":
       case "DESTROYED":
