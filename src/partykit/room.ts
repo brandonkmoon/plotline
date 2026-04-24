@@ -1920,14 +1920,14 @@ export default class RoomServer implements Party.Server {
         }
       }
 
-      // Track Line of the Game (most raw votes, not weighted)
-      const rawCounts: number[] = new Array(7).fill(0);
+      // Track Line of the Game (most points, not raw votes)
+      const linePoints: number[] = new Array(7).fill(0);
       for (const vote of result.votes) {
-        rawCounts[vote.lineIndex]++;
+        linePoints[vote.lineIndex] += vote.isStandingOvation ? 3 : 1;
       }
-      for (let i = 0; i < rawCounts.length; i++) {
-        if (rawCounts[i] > maxVoteCount) {
-          maxVoteCount = rawCounts[i];
+      for (let i = 0; i < linePoints.length; i++) {
+        if (linePoints[i] > maxVoteCount) {
+          maxVoteCount = linePoints[i];
           const authorId = result.lineAuthors[i] ?? "";
           const slot = this.gameState.stories[result.storyIndex]?.slots[i];
           const author = this.gameState.players.find((p) => p.id === authorId);
@@ -1937,7 +1937,7 @@ export default class RoomServer implements Party.Server {
             text: slot?.response ?? "",
             authorId: slot?.playerId ?? "",
             authorName: author?.name ?? "Unknown",
-            voteCount: rawCounts[i],
+            points: linePoints[i],
           };
         }
       }
@@ -1998,15 +1998,16 @@ export default class RoomServer implements Party.Server {
     const players = this.gameState.players;
     const allResults = this.seriesState.completedGames.flatMap((g) => g.voteResults);
 
-    // Helper: count votes by line type across all games
-    const votesByPlayerByActs = (acts: number[]) => {
+    // Helper: count points by line type across all games
+    const pointsByPlayerByActs = (acts: number[]) => {
       const counts: Record<string, number> = {};
       for (const result of allResults) {
         for (const vote of result.votes) {
           if (acts.includes(vote.lineIndex)) {
             const authorId = result.lineAuthors[vote.lineIndex];
             if (authorId) {
-              counts[authorId] = (counts[authorId] ?? 0) + 1;
+              const pts = vote.isStandingOvation ? 3 : 1;
+              counts[authorId] = (counts[authorId] ?? 0) + pts;
             }
           }
         }
@@ -2041,7 +2042,7 @@ export default class RoomServer implements Party.Server {
     }
 
     // Casting Director — most votes on acts 0-1 (character names)
-    const castingCounts = votesByPlayerByActs([0, 1]);
+    const castingCounts = pointsByPlayerByActs([0, 1]);
     const castingId = findTop(castingCounts);
     if (castingId) {
       awards.push({
@@ -2053,7 +2054,7 @@ export default class RoomServer implements Party.Server {
     }
 
     // Scene Stealer — most votes on acts 2-3 (location/action)
-    const sceneCounts = votesByPlayerByActs([2, 3]);
+    const sceneCounts = pointsByPlayerByActs([2, 3]);
     const sceneId = findTop(sceneCounts);
     if (sceneId) {
       awards.push({
@@ -2065,7 +2066,7 @@ export default class RoomServer implements Party.Server {
     }
 
     // Speechwriter — most votes on acts 4-5 (dialogue)
-    const speechCounts = votesByPlayerByActs([4, 5]);
+    const speechCounts = pointsByPlayerByActs([4, 5]);
     const speechId = findTop(speechCounts);
     if (speechId) {
       awards.push({
@@ -2077,7 +2078,7 @@ export default class RoomServer implements Party.Server {
     }
 
     // Closer — most votes on act 6 (ending)
-    const closerCounts = votesByPlayerByActs([6]);
+    const closerCounts = pointsByPlayerByActs([6]);
     const closerId = findTop(closerCounts);
     if (closerId) {
       awards.push({
@@ -2110,18 +2111,18 @@ export default class RoomServer implements Party.Server {
       });
     }
 
-    // Line of the Series — single most-voted line across all games
+    // Line of the Series — single highest-scoring line across all games
     let bestLineText = "";
     let bestLineAuthorId = "";
-    let bestLineVotes = 0;
+    let bestLinePoints = 0;
     for (const result of allResults) {
-      const rawCounts: number[] = new Array(7).fill(0);
+      const linePoints: number[] = new Array(7).fill(0);
       for (const vote of result.votes) {
-        rawCounts[vote.lineIndex]++;
+        linePoints[vote.lineIndex] += vote.isStandingOvation ? 3 : 1;
       }
-      for (let i = 0; i < rawCounts.length; i++) {
-        if (rawCounts[i] > bestLineVotes) {
-          bestLineVotes = rawCounts[i];
+      for (let i = 0; i < linePoints.length; i++) {
+        if (linePoints[i] > bestLinePoints) {
+          bestLinePoints = linePoints[i];
           bestLineAuthorId = result.lineAuthors[i] ?? "";
           bestLineText = result.lineTexts[i] ?? "";
         }

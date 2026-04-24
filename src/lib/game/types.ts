@@ -68,7 +68,7 @@ export interface GameScores {
     text: string;
     authorId: string;
     authorName: string;
-    voteCount: number;
+    points: number;
   } | null;
 }
 

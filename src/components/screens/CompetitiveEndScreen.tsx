@@ -140,7 +140,7 @@ export default function CompetitiveEndScreen() {
               &ldquo;{scores.lineOfTheGame.text}&rdquo;
             </p>
             <p className="font-sans text-[12px] text-text-dim mt-1">
-              &mdash; {scores.lineOfTheGame.authorName} ({scores.lineOfTheGame.voteCount} votes)
+              &mdash; {scores.lineOfTheGame.authorName} ({scores.lineOfTheGame.points} pts)
             </p>
           </div>
         </>
