@@ -146,6 +146,11 @@ export default function PromptScreen() {
 
   return (
     <>
+      <CountdownTimer
+        roundStartedAt={roundStartedAt}
+        roundDurationMs={roundDurationMs}
+        roomState={room?.state}
+      />
       <div className="screen">
         <hr className="rule prompt-rule-enter" />
 
@@ -312,13 +317,6 @@ export default function PromptScreen() {
           </div>
         )}
 
-        <div className="mt-5">
-          <CountdownTimer
-            roundStartedAt={roundStartedAt}
-            roundDurationMs={roundDurationMs}
-            roomState={room?.state}
-          />
-        </div>
 
         <div className="mt-5">
           {!submitted ? (

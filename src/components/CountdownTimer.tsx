@@ -21,68 +21,47 @@ export default function CountdownTimer({
     if (
       roundStartedAt == null ||
       !Number.isFinite(roundStartedAt) ||
-      roundStartedAt <= 0
+      roundStartedAt <= 0 ||
+      !Number.isFinite(roundDurationMs) ||
+      roundDurationMs <= 0
     ) {
       setRemainingMs(null);
       return;
     }
 
-    if (!Number.isFinite(roundDurationMs) || roundDurationMs <= 0) {
-      setRemainingMs(null);
-      return;
-    }
-
     function tick() {
-      const left = Math.max(
-        0,
-        (roundStartedAt as number) + roundDurationMs - Date.now()
-      );
+      const left = Math.max(0, (roundStartedAt as number) + roundDurationMs - Date.now());
       setRemainingMs(Number.isFinite(left) ? left : null);
     }
 
     tick();
-    const interval = setInterval(tick, 250);
+    const interval = setInterval(tick, 100);
     return () => clearInterval(interval);
   }, [roundStartedAt, roundDurationMs]);
 
-  const baseClass =
-    "font-serif text-[28px] text-center tracking-[2px]";
+  const fraction = remainingMs !== null && roundDurationMs > 0
+    ? remainingMs / roundDurationMs
+    : roomState === "PLAYING" ? 0 : 1;
 
-  if (remainingMs === null) {
-    if (roomState === "PLAYING") {
-      return (
-        <div className="text-center">
-          <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted mb-1">Time</p>
-          <div className={`${baseClass} text-text-muted`}>0:00</div>
-        </div>
-      );
-    }
-    return (
-      <div className="text-center">
-        <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted mb-1">Time</p>
-        <div className={`${baseClass} text-text-muted`}>--:--</div>
-      </div>
-    );
-  }
+  const totalSeconds = remainingMs !== null ? Math.ceil(remainingMs / 1000) : 0;
 
-  const totalSeconds = Math.ceil(remainingMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const display = `${minutes}:${String(seconds).padStart(2, "0")}`;
-
-  let colorClass = "text-ink";
-  let animClass = "";
-  if (totalSeconds <= 10) {
-    colorClass = "text-red-600";
-    animClass = "timer-pulse";
-  } else if (totalSeconds <= 30) {
-    colorClass = "text-amber-600";
-  }
+  const barColor = totalSeconds <= 5
+    ? "#dc2626"
+    : totalSeconds <= 15
+    ? "#d97706"
+    : "#1a1a1a";
 
   return (
-    <div className="text-center">
-      <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted mb-1">Time</p>
-      <div className={`${baseClass} ${colorClass} ${animClass}`}>{display}</div>
+    <div className="w-full">
+      <div className="w-full h-[3px] bg-list-border overflow-hidden">
+        <div
+          className="h-full transition-all duration-100 ease-linear"
+          style={{
+            width: `${fraction * 100}%`,
+            backgroundColor: barColor,
+          }}
+        />
+      </div>
     </div>
   );
 }

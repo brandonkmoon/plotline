@@ -21,6 +21,10 @@ export default function WaitingScreen() {
   } = useRoom();
 
   const totalPending = pendingConnected + pendingDisconnected;
+  const connectedPlayers = room?.players.filter((p) => p.isConnected) ?? [];
+  const submittedCount = connectedPlayers.filter(
+    (p) => playerStatuses[p.id] === "submitted"
+  ).length;
 
   return (
     <>
@@ -31,6 +35,12 @@ export default function WaitingScreen() {
           </p>
         )}
 
+        <CountdownTimer
+          roundStartedAt={roundStartedAt}
+          roundDurationMs={roundDurationMs}
+          roomState={room?.state}
+        />
+
         <hr className="rule" />
         <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
           Intermission
@@ -38,21 +48,27 @@ export default function WaitingScreen() {
         <h1 className="font-serif font-bold text-[24px] text-ink mb-1">
           Sit Tight
         </h1>
-        <p className="font-body italic text-[16px] text-text-dim">
-          Waiting on {totalPending} more player{totalPending !== 1 ? "s" : ""}
-          &hellip;
+        <p className="font-sans text-[12px] text-text-muted mb-1">
+          {submittedCount} of {connectedPlayers.length} submitted
         </p>
+
+        {/* Submission dots */}
+        <div className="flex justify-center gap-1.5 mb-4">
+          {connectedPlayers.map((p) => (
+            <div
+              key={p.id}
+              className="w-2 h-2 rounded-full transition-colors duration-300"
+              style={{
+                backgroundColor: playerStatuses[p.id] === "submitted" ? "#1a1a1a" : "#d0d0d0",
+              }}
+            />
+          ))}
+        </div>
 
         <hr className="rule" />
 
-        <CountdownTimer
-          roundStartedAt={roundStartedAt}
-          roundDurationMs={roundDurationMs}
-          roomState={room?.state}
-        />
-
         {isHost && (advanceAvailable || pendingConnected === 0) && totalPending > 0 && (
-          <div className="mt-8">
+          <div className="mb-4">
             <Button variant="secondary" onClick={hostAdvance}>
               {pendingConnected === 0
                 ? `Advance (${pendingDisconnected} offline)`
