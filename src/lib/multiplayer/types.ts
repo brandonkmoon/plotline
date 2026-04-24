@@ -25,7 +25,7 @@ export type ClientMessage =
       protocolVersion: number;
       previousHostName?: string;
     }
-  | { type: "START_GAME" }
+  | { type: "START_GAME"; mode?: "classic" | "competitive"; seriesLength?: 3 | 5 }
   | {
       type: "SUBMIT_PROMPT";
       storyIndex: number;
@@ -41,7 +41,11 @@ export type ClientMessage =
   | { type: "QUEUE_NEXT_GAME" }
   | { type: "CREATE_NEXT_ROOM" }
   | { type: "SET_READY"; ready: boolean }
-  | { type: "TYPING_STATUS"; status: "writing" | "idle" };
+  | { type: "TYPING_STATUS"; status: "writing" | "idle" }
+  // Competitive mode
+  | { type: "START_VOTING" }
+  | { type: "SUBMIT_VOTE"; storyIndex: number; lineIndex: number; isStandingOvation: boolean }
+  | { type: "ADVANCE_VOTING" };
 
 export type ServerMessage =
   | {
@@ -60,7 +64,12 @@ export type ServerMessage =
   | { type: "ASSEMBLED_STORIES"; stories: AssembledStory[] }
   | { type: "ARCHIVE_READY"; archiveUrl: string }
   | { type: "REVEAL_STATE"; storyIndex: number; revealedCount: number; readerId: string; readerName: string }
-  | { type: "ROOM_REDIRECT"; newRoomCode: string };
+  | { type: "ROOM_REDIRECT"; newRoomCode: string }
+  // Competitive mode
+  | { type: "VOTING_OPEN"; storyIndex: number; votingStartedAt: number; votingDurationMs: number }
+  | { type: "VOTING_CLOSED"; storyIndex: number }
+  | { type: "GAME_SCORES"; scores: import("@/lib/game/types").GameScores; voteResults: import("@/lib/game/types").StoryVoteResult[]; gameNumber: number; seriesStandings: Record<string, number> }
+  | { type: "SERIES_AWARDS"; awards: import("@/lib/game/types").SeriesAward[]; finalStandings: Record<string, number> };
 
 export type RegistryMessage =
   | { type: "REGISTER"; code: string }

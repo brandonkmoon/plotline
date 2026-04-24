@@ -36,6 +36,74 @@ export interface Story {
   isRevealed: boolean;
 }
 
+// --- Competitive mode types ---
+
+export type GameMode = "classic" | "competitive";
+
+export interface Vote {
+  voterId: string;
+  storyIndex: number;
+  lineIndex: number; // which of the 7 lines (0-6)
+  isStandingOvation: boolean;
+}
+
+export interface StoryVoteResult {
+  storyIndex: number;
+  votes: Vote[];
+  winningLineIndex: number;  // line with most votes
+  winningAuthorId: string;
+  winningLineText: string;
+}
+
+export interface GameScores {
+  // playerId → points earned this game
+  points: Record<string, number>;
+  lineOfTheGame: {
+    storyIndex: number;
+    lineIndex: number;
+    text: string;
+    authorId: string;
+    authorName: string;
+    voteCount: number;
+  } | null;
+}
+
+export interface SeriesAward {
+  id: string;       // "mvp", "scene-stealer", etc.
+  title: string;    // "MVP", "Scene Stealer", etc.
+  playerId: string;
+  playerName: string;
+  detail?: string;  // e.g. the winning line text for "Line of the Series"
+}
+
+export interface SeriesState {
+  mode: GameMode;
+  totalGames: number;           // 3 or 5
+  currentGameNumber: number;    // 1-indexed
+  cumulativePoints: Record<string, number>;
+  // Track standing ovation usage per game per player
+  standingOvationsUsed: Record<string, boolean>;
+  // Stored results from each completed game
+  completedGames: {
+    gameNumber: number;
+    scores: GameScores;
+    voteResults: StoryVoteResult[];
+  }[];
+  // Awards (populated after final game)
+  awards: SeriesAward[];
+}
+
+// --- Voting sub-state within REVEAL ---
+
+export type VotingPhase = "reading" | "voting" | "closed";
+
+export interface VotingState {
+  storyIndex: number;
+  phase: VotingPhase;
+  votesReceived: string[];   // playerIds who have submitted votes
+  votingStartedAt: number | null;
+}
+
 export interface Room {
   code: string;
   state: RoomState;
@@ -48,6 +116,10 @@ export interface Room {
   pendingPlayers: PendingPlayer[];
   nextRoomCode?: string;
   archiveUrl?: string;
+  // Competitive mode (defaults to "classic" if absent)
+  gameMode?: GameMode;
+  series?: SeriesState;
+  votingState?: VotingState;
 }
 
 export interface Prompt {
@@ -91,4 +163,9 @@ export type GameAction =
   | { type: "PENDING_PROMOTED"; playerIds: string[]; timestamp: number }
   | { type: "PLAYER_QUEUED_NEXT"; playerId: string }
   | { type: "NEXT_ROOM_CREATED"; nextRoomCode: string }
-  | { type: "ARCHIVE_URL_SET"; archiveUrl: string };
+  | { type: "ARCHIVE_URL_SET"; archiveUrl: string }
+  // Competitive mode actions
+  | { type: "VOTING_STARTED"; storyIndex: number; timestamp: number }
+  | { type: "VOTE_SUBMITTED"; vote: Vote }
+  | { type: "VOTING_CLOSED"; storyIndex: number }
+  | { type: "SERIES_STARTED"; totalGames: number };

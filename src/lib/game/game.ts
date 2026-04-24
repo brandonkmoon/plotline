@@ -385,5 +385,6 @@ export function createRoom(
     createdAt: timestamp,
     updatedAt: timestamp,
     pendingPlayers: [],
+    gameMode: "classic",
   };
 }
