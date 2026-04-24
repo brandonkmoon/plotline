@@ -10,12 +10,15 @@ export default function VotingScreen() {
   const {
     room,
     currentPlayer,
+    currentPendingPlayer,
     assembledStories,
     votingOpen,
     isHost,
     submitVote,
     advanceVoting,
   } = useRoom();
+
+  const isSpectator = currentPendingPlayer !== null;
 
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
   const [isStandingOvation, setIsStandingOvation] = useState(false);
@@ -179,7 +182,7 @@ export default function VotingScreen() {
           return (
             <button
               key={i}
-              disabled={submitted || isMine}
+              disabled={submitted || isMine || isSpectator}
               onMouseDown={() => handleLongPressStart(i)}
               onMouseUp={handleLongPressEnd}
               onMouseLeave={handleLongPressEnd}
@@ -220,7 +223,16 @@ export default function VotingScreen() {
 
       {/* Submit */}
       <div className="mt-6">
-        {!submitted ? (
+        {isSpectator ? (
+          <div className="text-center">
+            <p className="font-serif font-bold text-[18px] text-ink mb-1">
+              Spectating
+            </p>
+            <p className="font-sans text-[12px] text-text-muted">
+              Players are voting &mdash; you&rsquo;ll join next game
+            </p>
+          </div>
+        ) : !submitted ? (
           <Button
             variant="primary"
             onClick={handleSubmit}

@@ -495,6 +495,7 @@ function RoomContent() {
     // END    → full EndScreen with spectator queue controls
     // else   → SpectatorScreen (handles PLAYING + LOBBY/CREATED)
     if (isPending) {
+      if (room.state === "REVEAL" && room.votingState) return <VotingScreen />;
       if (room.state === "REVEAL") return <RevealScreen />;
       if (room.state === "END" || room.state === "DESTROYED") return <EndScreen />;
       return <SpectatorScreen />;
