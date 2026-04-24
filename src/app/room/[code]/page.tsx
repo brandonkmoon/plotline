@@ -531,9 +531,10 @@ function RoomContent() {
   const showStrip = room !== null && !connectionError;
 
   // Timer: show during PLAYING and voting
-  const showTimer = room?.state === "PLAYING" || !!votingOpen;
-  const timerStartedAt = votingOpen ? votingOpen.votingStartedAt : roundStartedAt;
-  const timerDurationMs = votingOpen ? votingOpen.votingDurationMs : roundDurationMs;
+  const isVoting = !!room?.votingState;
+  const showTimer = room?.state === "PLAYING" || isVoting;
+  const timerStartedAt = isVoting && votingOpen ? votingOpen.votingStartedAt : roundStartedAt;
+  const timerDurationMs = isVoting && votingOpen ? votingOpen.votingDurationMs : roundDurationMs;
 
   return (
     <>
