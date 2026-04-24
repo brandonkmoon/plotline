@@ -526,8 +526,8 @@ class GameClient {
 
   // --- Actions ---
 
-  startGame(): void {
-    this.send({ type: "START_GAME" });
+  startGame(mode?: "classic" | "competitive", seriesLength?: 3 | 5): void {
+    this.send({ type: "START_GAME", mode, seriesLength });
   }
 
   submitPrompt(

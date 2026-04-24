@@ -46,7 +46,7 @@ interface RoomContextValue {
     existingPlayerId?: string
   ) => Promise<string>;
   disconnect: () => void;
-  startGame: () => void;
+  startGame: (mode?: "classic" | "competitive", seriesLength?: 3 | 5) => void;
   submitPrompt: (
     storyIndex: number,
     promptIndex: number,
@@ -262,7 +262,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     roomRedirect,
     connect,
     disconnect,
-    startGame: () => gameClient.startGame(),
+    startGame: (mode, seriesLength) => gameClient.startGame(mode, seriesLength),
     submitPrompt: (storyIndex, promptIndex, response) =>
       gameClient.submitPrompt(storyIndex, promptIndex, response),
     hostAdvance: () => gameClient.hostAdvance(),
