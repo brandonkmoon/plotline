@@ -10,6 +10,7 @@ import LobbyScreen from "@/components/screens/LobbyScreen";
 import PromptScreen from "@/components/screens/PromptScreen";
 import WaitingScreen from "@/components/screens/WaitingScreen";
 import RevealScreen from "@/components/screens/RevealScreen";
+import VotingScreen from "@/components/screens/VotingScreen";
 import EndScreen from "@/components/screens/EndScreen";
 import SpectatorScreen from "@/components/screens/SpectatorScreen";
 import Button from "@/components/Button";
@@ -345,6 +346,7 @@ function RoomContent() {
     playerStatuses,
     connectionError,
     roomRedirect,
+    votingOpen,
   } = useRoom();
   const router = useRouter();
 
@@ -376,7 +378,7 @@ function RoomContent() {
       case "PLAYING":
         return hasSubmitted ? "waiting" : `prompt-${room.currentRound}`;
       case "REVEAL":
-        return "reveal";
+        return votingOpen ? `voting-${votingOpen.storyIndex}` : "reveal";
       case "END":
       case "DESTROYED":
         return "end";
@@ -408,7 +410,7 @@ function RoomContent() {
         return hasSubmitted ? <WaitingScreen /> : <PromptScreen />;
 
       case "REVEAL":
-        return <RevealScreen />;
+        return votingOpen ? <VotingScreen /> : <RevealScreen />;
 
       case "END":
       case "DESTROYED":

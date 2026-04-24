@@ -25,6 +25,27 @@ type ArchiveReadyCallback = (archiveUrl: string) => void;
 type RevealStateCallback = (state: RevealState) => void;
 type RoomRedirectCallback = (newRoomCode: string) => void;
 
+// Competitive mode callbacks
+export interface VotingOpenState {
+  storyIndex: number;
+  votingStartedAt: number;
+  votingDurationMs: number;
+}
+export interface GameScoresState {
+  scores: import("@/lib/game/types").GameScores;
+  voteResults: import("@/lib/game/types").StoryVoteResult[];
+  gameNumber: number;
+  seriesStandings: Record<string, number>;
+}
+export interface SeriesAwardsState {
+  awards: import("@/lib/game/types").SeriesAward[];
+  finalStandings: Record<string, number>;
+}
+type VotingOpenCallback = (state: VotingOpenState) => void;
+type VotingClosedCallback = (storyIndex: number) => void;
+type GameScoresCallback = (state: GameScoresState) => void;
+type SeriesAwardsCallback = (state: SeriesAwardsState) => void;
+
 const CONNECT_TIMEOUT_MS = 10_000;
 const DEFAULT_ROUND_DURATION_MS = 90_000;
 
@@ -162,6 +183,11 @@ class GameClient {
   private archiveReadyListeners: Set<ArchiveReadyCallback> = new Set();
   private revealStateListeners: Set<RevealStateCallback> = new Set();
   private roomRedirectListeners: Set<RoomRedirectCallback> = new Set();
+  // Competitive mode listeners
+  private votingOpenListeners: Set<VotingOpenCallback> = new Set();
+  private votingClosedListeners: Set<VotingClosedCallback> = new Set();
+  private gameScoresListeners: Set<GameScoresCallback> = new Set();
+  private seriesAwardsListeners: Set<SeriesAwardsCallback> = new Set();
   private messageLogListeners: Set<
     (entry: { direction: "in" | "out"; data: string; timestamp: number }) => void
   > = new Set();
@@ -443,6 +469,32 @@ class GameClient {
             clearRejoinId(roomCode);
             for (const cb of this.roomRedirectListeners) cb(msg.newRoomCode);
             break;
+
+          // Competitive mode
+          case "VOTING_OPEN":
+            for (const cb of this.votingOpenListeners) cb({
+              storyIndex: msg.storyIndex,
+              votingStartedAt: msg.votingStartedAt,
+              votingDurationMs: msg.votingDurationMs,
+            });
+            break;
+          case "VOTING_CLOSED":
+            for (const cb of this.votingClosedListeners) cb(msg.storyIndex);
+            break;
+          case "GAME_SCORES":
+            for (const cb of this.gameScoresListeners) cb({
+              scores: msg.scores,
+              voteResults: msg.voteResults,
+              gameNumber: msg.gameNumber,
+              seriesStandings: msg.seriesStandings,
+            });
+            break;
+          case "SERIES_AWARDS":
+            for (const cb of this.seriesAwardsListeners) cb({
+              awards: msg.awards,
+              finalStandings: msg.finalStandings,
+            });
+            break;
         }
       });
 
@@ -587,6 +639,17 @@ class GameClient {
     this.send({ type: "TYPING_STATUS", status });
   }
 
+  // Competitive mode actions
+  startVoting(): void {
+    this.send({ type: "START_VOTING" });
+  }
+  submitVote(storyIndex: number, lineIndex: number, isStandingOvation: boolean): void {
+    this.send({ type: "SUBMIT_VOTE", storyIndex, lineIndex, isStandingOvation });
+  }
+  advanceVoting(): void {
+    this.send({ type: "ADVANCE_VOTING" });
+  }
+
   // --- Subscriptions ---
 
   onStateUpdate(callback: StateCallback): () => void {
@@ -638,6 +701,24 @@ class GameClient {
   onRoomRedirect(callback: RoomRedirectCallback): () => void {
     this.roomRedirectListeners.add(callback);
     return () => this.roomRedirectListeners.delete(callback);
+  }
+
+  // Competitive mode subscriptions
+  onVotingOpen(callback: VotingOpenCallback): () => void {
+    this.votingOpenListeners.add(callback);
+    return () => this.votingOpenListeners.delete(callback);
+  }
+  onVotingClosed(callback: VotingClosedCallback): () => void {
+    this.votingClosedListeners.add(callback);
+    return () => this.votingClosedListeners.delete(callback);
+  }
+  onGameScores(callback: GameScoresCallback): () => void {
+    this.gameScoresListeners.add(callback);
+    return () => this.gameScoresListeners.delete(callback);
+  }
+  onSeriesAwards(callback: SeriesAwardsCallback): () => void {
+    this.seriesAwardsListeners.add(callback);
+    return () => this.seriesAwardsListeners.delete(callback);
   }
 
   onMessageLog(

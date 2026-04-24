@@ -21,6 +21,8 @@ export default function RevealScreen() {
     justBecameHost,
     playerStatuses,
     room,
+    votingOpen,
+    startVoting,
   } = useRoom();
 
   const [localStoryIdx, setLocalStoryIdx] = useState(0);
@@ -287,9 +289,15 @@ export default function RevealScreen() {
 
         {allRevealed && (
           <div className="mt-8">
-            <Button variant="secondary" onClick={handleNextStory}>
-              {isFinalStory ? "That\u2019s a Wrap \u2192" : "Next Story \u2192"}
-            </Button>
+            {room.gameMode === "competitive" && !votingOpen ? (
+              <Button variant="primary" onClick={() => startVoting()}>
+                Start Voting
+              </Button>
+            ) : (
+              <Button variant="secondary" onClick={handleNextStory}>
+                {isFinalStory ? "That\u2019s a Wrap \u2192" : "Next Story \u2192"}
+              </Button>
+            )}
           </div>
         )}
 

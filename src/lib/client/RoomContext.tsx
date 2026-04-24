@@ -9,7 +9,7 @@ import React, {
   useRef,
 } from "react";
 import { gameClient } from "@/lib/multiplayer/gameClient";
-import type { RevealState } from "@/lib/multiplayer/gameClient";
+import type { RevealState, VotingOpenState, GameScoresState, SeriesAwardsState } from "@/lib/multiplayer/gameClient";
 import type {
   Room,
   Player,
@@ -64,6 +64,13 @@ interface RoomContextValue {
   setReady: (ready: boolean) => void;
   sendTypingStatus: (status: "writing" | "idle") => void;
   archiveUrl: string | null;
+  // Competitive mode
+  votingOpen: VotingOpenState | null;
+  gameScores: GameScoresState | null;
+  seriesAwards: SeriesAwardsState | null;
+  startVoting: () => void;
+  submitVote: (storyIndex: number, lineIndex: number, isStandingOvation: boolean) => void;
+  advanceVoting: () => void;
 }
 
 const RoomContext = createContext<RoomContextValue | null>(null);
@@ -90,6 +97,10 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     useState<ConnectionErrorReason | null>(null);
   const [revealState, setRevealState] = useState<RevealState | null>(null);
   const [roomRedirect, setRoomRedirect] = useState<string | null>(null);
+  // Competitive mode
+  const [votingOpen, setVotingOpen] = useState<VotingOpenState | null>(null);
+  const [gameScores, setGameScores] = useState<GameScoresState | null>(null);
+  const [seriesAwards, setSeriesAwards] = useState<SeriesAwardsState | null>(null);
   const [justBecameHost, setJustBecameHost] = useState(false);
   const playerIdRef = useRef<string | null>(null);
   const prevIsHostRef = useRef<boolean>(false);
@@ -159,6 +170,20 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
       gameClient.onRoomRedirect((newCode) => {
         setRoomRedirect(newCode);
       })
+    );
+
+    // Competitive mode listeners
+    unsubs.push(
+      gameClient.onVotingOpen((state) => setVotingOpen(state))
+    );
+    unsubs.push(
+      gameClient.onVotingClosed(() => setVotingOpen(null))
+    );
+    unsubs.push(
+      gameClient.onGameScores((state) => setGameScores(state))
+    );
+    unsubs.push(
+      gameClient.onSeriesAwards((state) => setSeriesAwards(state))
     );
 
     return () => {
@@ -277,6 +302,14 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     setReady: (ready) => gameClient.setReady(ready),
     sendTypingStatus: (status) => gameClient.sendTypingStatus(status),
     archiveUrl: room?.archiveUrl ?? null,
+    // Competitive mode
+    votingOpen,
+    gameScores,
+    seriesAwards,
+    startVoting: () => gameClient.startVoting(),
+    submitVote: (storyIndex, lineIndex, isStandingOvation) =>
+      gameClient.submitVote(storyIndex, lineIndex, isStandingOvation),
+    advanceVoting: () => gameClient.advanceVoting(),
   };
 
   return <RoomContext.Provider value={value}>{children}</RoomContext.Provider>;
