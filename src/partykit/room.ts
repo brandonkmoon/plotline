@@ -1831,7 +1831,45 @@ export default class RoomServer implements Party.Server {
 
     // Broadcast that voting is closed (no results yet — saved for scoreboard)
     this.broadcast({ type: "VOTING_CLOSED", storyIndex });
-    this.broadcastStateUpdate();
+
+    // Auto-advance to the next story after a short pause so clients
+    // see the "closed" state briefly before transitioning.
+    setTimeout(() => {
+      if (!this.gameState || this.gameState.state !== "REVEAL") return;
+
+      // Mark current story as revealed
+      const action: GameAction = {
+        type: "STORY_REVEALED",
+        storyIndex,
+        timestamp: Date.now(),
+      };
+      this.gameState = gameReducer(this.gameState, action);
+
+      // Clear voting state
+      this.gameState = {
+        ...this.gameState,
+        votingState: undefined,
+      };
+
+      // Advance to next story in shuffled order
+      const currentPos = this.revealOrder.indexOf(this.revealStoryIndex);
+      const nextIdx = this.revealOrder[currentPos + 1];
+      if (nextIdx !== undefined) {
+        this.revealStoryIndex = nextIdx;
+        this.revealedLineCount = 0;
+        this.broadcastRevealState();
+      }
+
+      this.broadcastStateUpdate();
+
+      // If all stories revealed → END
+      if (this.gameState.state === "END") {
+        this.archiveRoom();
+        if (this.gameState.gameMode === "competitive") {
+          this.computeAndBroadcastScores();
+        }
+      }
+    }, 1500);
   }
 
   private clearVotingTimer() {

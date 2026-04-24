@@ -22,6 +22,7 @@ export default function VotingScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [longPressFired, setLongPressFired] = useState(false);
 
   const storyIndex = votingOpen?.storyIndex ?? 0;
   const story = assembledStories?.[storyIndex];
@@ -68,6 +69,11 @@ export default function VotingScreen() {
 
   const handleTap = useCallback(
     (lineIndex: number) => {
+      // Skip if a long-press just fired (onClick fires after onMouseUp)
+      if (longPressFired) {
+        setLongPressFired(false);
+        return;
+      }
       if (submitted || myLineIndices.has(lineIndex)) return;
       if (selectedLine === lineIndex && !isStandingOvation) {
         // Deselect
@@ -78,18 +84,18 @@ export default function VotingScreen() {
         setIsStandingOvation(false);
       }
     },
-    [submitted, selectedLine, isStandingOvation, myLineIndices]
+    [submitted, selectedLine, isStandingOvation, myLineIndices, longPressFired]
   );
 
   const handleLongPressStart = useCallback(
     (lineIndex: number) => {
       if (submitted || myLineIndices.has(lineIndex) || standingOvationUsed) return;
+      setLongPressFired(false);
       const timer = setTimeout(() => {
+        setLongPressFired(true);
         if (selectedLine === lineIndex && isStandingOvation) {
-          // Downgrade to regular vote
           setIsStandingOvation(false);
         } else {
-          // Give standing ovation
           setSelectedLine(lineIndex);
           setIsStandingOvation(true);
         }
@@ -162,7 +168,7 @@ export default function VotingScreen() {
               className={`
                 w-full text-left px-4 py-3 border-l-2 transition-colors
                 ${isMine
-                  ? "opacity-30 cursor-not-allowed border-l-list-border"
+                  ? "opacity-50 cursor-not-allowed border-l-list-border"
                   : isOvation
                   ? "bg-banner border-l-ink"
                   : isSelected

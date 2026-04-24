@@ -172,7 +172,7 @@ export default function RevealScreen() {
             Now Playing
           </p>
           <h1 className="font-serif font-bold text-[24px] text-ink text-center mb-1">
-            Story {currentStoryIdx + 1} of {totalStories}
+            Story {storiesAlreadyRevealed + 1} of {totalStories}
           </h1>
           {story.title && (
             <p className="font-serif font-bold text-[21px] text-ink text-center mb-1">
