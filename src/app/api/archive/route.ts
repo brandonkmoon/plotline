@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
             contribution: prompt.contribution,
             authorName: prompt.authorName,
             wasPlaceholder: prompt.wasPlaceholder ? 1 : 0,
+            points: prompt.points ?? 0,
           });
         }
       }

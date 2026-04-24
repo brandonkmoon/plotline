@@ -114,6 +114,16 @@ export default function CompetitiveEndScreen() {
   if (!room || !gameScores) return null;
 
   const { scores, voteResults, gameNumber, seriesStandings } = gameScores;
+
+  // Compute points per line for each story
+  const linePointsByStory: Record<number, number[]> = {};
+  for (const result of voteResults) {
+    const pts = new Array(7).fill(0);
+    for (const vote of result.votes) {
+      pts[vote.lineIndex] += vote.isStandingOvation ? 3 : 1;
+    }
+    linePointsByStory[result.storyIndex] = pts;
+  }
   const isFinalGame = room.series
     ? gameNumber >= room.series.totalGames
     : false;
@@ -242,25 +252,32 @@ export default function CompetitiveEndScreen() {
             {isExpanded && (
               <div className="border border-t-0 border-ink bg-white px-4 pb-5 pt-4">
                 {story.sections.map((section, si) => {
-                  // Find who wrote this line
                   const slot = room.stories[story.storyIndex]?.slots[si];
                   const authorName = slot?.playerId
                     ? room.players.find((p) => p.id === slot.playerId)?.name ?? ""
                     : "";
+                  const pts = linePointsByStory[story.storyIndex]?.[si] ?? 0;
 
                   return (
-                    <div key={si} className="mb-2">
-                      <p
-                        className={`font-body text-[17px] leading-[1.6] ${
-                          section.style === "dialogue" ? "italic" : ""
-                        } text-ink`}
-                      >
-                        {section.text}
-                      </p>
-                      {authorName && (
-                        <p className="font-sans text-[11px] text-text-muted mt-0.5">
-                          — {authorName}
+                    <div key={si} className="mb-3 flex gap-3 items-start">
+                      <div className="flex-1">
+                        <p
+                          className={`font-body text-[17px] leading-[1.6] ${
+                            section.style === "dialogue" ? "italic" : ""
+                          } text-ink`}
+                        >
+                          {section.text}
                         </p>
+                        {authorName && (
+                          <p className="font-sans text-[11px] text-text-muted mt-0.5">
+                            — {authorName}
+                          </p>
+                        )}
+                      </div>
+                      {pts > 0 && (
+                        <span className="font-sans text-[11px] font-semibold text-ink bg-banner px-2 py-0.5 shrink-0 mt-1">
+                          {pts} pt{pts !== 1 ? "s" : ""}
+                        </span>
                       )}
                     </div>
                   );

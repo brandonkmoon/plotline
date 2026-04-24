@@ -29,4 +29,5 @@ export const archivedPrompts = sqliteTable("archived_prompts", {
   contribution: text("contribution").notNull(),
   authorName: text("author_name").notNull(),
   wasPlaceholder: integer("was_placeholder").notNull().default(0),
+  points: integer("points").default(0),
 });

@@ -1,4 +1,4 @@
-import type { Room } from "@/lib/game/types";
+import type { Room, StoryVoteResult } from "@/lib/game/types";
 import { PROMPTS, getRandomPlaceholder } from "@/lib/game/prompts";
 
 export interface ArchivePromptData {
@@ -7,6 +7,7 @@ export interface ArchivePromptData {
   contribution: string;
   authorName: string;
   wasPlaceholder: boolean;
+  points?: number; // competitive mode: points this line received
 }
 
 export interface ArchiveStoryData {
@@ -26,8 +27,23 @@ export interface ArchiveData {
   stories: ArchiveStoryData[];
 }
 
-export function serializeRoomForArchive(room: Room): ArchiveData {
+export function serializeRoomForArchive(
+  room: Room,
+  voteResults?: StoryVoteResult[]
+): ArchiveData {
   const playerMap = new Map(room.players.map((p) => [p.id, p.name]));
+
+  // Pre-compute points per line per story from vote results
+  const pointsByStory: Record<number, number[]> = {};
+  if (voteResults) {
+    for (const result of voteResults) {
+      const pts = new Array(7).fill(0);
+      for (const vote of result.votes) {
+        pts[vote.lineIndex] += vote.isStandingOvation ? 3 : 1;
+      }
+      pointsByStory[result.storyIndex] = pts;
+    }
+  }
 
   const stories: ArchiveStoryData[] = room.stories.map((story) => {
     // The reader is the player who wrote prompt 6 (the last prompt, "Then what?")
@@ -50,6 +66,7 @@ export function serializeRoomForArchive(room: Room): ArchiveData {
         contribution,
         authorName,
         wasPlaceholder,
+        points: pointsByStory[story.index]?.[slot.promptIndex] ?? 0,
       };
     });
 

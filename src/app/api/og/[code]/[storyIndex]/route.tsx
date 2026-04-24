@@ -74,7 +74,7 @@ export async function GET(
   // Fetch story from DB
   let storyData: {
     title: string;
-    lines: { text: string; style: "name" | "location" | "action" | "dialogue" | "ending" }[];
+    lines: { text: string; style: "name" | "location" | "action" | "dialogue" | "ending"; points?: number }[];
   } | null = null;
 
   try {
@@ -94,6 +94,7 @@ export async function GET(
 
       const sorted = prompts.sort((a: { slot: number }, b: { slot: number }) => a.slot - b.slot);
       const contributions = sorted.map((p: { contribution: string }) => p.contribution);
+      const linePoints = sorted.map((p: { points?: number | null }) => p.points ?? 0);
 
       if (contributions.length >= 7) {
         const p1Full = contributions[0];
@@ -111,13 +112,13 @@ export async function GET(
         storyData = {
           title,
           lines: [
-            { text: p1Full, style: "name" },
-            { text: `and ${p2Full}`, style: "name" },
-            { text: `are ${location},`, style: "location" },
-            { text: `${action}.`, style: "action" },
-            { text: `${p1Name} says, \u201c${dialogue1}\u201d`, style: "dialogue" },
-            { text: `${p2Name} says, \u201c${dialogue2}\u201d`, style: "dialogue" },
-            { text: `Then, ${ending}.`, style: "ending" },
+            { text: p1Full, style: "name", points: linePoints[0] },
+            { text: `and ${p2Full}`, style: "name", points: linePoints[1] },
+            { text: `are ${location},`, style: "location", points: linePoints[2] },
+            { text: `${action}.`, style: "action", points: linePoints[3] },
+            { text: `${p1Name} says, \u201c${dialogue1}\u201d`, style: "dialogue", points: linePoints[4] },
+            { text: `${p2Name} says, \u201c${dialogue2}\u201d`, style: "dialogue", points: linePoints[5] },
+            { text: `Then, ${ending}.`, style: "ending", points: linePoints[6] },
           ],
         };
       }
@@ -227,19 +228,46 @@ export async function GET(
             {lines.map((line, i) => {
               const isName = line.style === "name";
               const isDialogue = line.style === "dialogue";
+              const pts = line.points ?? 0;
               return (
                 <div
                   key={i}
                   style={{
-                    fontFamily: isName ? headingFont : bodyFont,
-                    fontStyle: isDialogue ? "italic" : "normal",
-                    fontWeight: isName ? 700 : 400,
-                    fontSize: isName ? 28 : 26,
-                    lineHeight: 1.45,
-                    color: INK,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 12,
                   }}
                 >
-                  {line.text}
+                  <div
+                    style={{
+                      fontFamily: isName ? headingFont : bodyFont,
+                      fontStyle: isDialogue ? "italic" : "normal",
+                      fontWeight: isName ? 700 : 400,
+                      fontSize: isName ? 28 : 26,
+                      lineHeight: 1.45,
+                      color: INK,
+                      flex: 1,
+                    }}
+                  >
+                    {line.text}
+                  </div>
+                  {pts > 0 && (
+                    <div
+                      style={{
+                        backgroundColor: YELLOW,
+                        padding: "4px 10px",
+                        fontFamily: bodyFont,
+                        fontSize: 18,
+                        fontWeight: 600,
+                        color: INK,
+                        whiteSpace: "nowrap",
+                        marginTop: 4,
+                      }}
+                    >
+                      {pts} pt{pts !== 1 ? "s" : ""}
+                    </div>
+                  )}
                 </div>
               );
             })}

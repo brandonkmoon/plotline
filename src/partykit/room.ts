@@ -1420,7 +1420,10 @@ export default class RoomServer implements Party.Server {
   private async archiveRoom() {
     if (!this.gameState) return;
     try {
-      const archiveData = serializeRoomForArchive(this.gameState);
+      const archiveData = serializeRoomForArchive(
+        this.gameState,
+        this.gameState.gameMode === "competitive" ? this.gameVoteResults : undefined
+      );
       const apiHost = (this.room.env.APP_URL as string) || process.env.APP_URL || "http://localhost:3000";
       const response = await fetch(`${apiHost}/api/archive`, {
         method: "POST",
