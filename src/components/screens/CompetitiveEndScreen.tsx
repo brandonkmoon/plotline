@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useRoom } from "@/lib/client/RoomContext";
 import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
@@ -71,6 +72,8 @@ export default function CompetitiveEndScreen() {
     playAgain,
     archiveUrl,
   } = useRoom();
+
+  const router = useRouter();
 
   const [showAwards, setShowAwards] = useState(true);
   const [expandedStory, setExpandedStory] = useState<number | null>(null);
@@ -287,20 +290,44 @@ export default function CompetitiveEndScreen() {
       <hr className="rule" />
 
       {/* Actions */}
-      {isHost ? (
+      {isFinalGame ? (
         <div className="flex flex-col gap-3">
-          {isFinalGame ? (
+          {room.nextRoomCode ? (
+            <>
+              <div className="border border-ink px-4 py-3 text-center">
+                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">
+                  New Room Code
+                </p>
+                <p className="font-serif font-bold text-[22px] text-ink tracking-widest">
+                  {room.nextRoomCode}
+                </p>
+              </div>
+              <Button variant="primary" onClick={() => {
+                const name = currentPlayer?.name ?? "";
+                if (name) {
+                  try { sessionStorage.setItem(`plotline.nextJoin.${room.nextRoomCode}`, name); } catch {}
+                }
+                router.push(`/room/${room.nextRoomCode}`);
+              }}>
+                Join New Series
+              </Button>
+            </>
+          ) : isHost ? (
             <Button variant="secondary" onClick={() => createNextRoom()}>
               New Series
             </Button>
           ) : (
-            <Button variant="primary" onClick={() => playAgain()} disabled={advanceCountdown > 0}>
-              {advanceCountdown > 0
-                ? `Next Game in ${advanceCountdown}s`
-                : `Next Game (${gameNumber + 1} of ${room.series?.totalGames ?? "?"})`}
-            </Button>
+            <p className="font-body italic text-[14px] text-text-muted text-center">
+              The host can start a new series when everyone&rsquo;s ready.
+            </p>
           )}
         </div>
+      ) : isHost ? (
+        <Button variant="primary" onClick={() => playAgain()} disabled={advanceCountdown > 0}>
+          {advanceCountdown > 0
+            ? `Next Game in ${advanceCountdown}s`
+            : `Next Game (${gameNumber + 1} of ${room.series?.totalGames ?? "?"})`}
+        </Button>
       ) : (
         <p className="font-body italic text-[16px] text-text-dim text-center">
           Waiting for the host...
