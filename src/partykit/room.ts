@@ -67,6 +67,19 @@ export default class RoomServer implements Party.Server {
   // ADVANCE_AVAILABLE to the first player who reconnects.
   private pendingAdvanceAvailable: boolean = false;
 
+  // --- Competitive mode state ---
+  // Votes for the current story being voted on (cleared per story)
+  private currentVotes: Map<string, { lineIndex: number; isStandingOvation: boolean }> = new Map();
+  // All vote results for the current game (cleared per game)
+  private gameVoteResults: import("@/lib/game/types").StoryVoteResult[] = [];
+  // Series state persists across games within a series
+  private seriesState: import("@/lib/game/types").SeriesState | null = null;
+  // Voting timer
+  private votingTimer: ReturnType<typeof setTimeout> | null = null;
+  private votingStartedAt: number | null = null;
+
+  private static readonly VOTING_DURATION_MS = 30_000;
+
   constructor(room: Party.Room) {
     this.room = room;
   }
@@ -242,7 +255,7 @@ export default class RoomServer implements Party.Server {
         this.handleJoinRoom(msg, sender);
         break;
       case "START_GAME":
-        this.handleStartGame(sender);
+        this.handleStartGame(msg, sender);
         break;
       case "SUBMIT_PROMPT":
         this.handleSubmitPrompt(msg, sender);
@@ -276,6 +289,16 @@ export default class RoomServer implements Party.Server {
         break;
       case "TYPING_STATUS":
         this.handleTypingStatus(msg, sender);
+        break;
+      // Competitive mode
+      case "START_VOTING":
+        this.handleStartVoting(sender);
+        break;
+      case "SUBMIT_VOTE":
+        this.handleSubmitVote(msg, sender);
+        break;
+      case "ADVANCE_VOTING":
+        this.handleAdvanceVoting(sender);
         break;
       default:
         this.sendTo(sender, {
@@ -709,7 +732,10 @@ export default class RoomServer implements Party.Server {
     this.broadcastPlayerStatuses();
   }
 
-  private handleStartGame(sender: Party.Connection) {
+  private handleStartGame(
+    msg: Extract<ClientMessage, { type: "START_GAME" }>,
+    sender: Party.Connection
+  ) {
     if (!this.gameState) return;
 
     const playerId = this.connectionToPlayer.get(sender.id);
@@ -720,6 +746,42 @@ export default class RoomServer implements Party.Server {
       });
       return;
     }
+
+    // Set game mode before starting
+    const mode = msg.mode ?? "classic";
+    this.gameState = { ...this.gameState, gameMode: mode };
+
+    // Initialize series state for competitive mode
+    if (mode === "competitive") {
+      const totalGames = msg.seriesLength ?? 3;
+      const currentGameNumber = this.seriesState
+        ? this.seriesState.currentGameNumber + 1
+        : 1;
+
+      if (!this.seriesState) {
+        // First game of a new series
+        this.seriesState = {
+          mode: "competitive",
+          totalGames,
+          currentGameNumber: 1,
+          cumulativePoints: {},
+          standingOvationsUsed: {},
+          completedGames: [],
+          awards: [],
+        };
+      } else {
+        // Continuation of existing series
+        this.seriesState.currentGameNumber = currentGameNumber;
+        // Reset per-game standing ovation usage
+        this.seriesState.standingOvationsUsed = {};
+      }
+
+      this.gameState.series = this.seriesState;
+    }
+
+    // Reset per-game vote state
+    this.currentVotes.clear();
+    this.gameVoteResults = [];
 
     const now = Date.now();
     const action: GameAction = {
@@ -907,6 +969,10 @@ export default class RoomServer implements Party.Server {
     // Archive when game transitions to END (all stories revealed)
     if (this.gameState.state === "END") {
       this.archiveRoom();
+      // In competitive mode, compute and broadcast scores
+      if (this.gameState.gameMode === "competitive") {
+        this.computeAndBroadcastScores();
+      }
     }
   }
 
@@ -963,6 +1029,9 @@ export default class RoomServer implements Party.Server {
     // Archive when game ends
     if (this.gameState.state === "END") {
       this.archiveRoom();
+      if (this.gameState.gameMode === "competitive") {
+        this.computeAndBroadcastScores();
+      }
     }
   }
 
@@ -1542,5 +1611,459 @@ export default class RoomServer implements Party.Server {
         `[room] → broadcast PLAYER_STATUS_CHANGED to ${count} client(s)`
       );
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // COMPETITIVE MODE — Voting, Scoring, Awards
+  // ═══════════════════════════════════════════════════════════
+
+  private handleStartVoting(sender: Party.Connection) {
+    if (!this.gameState) return;
+    if (this.gameState.state !== "REVEAL") return;
+    if (this.gameState.gameMode !== "competitive") return;
+
+    const playerId = this.connectionToPlayer.get(sender.id);
+    if (!playerId) return;
+
+    // Only the reader or host can start voting
+    const currentStory = this.gameState.stories[this.revealStoryIndex];
+    const readerSlot = currentStory?.slots.find((s) => s.promptIndex === 6);
+    const readerId = readerSlot?.playerId;
+    const isHost = playerId === this.gameState.hostId;
+    if (playerId !== readerId && !isHost) return;
+
+    // Don't start voting twice for the same story
+    if (
+      this.gameState.votingState?.storyIndex === this.revealStoryIndex &&
+      this.gameState.votingState?.phase === "voting"
+    ) {
+      return;
+    }
+
+    // Clear previous votes
+    this.currentVotes.clear();
+
+    // Set voting state
+    const now = Date.now();
+    this.votingStartedAt = now;
+    this.gameState = {
+      ...this.gameState,
+      votingState: {
+        storyIndex: this.revealStoryIndex,
+        phase: "voting",
+        votesReceived: [],
+        votingStartedAt: now,
+      },
+    };
+
+    // Broadcast voting open
+    this.broadcast({
+      type: "VOTING_OPEN",
+      storyIndex: this.revealStoryIndex,
+      votingStartedAt: now,
+      votingDurationMs: RoomServer.VOTING_DURATION_MS,
+    });
+
+    // Start voting timer
+    this.clearVotingTimer();
+    this.votingTimer = setTimeout(() => {
+      this.closeVotingForStory();
+    }, RoomServer.VOTING_DURATION_MS);
+
+    this.broadcastStateUpdate();
+  }
+
+  private handleSubmitVote(
+    msg: Extract<ClientMessage, { type: "SUBMIT_VOTE" }>,
+    sender: Party.Connection
+  ) {
+    if (!this.gameState) return;
+    if (this.gameState.state !== "REVEAL") return;
+    if (this.gameState.gameMode !== "competitive") return;
+    if (this.gameState.votingState?.phase !== "voting") return;
+    if (msg.storyIndex !== this.gameState.votingState.storyIndex) return;
+
+    const playerId = this.connectionToPlayer.get(sender.id);
+    if (!playerId) return;
+
+    // Can't vote for your own line
+    const currentStory = this.gameState.stories[this.revealStoryIndex];
+    if (!currentStory) return;
+    const slot = currentStory.slots[msg.lineIndex];
+    if (slot?.playerId === playerId) {
+      this.sendTo(sender, { type: "ERROR", reason: "Cannot vote for your own line" });
+      return;
+    }
+
+    // Check standing ovation eligibility
+    if (msg.isStandingOvation) {
+      if (this.seriesState?.standingOvationsUsed[playerId]) {
+        this.sendTo(sender, { type: "ERROR", reason: "Standing ovation already used this game" });
+        return;
+      }
+    }
+
+    // Store/update vote (one per player per story)
+    this.currentVotes.set(playerId, {
+      lineIndex: msg.lineIndex,
+      isStandingOvation: msg.isStandingOvation,
+    });
+
+    // Mark standing ovation as used
+    if (msg.isStandingOvation && this.seriesState) {
+      this.seriesState.standingOvationsUsed[playerId] = true;
+    }
+
+    // Update votes received list
+    const votesReceived = Array.from(this.currentVotes.keys());
+    this.gameState = {
+      ...this.gameState,
+      votingState: {
+        ...this.gameState.votingState!,
+        votesReceived,
+      },
+    };
+
+    this.broadcastStateUpdate();
+
+    // Check if all connected players have voted
+    const connectedPlayers = this.gameState.players.filter((p) => p.isConnected);
+    if (votesReceived.length >= connectedPlayers.length) {
+      this.closeVotingForStory();
+    }
+  }
+
+  private handleAdvanceVoting(sender: Party.Connection) {
+    if (!this.gameState) return;
+
+    const playerId = this.connectionToPlayer.get(sender.id);
+    if (!playerId || playerId !== this.gameState.hostId) return;
+
+    // Host can force-close voting (after timer expires)
+    if (this.gameState.votingState?.phase === "voting") {
+      this.closeVotingForStory();
+    }
+  }
+
+  private closeVotingForStory() {
+    if (!this.gameState) return;
+    this.clearVotingTimer();
+
+    const storyIndex = this.revealStoryIndex;
+    const currentStory = this.gameState.stories[storyIndex];
+    if (!currentStory) return;
+
+    // Tally votes
+    const lineTallies: number[] = new Array(7).fill(0);
+    const votes: import("@/lib/game/types").Vote[] = [];
+
+    for (const [voterId, vote] of this.currentVotes) {
+      const points = vote.isStandingOvation ? 3 : 1;
+      lineTallies[vote.lineIndex] += points;
+      votes.push({
+        voterId,
+        storyIndex,
+        lineIndex: vote.lineIndex,
+        isStandingOvation: vote.isStandingOvation,
+      });
+    }
+
+    // Find winning line
+    let winningLineIndex = 0;
+    let maxTally = 0;
+    for (let i = 0; i < lineTallies.length; i++) {
+      if (lineTallies[i] > maxTally) {
+        maxTally = lineTallies[i];
+        winningLineIndex = i;
+      }
+    }
+
+    const winningSlot = currentStory.slots[winningLineIndex];
+    const winningAuthorId = winningSlot?.playerId ?? "";
+    const winningPlayer = this.gameState.players.find((p) => p.id === winningAuthorId);
+
+    const result: import("@/lib/game/types").StoryVoteResult = {
+      storyIndex,
+      votes,
+      winningLineIndex,
+      winningAuthorId,
+      winningLineText: winningSlot?.response ?? "",
+    };
+
+    this.gameVoteResults.push(result);
+    this.currentVotes.clear();
+
+    // Update voting state to closed
+    this.gameState = {
+      ...this.gameState,
+      votingState: {
+        storyIndex,
+        phase: "closed",
+        votesReceived: [],
+        votingStartedAt: null,
+      },
+    };
+
+    // Broadcast that voting is closed (no results yet — saved for scoreboard)
+    this.broadcast({ type: "VOTING_CLOSED", storyIndex });
+    this.broadcastStateUpdate();
+  }
+
+  private clearVotingTimer() {
+    if (this.votingTimer) {
+      clearTimeout(this.votingTimer);
+      this.votingTimer = null;
+    }
+    this.votingStartedAt = null;
+  }
+
+  // Called when the game transitions to END in competitive mode.
+  // Computes points, Line of the Game, updates series state, and
+  // broadcasts scores (and awards if it's the final game).
+  private computeAndBroadcastScores() {
+    if (!this.gameState || !this.seriesState) return;
+
+    const points: Record<string, number> = {};
+    // Initialize all players to 0
+    for (const p of this.gameState.players) {
+      points[p.id] = 0;
+    }
+
+    // Calculate points from all vote results this game
+    let lineOfTheGame: import("@/lib/game/types").GameScores["lineOfTheGame"] = null;
+    let maxVoteCount = 0;
+
+    for (const result of this.gameVoteResults) {
+      for (const vote of result.votes) {
+        const authorId = this.gameState.stories[result.storyIndex]
+          ?.slots[vote.lineIndex]?.playerId;
+        if (!authorId) continue;
+
+        if (vote.isStandingOvation) {
+          // 3 points to author, 2 to voter
+          points[authorId] = (points[authorId] ?? 0) + 3;
+          points[vote.voterId] = (points[vote.voterId] ?? 0) + 2;
+        } else {
+          // 1 point to author
+          points[authorId] = (points[authorId] ?? 0) + 1;
+        }
+      }
+
+      // Track Line of the Game (most raw votes, not weighted)
+      const rawCounts: number[] = new Array(7).fill(0);
+      for (const vote of result.votes) {
+        rawCounts[vote.lineIndex]++;
+      }
+      for (let i = 0; i < rawCounts.length; i++) {
+        if (rawCounts[i] > maxVoteCount) {
+          maxVoteCount = rawCounts[i];
+          const slot = this.gameState.stories[result.storyIndex]?.slots[i];
+          const author = this.gameState.players.find((p) => p.id === slot?.playerId);
+          lineOfTheGame = {
+            storyIndex: result.storyIndex,
+            lineIndex: i,
+            text: slot?.response ?? "",
+            authorId: slot?.playerId ?? "",
+            authorName: author?.name ?? "Unknown",
+            voteCount: rawCounts[i],
+          };
+        }
+      }
+    }
+
+    // Double points in the final game
+    const isFinalGame =
+      this.seriesState.currentGameNumber >= this.seriesState.totalGames;
+    if (isFinalGame) {
+      for (const id of Object.keys(points)) {
+        points[id] *= 2;
+      }
+    }
+
+    const gameScores: import("@/lib/game/types").GameScores = {
+      points,
+      lineOfTheGame,
+    };
+
+    // Update cumulative series points
+    for (const [id, pts] of Object.entries(points)) {
+      this.seriesState.cumulativePoints[id] =
+        (this.seriesState.cumulativePoints[id] ?? 0) + pts;
+    }
+
+    // Store completed game
+    this.seriesState.completedGames.push({
+      gameNumber: this.seriesState.currentGameNumber,
+      scores: gameScores,
+      voteResults: [...this.gameVoteResults],
+    });
+
+    // Broadcast game scores
+    this.broadcast({
+      type: "GAME_SCORES",
+      scores: gameScores,
+      voteResults: this.gameVoteResults,
+      gameNumber: this.seriesState.currentGameNumber,
+      seriesStandings: { ...this.seriesState.cumulativePoints },
+    });
+
+    // If final game, compute and broadcast awards
+    if (isFinalGame) {
+      const awards = this.computeSeriesAwards();
+      this.seriesState.awards = awards;
+      this.broadcast({
+        type: "SERIES_AWARDS",
+        awards,
+        finalStandings: { ...this.seriesState.cumulativePoints },
+      });
+    }
+  }
+
+  private computeSeriesAwards(): import("@/lib/game/types").SeriesAward[] {
+    if (!this.gameState || !this.seriesState) return [];
+
+    const awards: import("@/lib/game/types").SeriesAward[] = [];
+    const players = this.gameState.players;
+    const allResults = this.seriesState.completedGames.flatMap((g) => g.voteResults);
+
+    // Helper: count votes by line type across all games
+    const votesByPlayerByActs = (acts: number[]) => {
+      const counts: Record<string, number> = {};
+      for (const result of allResults) {
+        for (const vote of result.votes) {
+          const slot = this.gameState!.stories[result.storyIndex]?.slots[vote.lineIndex];
+          if (slot && acts.includes(vote.lineIndex) && slot.playerId) {
+            counts[slot.playerId] = (counts[slot.playerId] ?? 0) + 1;
+          }
+        }
+      }
+      return counts;
+    };
+
+    const findTop = (counts: Record<string, number>) => {
+      let topId = "";
+      let topCount = 0;
+      for (const [id, count] of Object.entries(counts)) {
+        if (count > topCount) {
+          topCount = count;
+          topId = id;
+        }
+      }
+      return topId;
+    };
+
+    const nameOf = (id: string) =>
+      players.find((p) => p.id === id)?.name ?? "Unknown";
+
+    // MVP — most cumulative points
+    const mvpId = findTop(this.seriesState.cumulativePoints);
+    if (mvpId) {
+      awards.push({
+        id: "mvp",
+        title: "MVP",
+        playerId: mvpId,
+        playerName: nameOf(mvpId),
+      });
+    }
+
+    // Casting Director — most votes on acts 0-1 (character names)
+    const castingCounts = votesByPlayerByActs([0, 1]);
+    const castingId = findTop(castingCounts);
+    if (castingId) {
+      awards.push({
+        id: "casting-director",
+        title: "Casting Director",
+        playerId: castingId,
+        playerName: nameOf(castingId),
+      });
+    }
+
+    // Scene Stealer — most votes on acts 2-3 (location/action)
+    const sceneCounts = votesByPlayerByActs([2, 3]);
+    const sceneId = findTop(sceneCounts);
+    if (sceneId) {
+      awards.push({
+        id: "scene-stealer",
+        title: "Scene Stealer",
+        playerId: sceneId,
+        playerName: nameOf(sceneId),
+      });
+    }
+
+    // Speechwriter — most votes on acts 4-5 (dialogue)
+    const speechCounts = votesByPlayerByActs([4, 5]);
+    const speechId = findTop(speechCounts);
+    if (speechId) {
+      awards.push({
+        id: "speechwriter",
+        title: "Speechwriter",
+        playerId: speechId,
+        playerName: nameOf(speechId),
+      });
+    }
+
+    // Closer — most votes on act 6 (ending)
+    const closerCounts = votesByPlayerByActs([6]);
+    const closerId = findTop(closerCounts);
+    if (closerId) {
+      awards.push({
+        id: "closer",
+        title: "Closer",
+        playerId: closerId,
+        playerName: nameOf(closerId),
+      });
+    }
+
+    // Fan Favorite — most standing ovations received
+    const ovationCounts: Record<string, number> = {};
+    for (const result of allResults) {
+      for (const vote of result.votes) {
+        if (vote.isStandingOvation) {
+          const slot = this.gameState!.stories[result.storyIndex]?.slots[vote.lineIndex];
+          if (slot?.playerId) {
+            ovationCounts[slot.playerId] = (ovationCounts[slot.playerId] ?? 0) + 1;
+          }
+        }
+      }
+    }
+    const fanFavId = findTop(ovationCounts);
+    if (fanFavId) {
+      awards.push({
+        id: "fan-favorite",
+        title: "Fan Favorite",
+        playerId: fanFavId,
+        playerName: nameOf(fanFavId),
+      });
+    }
+
+    // Line of the Series — single most-voted line across all games
+    let bestLineText = "";
+    let bestLineAuthorId = "";
+    let bestLineVotes = 0;
+    for (const result of allResults) {
+      const rawCounts: number[] = new Array(7).fill(0);
+      for (const vote of result.votes) {
+        rawCounts[vote.lineIndex]++;
+      }
+      for (let i = 0; i < rawCounts.length; i++) {
+        if (rawCounts[i] > bestLineVotes) {
+          bestLineVotes = rawCounts[i];
+          const slot = this.gameState!.stories[result.storyIndex]?.slots[i];
+          bestLineText = slot?.response ?? "";
+          bestLineAuthorId = slot?.playerId ?? "";
+        }
+      }
+    }
+    if (bestLineAuthorId) {
+      awards.push({
+        id: "line-of-the-series",
+        title: "Line of the Series",
+        playerId: bestLineAuthorId,
+        playerName: nameOf(bestLineAuthorId),
+        detail: bestLineText,
+      });
+    }
+
+    return awards;
   }
 }
