@@ -27,59 +27,56 @@ export default function VotingScreen() {
   const storyIndex = votingOpen?.storyIndex ?? 0;
   const story = assembledStories?.[storyIndex];
   const standingOvationUsed = room?.series?.standingOvationsUsed[currentPlayer?.id ?? ""] ?? false;
-  const standingOvationAvailable = !standingOvationUsed && !isStandingOvation;
+  const standingOvationAvailable = !standingOvationUsed;
 
-  // Find which lines the current player wrote in this story
+  // Which lines did I write?
   const myLineIndices = new Set<number>();
   if (room && currentPlayer) {
     const gameStory = room.stories[storyIndex];
     if (gameStory) {
       gameStory.slots.forEach((slot, i) => {
-        if (slot.playerId === currentPlayer.id) {
-          myLineIndices.add(i);
-        }
+        if (slot.playerId === currentPlayer.id) myLineIndices.add(i);
       });
     }
   }
 
-  // Reset when voting opens for a new story
+  // Vote count for live progress
+  const votesIn = room?.votingState?.votesReceived?.length ?? 0;
+  const totalPlayers = room?.players.filter((p) => p.isConnected).length ?? 0;
+
+  // Reset on new story
   useEffect(() => {
     setSelectedLine(null);
     setIsStandingOvation(false);
     setSubmitted(false);
   }, [storyIndex]);
 
-  // Countdown timer
+  // Timer
   useEffect(() => {
-    if (!votingOpen?.votingStartedAt) {
-      setRemainingMs(null);
-      return;
-    }
+    if (!votingOpen?.votingStartedAt) { setRemainingMs(null); return; }
     const duration = votingOpen.votingDurationMs ?? VOTING_DURATION_MS;
     function tick() {
       const left = Math.max(0, votingOpen!.votingStartedAt + duration - Date.now());
       setRemainingMs(left);
     }
     tick();
-    const interval = setInterval(tick, 250);
+    const interval = setInterval(tick, 100);
     return () => clearInterval(interval);
   }, [votingOpen]);
 
   const timerExpired = remainingMs !== null && remainingMs <= 0;
+  const timerFraction = remainingMs !== null && votingOpen
+    ? remainingMs / (votingOpen.votingDurationMs ?? VOTING_DURATION_MS)
+    : 1;
+  const totalSeconds = remainingMs !== null ? Math.ceil(remainingMs / 1000) : 0;
 
   const handleTap = useCallback(
     (lineIndex: number) => {
-      // Skip if a long-press just fired (onClick fires after onMouseUp)
-      if (longPressFired) {
-        setLongPressFired(false);
-        return;
-      }
+      if (longPressFired) { setLongPressFired(false); return; }
       if (submitted || myLineIndices.has(lineIndex)) return;
       if (selectedLine === lineIndex && !isStandingOvation) {
-        // Deselect
         setSelectedLine(null);
       } else {
-        // Select as regular vote (clears any standing ovation)
         setSelectedLine(lineIndex);
         setIsStandingOvation(false);
       }
@@ -106,10 +103,7 @@ export default function VotingScreen() {
   );
 
   const handleLongPressEnd = useCallback(() => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
+    if (longPressTimer) { clearTimeout(longPressTimer); setLongPressTimer(null); }
   }, [longPressTimer]);
 
   const handleSubmit = useCallback(() => {
@@ -120,38 +114,47 @@ export default function VotingScreen() {
 
   if (!story || !room) return null;
 
-  const totalSeconds = remainingMs !== null ? Math.ceil(remainingMs / 1000) : 0;
-  const timerDisplay = `0:${String(totalSeconds).padStart(2, "0")}`;
-
   return (
     <div className="screen anim-fade-in">
-      <hr className="rule" />
+      {/* Timer bar — shrinks from full to zero, turns red at 5s */}
+      <div className="w-full h-[3px] bg-list-border mb-6 overflow-hidden">
+        <div
+          className="h-full transition-all duration-100 ease-linear"
+          style={{
+            width: `${timerFraction * 100}%`,
+            backgroundColor: totalSeconds <= 5 ? "#dc2626" : totalSeconds <= 10 ? "#d97706" : "#1a1a1a",
+          }}
+        />
+      </div>
 
       <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
         Vote for the Best Line
       </p>
 
-      {/* Timer */}
-      <div className="text-center mb-4">
-        <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted mb-1">
-          Time
-        </p>
-        <p className={`font-serif text-[28px] tracking-[2px] ${totalSeconds <= 10 ? "text-red-600" : "text-ink"}`}>
-          {timerDisplay}
-        </p>
+      {/* Vote progress */}
+      <p className="font-sans text-[12px] text-text-muted text-center mb-1">
+        {submitted
+          ? `${votesIn} of ${totalPlayers} votes in`
+          : standingOvationAvailable && !submitted
+          ? "Long-press a line for a standing ovation (3× points)"
+          : "\u00A0"}
+      </p>
+
+      {/* Vote dots */}
+      <div className="flex justify-center gap-1.5 mb-4">
+        {Array.from({ length: totalPlayers }).map((_, i) => (
+          <div
+            key={i}
+            className="w-2 h-2 rounded-full transition-colors duration-300"
+            style={{ backgroundColor: i < votesIn ? "#1a1a1a" : "#d0d0d0" }}
+          />
+        ))}
       </div>
 
-      {/* Standing ovation indicator */}
-      {!standingOvationUsed && !submitted && (
-        <p className="font-body italic text-[13px] text-text-muted text-center mb-4">
-          Long-press a line for a standing ovation (3x points)
-        </p>
-      )}
+      <hr className="rule" style={{ marginTop: 0 }} />
 
-      <hr className="rule" />
-
-      {/* Lines */}
-      <div className="space-y-2">
+      {/* Line cards */}
+      <div className="space-y-3">
         {story.sections.map((section, i) => {
           const isMine = myLineIndices.has(i);
           const isSelected = selectedLine === i;
@@ -166,14 +169,14 @@ export default function VotingScreen() {
               onMouseLeave={handleLongPressEnd}
               onClick={() => handleTap(i)}
               className={`
-                w-full text-left px-4 py-3 border-l-2 transition-colors
+                w-full text-left p-4 border-2 transition-all duration-150
                 ${isMine
-                  ? "opacity-50 cursor-not-allowed border-l-list-border"
+                  ? "opacity-50 cursor-not-allowed border-list-border"
                   : isOvation
-                  ? "bg-banner border-l-ink"
+                  ? "border-ink bg-banner shadow-md scale-[1.02]"
                   : isSelected
-                  ? "bg-ink/5 border-l-ink"
-                  : "border-l-list-border hover:bg-ink/[0.02]"
+                  ? "border-ink bg-ink/5 shadow-sm scale-[1.01]"
+                  : "border-list-border hover:border-ink/30 hover:bg-ink/[0.02]"
                 }
               `}
             >
@@ -185,12 +188,12 @@ export default function VotingScreen() {
                 {section.text}
               </p>
               {isMine && (
-                <span className="font-sans text-[10px] uppercase tracking-[1px] text-text-muted">
+                <span className="font-sans text-[10px] uppercase tracking-[1px] text-text-muted mt-1 block">
                   You wrote this
                 </span>
               )}
               {isOvation && (
-                <span className="font-sans text-[10px] uppercase tracking-[1px] text-ink font-semibold mt-1 block">
+                <span className="font-sans text-[11px] uppercase tracking-[2px] text-ink font-bold mt-2 block">
                   ★ Standing Ovation
                 </span>
               )}
@@ -207,17 +210,26 @@ export default function VotingScreen() {
             onClick={handleSubmit}
             disabled={selectedLine === null}
           >
-            {selectedLine === null ? "Select a Line" : isStandingOvation ? "Submit Standing Ovation" : "Submit Vote"}
+            {selectedLine === null
+              ? "Select a Line"
+              : isStandingOvation
+              ? "★ Submit Standing Ovation"
+              : "Submit Vote"}
           </Button>
         ) : (
-          <p className="font-body italic text-[16px] text-text-muted text-center">
-            Vote submitted. Waiting for others...
-          </p>
+          <div className="text-center">
+            <p className="font-serif font-bold text-[18px] text-ink mb-1">
+              Vote Locked In
+            </p>
+            <p className="font-sans text-[12px] text-text-muted">
+              {votesIn} of {totalPlayers} votes in
+            </p>
+          </div>
         )}
       </div>
 
-      {/* Host advance (after timer expires) */}
-      {isHost && timerExpired && !submitted && (
+      {/* Host advance */}
+      {isHost && timerExpired && (
         <div className="mt-4">
           <Button variant="secondary" onClick={advanceVoting}>
             Close Voting
