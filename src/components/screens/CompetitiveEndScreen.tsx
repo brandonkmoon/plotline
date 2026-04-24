@@ -176,7 +176,11 @@ export default function CompetitiveEndScreen() {
       <p className="font-serif font-medium text-[14px] uppercase tracking-[3px] text-text-muted mb-4">
         Stories
       </p>
-      {assembledStories.map((story, i) => {
+      {(room.revealOrder
+        ? room.revealOrder.map((idx) => assembledStories.find((s) => s.storyIndex === idx)).filter(Boolean)
+        : assembledStories
+      ).map((story, i) => {
+        if (!story) return null;
         const isExpanded = expandedStory === i;
         return (
           <div key={story.storyIndex} style={{ marginTop: i === 0 ? 0 : 8 }}>

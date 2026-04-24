@@ -124,6 +124,8 @@ export interface Room {
   gameMode?: GameMode;
   series?: SeriesState;
   votingState?: VotingState;
+  // Shuffled story reveal order — set when entering REVEAL phase.
+  revealOrder?: number[];
 }
 
 export interface Prompt {

@@ -1464,6 +1464,11 @@ export default class RoomServer implements Party.Server {
     this.revealOrder = order;
     this.revealStoryIndex = order[0] ?? 0;
     this.revealedLineCount = 0;
+
+    // Store on room state so clients can sort story cards in reveal order
+    if (this.gameState) {
+      this.gameState = { ...this.gameState, revealOrder: order };
+    }
   }
 
   // Send assembled stories + current reveal position to a single reconnecting

@@ -159,7 +159,11 @@ export default function EndScreen() {
         {/* ── Story cards ──────────────────────────────────────── */}
         {storyCount > 0 && (
           <div className="flex flex-col mb-6">
-            {assembledStories.map((story, i) => {
+            {(room.revealOrder
+              ? room.revealOrder.map((idx) => assembledStories.find((s) => s.storyIndex === idx)).filter(Boolean)
+              : assembledStories
+            ).map((story, i) => {
+              if (!story) return null;
               const isExpanded = expandedIndex === i;
 
               return (
