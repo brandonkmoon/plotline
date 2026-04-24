@@ -197,6 +197,25 @@ export default function HelpOverlay() {
               </p>
             </div>
 
+            <div className="help-section">
+              <h3 className="help-q">Competitive Mode</h3>
+              <p className="help-a">
+                The host picks Competitive when starting the game. After each
+                story is read aloud, everyone votes for the best line.
+              </p>
+              <ul className="help-a mt-2 space-y-1 list-none">
+                <li>&bull; Tap a line = 1 point to the author</li>
+                <li>&bull; Long-press for a standing ovation = 3 pts to author + 2 pts to you</li>
+                <li>&bull; 1 standing ovation per game &mdash; use it or lose it</li>
+                <li>&bull; Don&rsquo;t vote in time? Your vote is assigned randomly</li>
+                <li>&bull; Final game of the series = double points</li>
+              </ul>
+              <p className="help-a mt-2">
+                Awards at the end: MVP, Casting Director, Scene Stealer,
+                Speechwriter, Closer, Fan Favorite, Line of the Series.
+              </p>
+            </div>
+
             <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted text-center mt-6">
               Built by Brandon Moon
             </p>

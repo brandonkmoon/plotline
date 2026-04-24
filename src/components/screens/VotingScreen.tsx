@@ -23,11 +23,16 @@ export default function VotingScreen() {
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [longPressFired, setLongPressFired] = useState(false);
+  const [hintDismissed, setHintDismissed] = useState(false);
 
   const storyIndex = votingOpen?.storyIndex ?? room?.votingState?.storyIndex ?? 0;
   const story = assembledStories?.[storyIndex];
   const standingOvationUsed = room?.series?.standingOvationsUsed[currentPlayer?.id ?? ""] ?? false;
   const standingOvationAvailable = !standingOvationUsed;
+  const isFirstVoteOfSeries = (room?.series?.currentGameNumber ?? 1) === 1 &&
+    (room?.series?.completedGames?.length ?? 0) === 0 &&
+    (room?.stories?.filter((s) => s.isRevealed).length ?? 0) === 0;
+  const showFirstTimeHint = isFirstVoteOfSeries && !hintDismissed;
 
   // Which lines did I write?
   const myLineIndices = new Set<number>();
@@ -129,18 +134,38 @@ export default function VotingScreen() {
         />
       </div>
 
+      {/* First-time hint */}
+      {showFirstTimeHint && (
+        <div className="mx-4 mb-4 border border-ink p-4 bg-banner/10">
+          <p className="font-serif font-bold text-[14px] text-ink mb-2">How Voting Works</p>
+          <ul className="space-y-1 font-sans text-[12px] text-text-dim list-none">
+            <li>• <strong>Tap</strong> a line to vote (1 pt to the author)</li>
+            <li>• <strong>Long-press</strong> for a standing ovation (3 pts to author, 2 pts to you)</li>
+            <li>• You get <strong>1 standing ovation per game</strong> — use it or lose it</li>
+            <li>• If you don&rsquo;t vote, your vote is assigned randomly</li>
+          </ul>
+          <button
+            onClick={() => setHintDismissed(true)}
+            className="mt-3 font-sans text-[11px] uppercase tracking-[2px] text-ink font-semibold"
+          >
+            Got it
+          </button>
+        </div>
+      )}
+
       <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
         Vote for the Best Line
       </p>
 
-      {/* Vote progress */}
-      <p className="font-sans text-[12px] text-text-muted text-center mb-1">
-        {submitted
-          ? `${votesIn} of ${totalPlayers} votes in`
-          : standingOvationAvailable && !submitted
-          ? "Long-press a line for a standing ovation (3× points)"
-          : "\u00A0"}
-      </p>
+      {/* Standing ovation status + vote progress */}
+      <div className="flex justify-between items-center mb-2 px-1">
+        <span className="font-sans text-[11px] text-text-muted">
+          {standingOvationAvailable ? "★ 1 standing ovation" : "★ Used"}
+        </span>
+        <span className="font-sans text-[11px] text-text-muted">
+          {votesIn}/{totalPlayers} voted
+        </span>
+      </div>
 
       {/* Vote dots */}
       <div className="flex justify-center gap-1.5 mb-4">

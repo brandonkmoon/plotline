@@ -54,6 +54,12 @@ function ModeSheet({
           <span className="font-body italic text-[14px] text-text-dim block mt-1">
             Vote on the best lines. Points, awards, a winner.
           </span>
+          <ul className="mt-3 mb-1 space-y-1 font-sans text-[12px] text-text-dim list-none">
+            <li>• After each story, everyone votes for the best line</li>
+            <li>• Long-press to give a <strong>standing ovation</strong> (3× points to the author, 2 pts to you) — 1 per game, use it or lose it</li>
+            <li>• Don&rsquo;t vote? Your vote gets assigned randomly</li>
+            <li>• Final game counts for <strong>double points</strong></li>
+          </ul>
 
           {/* Series length picker */}
           <div className="flex gap-3 mt-4 mb-4">
