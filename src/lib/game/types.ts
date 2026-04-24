@@ -53,6 +53,10 @@ export interface StoryVoteResult {
   winningLineIndex: number;  // line with most votes
   winningAuthorId: string;
   winningLineText: string;
+  // Snapshot data so awards can reference past games without needing
+  // the original stories array (which gets reset between games).
+  lineAuthors: Record<number, string>;
+  lineTexts: Record<number, string>;
 }
 
 export interface GameScores {

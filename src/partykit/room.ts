@@ -1792,12 +1792,27 @@ export default class RoomServer implements Party.Server {
     const winningAuthorId = winningSlot?.playerId ?? "";
     const winningPlayer = this.gameState.players.find((p) => p.id === winningAuthorId);
 
+    // Snapshot who wrote each line and what they wrote, so awards can
+    // reference past games after the stories array resets.
+    const lineAuthors: Record<number, string> = {};
+    const lineTexts: Record<number, string> = {};
+    for (let i = 0; i < currentStory.slots.length; i++) {
+      if (currentStory.slots[i]?.playerId) {
+        lineAuthors[i] = currentStory.slots[i].playerId!;
+      }
+      if (currentStory.slots[i]?.response) {
+        lineTexts[i] = currentStory.slots[i].response!;
+      }
+    }
+
     const result: import("@/lib/game/types").StoryVoteResult = {
       storyIndex,
       votes,
       winningLineIndex,
       winningAuthorId,
       winningLineText: winningSlot?.response ?? "",
+      lineAuthors,
+      lineTexts,
     };
 
     this.gameVoteResults.push(result);
@@ -1845,8 +1860,7 @@ export default class RoomServer implements Party.Server {
 
     for (const result of this.gameVoteResults) {
       for (const vote of result.votes) {
-        const authorId = this.gameState.stories[result.storyIndex]
-          ?.slots[vote.lineIndex]?.playerId;
+        const authorId = result.lineAuthors[vote.lineIndex];
         if (!authorId) continue;
 
         if (vote.isStandingOvation) {
@@ -1867,8 +1881,9 @@ export default class RoomServer implements Party.Server {
       for (let i = 0; i < rawCounts.length; i++) {
         if (rawCounts[i] > maxVoteCount) {
           maxVoteCount = rawCounts[i];
+          const authorId = result.lineAuthors[i] ?? "";
           const slot = this.gameState.stories[result.storyIndex]?.slots[i];
-          const author = this.gameState.players.find((p) => p.id === slot?.playerId);
+          const author = this.gameState.players.find((p) => p.id === authorId);
           lineOfTheGame = {
             storyIndex: result.storyIndex,
             lineIndex: i,
@@ -1941,9 +1956,11 @@ export default class RoomServer implements Party.Server {
       const counts: Record<string, number> = {};
       for (const result of allResults) {
         for (const vote of result.votes) {
-          const slot = this.gameState!.stories[result.storyIndex]?.slots[vote.lineIndex];
-          if (slot && acts.includes(vote.lineIndex) && slot.playerId) {
-            counts[slot.playerId] = (counts[slot.playerId] ?? 0) + 1;
+          if (acts.includes(vote.lineIndex)) {
+            const authorId = result.lineAuthors[vote.lineIndex];
+            if (authorId) {
+              counts[authorId] = (counts[authorId] ?? 0) + 1;
+            }
           }
         }
       }
@@ -2029,9 +2046,9 @@ export default class RoomServer implements Party.Server {
     for (const result of allResults) {
       for (const vote of result.votes) {
         if (vote.isStandingOvation) {
-          const slot = this.gameState!.stories[result.storyIndex]?.slots[vote.lineIndex];
-          if (slot?.playerId) {
-            ovationCounts[slot.playerId] = (ovationCounts[slot.playerId] ?? 0) + 1;
+          const authorId = result.lineAuthors[vote.lineIndex];
+          if (authorId) {
+            ovationCounts[authorId] = (ovationCounts[authorId] ?? 0) + 1;
           }
         }
       }
@@ -2058,9 +2075,8 @@ export default class RoomServer implements Party.Server {
       for (let i = 0; i < rawCounts.length; i++) {
         if (rawCounts[i] > bestLineVotes) {
           bestLineVotes = rawCounts[i];
-          const slot = this.gameState!.stories[result.storyIndex]?.slots[i];
-          bestLineText = slot?.response ?? "";
-          bestLineAuthorId = slot?.playerId ?? "";
+          bestLineAuthorId = result.lineAuthors[i] ?? "";
+          bestLineText = result.lineTexts[i] ?? "";
         }
       }
     }
