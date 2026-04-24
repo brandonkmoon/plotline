@@ -233,6 +233,11 @@ export default function VotingScreen() {
       {/* Host advances — tallies votes and moves to next story */}
       {isHost && hostCanAdvance && (
         <div className="mt-4">
+          {votesIn < totalPlayers && (
+            <p className="font-body italic text-[13px] text-text-muted text-center mb-2">
+              {totalPlayers - votesIn} player{totalPlayers - votesIn !== 1 ? "s" : ""} didn&rsquo;t vote &mdash; their vote{totalPlayers - votesIn !== 1 ? "s" : ""} will be assigned randomly.
+            </p>
+          )}
           <Button variant="primary" onClick={advanceVoting}>
             Next Story
           </Button>

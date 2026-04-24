@@ -1756,7 +1756,35 @@ export default class RoomServer implements Party.Server {
     const currentStory = this.gameState.stories[storyIndex];
     if (!currentStory) return;
 
-    // Tally whatever votes are in
+    // Assign random votes for connected players who didn't vote.
+    // This removes the advantage of not voting.
+    const connectedPlayers = this.gameState.players.filter((p) => p.isConnected);
+    for (const player of connectedPlayers) {
+      if (!this.currentVotes.has(player.id)) {
+        // Pick a random line this player didn't write
+        const mySlots = new Set(
+          currentStory.slots
+            .filter((s) => s.playerId === player.id)
+            .map((_, i) => i)
+        );
+        // Actually need slot index, not filter index
+        const eligible: number[] = [];
+        for (let i = 0; i < currentStory.slots.length; i++) {
+          if (currentStory.slots[i]?.playerId !== player.id) {
+            eligible.push(i);
+          }
+        }
+        if (eligible.length > 0) {
+          const randomLine = eligible[Math.floor(Math.random() * eligible.length)];
+          this.currentVotes.set(player.id, {
+            lineIndex: randomLine,
+            isStandingOvation: false,
+          });
+        }
+      }
+    }
+
+    // Tally all votes (including auto-assigned)
     const lineTallies: number[] = new Array(7).fill(0);
     const votes: import("@/lib/game/types").Vote[] = [];
 
