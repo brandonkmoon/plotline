@@ -939,16 +939,6 @@ export default class RoomServer implements Party.Server {
       return;
     }
 
-    // If voting just closed for this story, use the voting-specific
-    // advance path (which clears voting state properly).
-    if (
-      this.gameState.votingState?.phase === "closed" &&
-      this.gameState.votingState.storyIndex === this.revealStoryIndex
-    ) {
-      this.advanceAfterVoting();
-      return;
-    }
-
     // Mark the current story as revealed (if not already) and move on.
     const targetStoryIndex =
       currentStory && !currentStory.isRevealed
@@ -1689,12 +1679,9 @@ export default class RoomServer implements Party.Server {
       votingDurationMs: RoomServer.VOTING_DURATION_MS,
     });
 
-    // Start voting timer
+    // Timer is purely visual on the client side — no server-side
+    // auto-close. The host manually advances via ADVANCE_VOTING.
     this.clearVotingTimer();
-    this.votingTimer = setTimeout(() => {
-      this.closeVotingForStory();
-    }, RoomServer.VOTING_DURATION_MS);
-
     this.broadcastStateUpdate();
   }
 
@@ -1750,35 +1737,26 @@ export default class RoomServer implements Party.Server {
     };
 
     this.broadcastStateUpdate();
-
-    // Check if all connected players have voted
-    const connectedPlayers = this.gameState.players.filter((p) => p.isConnected);
-    if (votesReceived.length >= connectedPlayers.length) {
-      this.closeVotingForStory();
-    }
   }
 
+  // Host taps "Next Story" during or after voting. Tallies whatever
+  // votes are in, stores results, marks story as revealed, advances.
+  // One action — no intermediate "closed" state.
   private handleAdvanceVoting(sender: Party.Connection) {
     if (!this.gameState) return;
+    if (this.gameState.state !== "REVEAL") return;
+    if (this.gameState.votingState?.phase !== "voting") return;
 
     const playerId = this.connectionToPlayer.get(sender.id);
     if (!playerId || playerId !== this.gameState.hostId) return;
 
-    // Host can force-close voting (after timer expires)
-    if (this.gameState.votingState?.phase === "voting") {
-      this.closeVotingForStory();
-    }
-  }
-
-  private closeVotingForStory() {
-    if (!this.gameState) return;
     this.clearVotingTimer();
 
     const storyIndex = this.revealStoryIndex;
     const currentStory = this.gameState.stories[storyIndex];
     if (!currentStory) return;
 
-    // Tally votes
+    // Tally whatever votes are in
     const lineTallies: number[] = new Array(7).fill(0);
     const votes: import("@/lib/game/types").Vote[] = [];
 
@@ -1805,10 +1783,8 @@ export default class RoomServer implements Party.Server {
 
     const winningSlot = currentStory.slots[winningLineIndex];
     const winningAuthorId = winningSlot?.playerId ?? "";
-    const winningPlayer = this.gameState.players.find((p) => p.id === winningAuthorId);
 
-    // Snapshot who wrote each line and what they wrote, so awards can
-    // reference past games after the stories array resets.
+    // Snapshot line data for cross-game awards
     const lineAuthors: Record<number, string> = {};
     const lineTexts: Record<number, string> = {};
     for (let i = 0; i < currentStory.slots.length; i++) {
@@ -1820,7 +1796,7 @@ export default class RoomServer implements Party.Server {
       }
     }
 
-    const result: import("@/lib/game/types").StoryVoteResult = {
+    this.gameVoteResults.push({
       storyIndex,
       votes,
       winningLineIndex,
@@ -1828,32 +1804,16 @@ export default class RoomServer implements Party.Server {
       winningLineText: winningSlot?.response ?? "",
       lineAuthors,
       lineTexts,
-    };
+    });
 
-    this.gameVoteResults.push(result);
     this.currentVotes.clear();
 
-    // Update voting state to closed
-    this.gameState = {
-      ...this.gameState,
-      votingState: {
-        storyIndex,
-        phase: "closed",
-        votesReceived: [],
-        votingStartedAt: null,
-      },
-    };
-
-    // Broadcast that voting is closed — host/reader must manually
-    // advance to the next story via ADVANCE_REVEAL. No auto-advance,
-    // because skipping gives an advantage to players who didn't vote.
-    this.broadcast({ type: "VOTING_CLOSED", storyIndex });
-    this.broadcastStateUpdate();
+    // Now advance — mark story revealed, clear voting, move to next
+    this.advanceAfterVoting();
   }
 
-  // Called by handleAdvanceReveal when voting is closed and the host
-  // advances to the next story. Handles the story-revealed transition
-  // that used to be in the auto-advance timeout.
+  // Marks the current story as revealed, clears voting state, and
+  // advances to the next story in the shuffled reveal order.
   private advanceAfterVoting() {
     if (!this.gameState || this.gameState.state !== "REVEAL") return;
 

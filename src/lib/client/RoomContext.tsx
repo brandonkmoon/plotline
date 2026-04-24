@@ -177,12 +177,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
       gameClient.onVotingOpen((state) => setVotingOpen(state))
     );
     unsubs.push(
-      gameClient.onVotingClosed(() => {
-        // Don't clear votingOpen — the VotingScreen stays visible
-        // in a "closed" state with a "Next Story" button for the host.
-        // It clears when the host advances and votingState is removed
-        // from the room via STATE_UPDATE.
-      })
+      gameClient.onVotingClosed(() => setVotingOpen(null))
     );
     unsubs.push(
       gameClient.onGameScores((state) => setGameScores(state))

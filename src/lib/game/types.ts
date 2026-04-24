@@ -99,7 +99,7 @@ export interface SeriesState {
 
 // --- Voting sub-state within REVEAL ---
 
-export type VotingPhase = "reading" | "voting" | "closed";
+export type VotingPhase = "reading" | "voting";
 
 export interface VotingState {
   storyIndex: number;

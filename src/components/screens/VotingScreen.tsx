@@ -15,7 +15,6 @@ export default function VotingScreen() {
     isHost,
     submitVote,
     advanceVoting,
-    advanceReveal,
   } = useRoom();
 
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
@@ -29,7 +28,6 @@ export default function VotingScreen() {
   const story = assembledStories?.[storyIndex];
   const standingOvationUsed = room?.series?.standingOvationsUsed[currentPlayer?.id ?? ""] ?? false;
   const standingOvationAvailable = !standingOvationUsed;
-  const votingClosed = room?.votingState?.phase === "closed";
 
   // Which lines did I write?
   const myLineIndices = new Set<number>();
@@ -67,6 +65,8 @@ export default function VotingScreen() {
   }, [votingOpen]);
 
   const timerExpired = remainingMs !== null && remainingMs <= 0;
+  const allConnectedVoted = votesIn >= totalPlayers && totalPlayers > 0;
+  const hostCanAdvance = timerExpired || allConnectedVoted;
   const timerFraction = remainingMs !== null && votingOpen
     ? remainingMs / (votingOpen.votingDurationMs ?? VOTING_DURATION_MS)
     : 1;
@@ -165,7 +165,7 @@ export default function VotingScreen() {
           return (
             <button
               key={i}
-              disabled={submitted || isMine || votingClosed}
+              disabled={submitted || isMine}
               onMouseDown={() => handleLongPressStart(i)}
               onMouseUp={handleLongPressEnd}
               onMouseLeave={handleLongPressEnd}
@@ -204,23 +204,9 @@ export default function VotingScreen() {
         })}
       </div>
 
-      {/* Submit / Closed state */}
+      {/* Submit */}
       <div className="mt-6">
-        {votingClosed ? (
-          <div className="text-center">
-            <p className="font-serif font-bold text-[18px] text-ink mb-1">
-              Votes Are In
-            </p>
-            <p className="font-sans text-[12px] text-text-muted mb-4">
-              {votesIn} of {totalPlayers} voted
-            </p>
-            {isHost && (
-              <Button variant="primary" onClick={() => advanceReveal()}>
-                Next Story
-              </Button>
-            )}
-          </div>
-        ) : !submitted ? (
+        {!submitted ? (
           <Button
             variant="primary"
             onClick={handleSubmit}
@@ -244,11 +230,11 @@ export default function VotingScreen() {
         )}
       </div>
 
-      {/* Host can close voting early (after timer expires) */}
-      {isHost && timerExpired && !votingClosed && (
+      {/* Host advances — tallies votes and moves to next story */}
+      {isHost && hostCanAdvance && (
         <div className="mt-4">
-          <Button variant="secondary" onClick={advanceVoting}>
-            Close Voting
+          <Button variant="primary" onClick={advanceVoting}>
+            Next Story
           </Button>
         </div>
       )}
