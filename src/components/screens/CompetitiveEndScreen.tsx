@@ -297,7 +297,7 @@ export default function CompetitiveEndScreen() {
             <Button variant="primary" onClick={() => playAgain()} disabled={advanceCountdown > 0}>
               {advanceCountdown > 0
                 ? `Next Game in ${advanceCountdown}s`
-                : `Next Game (${gameNumber} of ${room.series?.totalGames ?? "?"})`}
+                : `Next Game (${gameNumber + 1} of ${room.series?.totalGames ?? "?"})`}
             </Button>
           )}
         </div>
