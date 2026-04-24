@@ -232,9 +232,6 @@ export default class RoomServer implements Party.Server {
   }
 
   onMessage(message: string, sender: Party.Connection) {
-    // Always log — not gated behind NODE_ENV
-    console.log(`[room] MSG ← ${message.slice(0, 80)}`);
-
     let msg: ClientMessage;
     try {
       msg = JSON.parse(message);
@@ -1761,15 +1758,12 @@ export default class RoomServer implements Party.Server {
   // votes are in, stores results, marks story as revealed, advances.
   // One action — no intermediate "closed" state.
   private handleAdvanceVoting(sender: Party.Connection) {
-    if (!this.gameState) { console.error("[voting] no gameState"); return; }
-    if (this.gameState.state !== "REVEAL") { console.error("[voting] state is", this.gameState.state, "not REVEAL"); return; }
-    if (this.gameState.votingState?.phase !== "voting") { console.error("[voting] phase is", this.gameState.votingState?.phase, "not voting"); return; }
+    if (!this.gameState) return;
+    if (this.gameState.state !== "REVEAL") return;
+    if (this.gameState.votingState?.phase !== "voting") return;
 
     const playerId = this.connectionToPlayer.get(sender.id);
-    if (!playerId) { console.error("[voting] no playerId for conn", sender.id); return; }
-    if (playerId !== this.gameState.hostId) { console.error("[voting] sender", playerId, "is not host", this.gameState.hostId); return; }
-
-    console.log("[voting] advancing — tallying votes for story", this.revealStoryIndex);
+    if (!playerId || playerId !== this.gameState.hostId) return;
     this.clearVotingTimer();
 
     const storyIndex = this.revealStoryIndex;
@@ -1863,11 +1857,7 @@ export default class RoomServer implements Party.Server {
   // Marks the current story as revealed, clears voting state, and
   // advances to the next story in the shuffled reveal order.
   private advanceAfterVoting() {
-    if (!this.gameState || this.gameState.state !== "REVEAL") {
-      console.error("[voting] advanceAfterVoting bail — state:", this.gameState?.state);
-      return;
-    }
-    console.log("[voting] advancing to next story from", this.revealStoryIndex);
+    if (!this.gameState || this.gameState.state !== "REVEAL") return;
 
     const storyIndex = this.revealStoryIndex;
 

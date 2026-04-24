@@ -347,7 +347,6 @@ function RoomContent() {
     playerStatuses,
     connectionError,
     roomRedirect,
-    votingOpen,
   } = useRoom();
   const router = useRouter();
 
@@ -379,7 +378,7 @@ function RoomContent() {
       case "PLAYING":
         return hasSubmitted ? "waiting" : `prompt-${room.currentRound}`;
       case "REVEAL":
-        return votingOpen ? `voting-${votingOpen.storyIndex}` : "reveal";
+        return room.votingState ? `voting-${room.votingState.storyIndex}` : "reveal";
       case "END":
       case "DESTROYED":
         return "end";
