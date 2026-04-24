@@ -287,10 +287,7 @@ export default function CompetitiveEndScreen() {
               New Series
             </Button>
           ) : (
-            <Button variant="primary" onClick={() => {
-              queueNextGame();
-              playAgain();
-            }}>
+            <Button variant="primary" onClick={() => playAgain()}>
               Next Game ({gameNumber} of {room.series?.totalGames ?? "?"})
             </Button>
           )}

@@ -1045,10 +1045,22 @@ export default class RoomServer implements Party.Server {
       ? this.gameState.players.find((p) => p.id === senderPlayerId)
       : null;
 
-    // Any player who has queued for the next game can trigger the start —
-    // not just the host. This lets the group move forward even if the
-    // original host is slow or absent.
-    if (!senderPlayer || !senderPlayer.queuedForNextGame) {
+    // In competitive mid-series, the host can advance directly without
+    // queueing — the series continuation is automatic.
+    const isMidSeries = this.seriesState &&
+      this.seriesState.currentGameNumber < this.seriesState.totalGames;
+    const isHost = senderPlayerId === this.gameState.hostId;
+
+    if (isMidSeries && isHost) {
+      // Auto-queue all connected players for the next game
+      this.gameState = {
+        ...this.gameState,
+        players: this.gameState.players.map((p) => ({
+          ...p,
+          queuedForNextGame: p.isConnected ? true : p.queuedForNextGame,
+        })),
+      };
+    } else if (!senderPlayer || !senderPlayer.queuedForNextGame) {
       this.sendTo(sender, {
         type: "ERROR",
         reason: "Only a queued player can start the next game",
