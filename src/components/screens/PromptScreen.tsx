@@ -321,13 +321,23 @@ export default function PromptScreen() {
         </div>
 
         <div className="mt-5">
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            disabled={submitted || effectiveResponse.trim().length === 0}
-          >
-            {submitted ? "Submitted" : "Submit"}
-          </Button>
+          {!submitted ? (
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={effectiveResponse.trim().length === 0}
+            >
+              Submit
+            </Button>
+          ) : (
+            <div className="text-center anim-fade-in">
+              <p className="font-serif font-bold text-[18px] text-ink mb-1">Locked In</p>
+              <p className="font-sans text-[12px] text-text-muted">
+                {(room?.players ?? []).filter(p => playerStatuses[p.id] === "submitted").length} of{" "}
+                {(room?.players ?? []).filter(p => p.isConnected).length} submitted
+              </p>
+            </div>
+          )}
         </div>
 
         <PlayerList players={room?.players ?? []} playerStatuses={playerStatuses} showSubmissionStatus />

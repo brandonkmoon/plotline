@@ -173,7 +173,9 @@ export default function EndScreen() {
                     marginTop: i === 0 ? 0 : 8,
                     position: "relative",
                     zIndex: isExpanded ? 10 : storyCount - i,
+                    animationDelay: `${i * 150}ms`,
                   }}
+                  className="card-stagger"
                 >
                   {/* Yellow Playbill header — always visible */}
                   <button

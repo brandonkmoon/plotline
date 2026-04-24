@@ -8,6 +8,7 @@ interface Props {
   playerStatuses: Record<string, string>;
   showSubmissionStatus?: boolean;
   readerId?: string;
+  animate?: boolean;
 }
 
 export default function PlayerList({
@@ -15,10 +16,11 @@ export default function PlayerList({
   playerStatuses,
   showSubmissionStatus = false,
   readerId,
+  animate = false,
 }: Props) {
   return (
     <ul className="w-full mt-6 list-none">
-      {players.map((player) => {
+      {players.map((player, idx) => {
         const status = playerStatuses[player.id];
         const isDisconnected = status === "disconnected";
         const isReconnecting = status === "reconnecting";
@@ -33,7 +35,10 @@ export default function PlayerList({
         return (
           <li
             key={player.id}
-            className={`font-body text-[15px] py-[10px] flex justify-between items-center border-b border-list-border last:border-b-0 ${dim}`}
+            className={`font-body text-[15px] py-[10px] flex justify-between items-center border-b border-list-border last:border-b-0 ${dim} ${
+              animate ? "player-enter" : ""
+            }`}
+            style={animate ? { animationDelay: `${idx * 80}ms`, opacity: 0 } : undefined}
           >
             {/* Left: name */}
             <span className={isDisconnected ? "line-through" : ""}>
@@ -54,7 +59,11 @@ export default function PlayerList({
               )}
 
               {showSubmissionStatus && !isDisconnected && !isReconnecting && (
-                <span className={`font-sans text-[14px] ${isSubmitted ? "text-ink" : "text-text-muted"}`}>
+                <span
+                  className={`font-sans text-[14px] inline-block ${
+                    isSubmitted ? "text-ink check-pop" : "text-text-muted"
+                  }`}
+                >
                   {isSubmitted ? "\u2713" : "\u22EF"}
                 </span>
               )}

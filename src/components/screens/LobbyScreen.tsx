@@ -174,6 +174,7 @@ export default function LobbyScreen() {
         <PlayerList
           players={room?.players ?? []}
           playerStatuses={playerStatuses}
+          animate
         />
 
         <p className="font-sans text-[13px] text-text-muted text-center mt-2 mb-2">
