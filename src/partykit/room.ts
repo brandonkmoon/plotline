@@ -1120,7 +1120,17 @@ export default class RoomServer implements Party.Server {
       pendingPlayers: keepPending,
     };
 
+    // Preserve competitive mode and series state across game resets
+    if (this.seriesState && this.seriesState.currentGameNumber < this.seriesState.totalGames) {
+      state.gameMode = "competitive";
+      state.series = this.seriesState;
+    }
+
     this.gameState = state;
+
+    // Reset per-game vote tracking for the next game
+    this.currentVotes.clear();
+    this.gameVoteResults = [];
 
     // Rebuild playerStatuses from scratch — clearing ghost entries from
     // players who didn't carry over to the new game. Without this,

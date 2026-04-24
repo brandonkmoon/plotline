@@ -67,6 +67,8 @@ export default function CompetitiveEndScreen() {
     gameScores,
     seriesAwards,
     createNextRoom,
+    queueNextGame,
+    playAgain,
   } = useRoom();
 
   const [showAwards, setShowAwards] = useState(true);
@@ -233,9 +235,18 @@ export default function CompetitiveEndScreen() {
       {/* Actions */}
       {isHost ? (
         <div className="flex flex-col gap-3">
-          <Button variant="secondary" onClick={() => createNextRoom()}>
-            {isFinalGame ? "New Series" : "Next Game"}
-          </Button>
+          {isFinalGame ? (
+            <Button variant="secondary" onClick={() => createNextRoom()}>
+              New Series
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={() => {
+              queueNextGame();
+              playAgain();
+            }}>
+              Next Game ({gameNumber} of {room.series?.totalGames ?? "?"})
+            </Button>
+          )}
         </div>
       ) : (
         <p className="font-body italic text-[16px] text-text-dim text-center">

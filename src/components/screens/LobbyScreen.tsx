@@ -100,6 +100,11 @@ export default function LobbyScreen() {
   const connectedPlayers = room?.players?.filter((p) => p.isConnected) ?? [];
   const canStart = connectedPlayers.length >= 4;
 
+  // If a series is already in progress (mid-series lobby from playAgain),
+  // skip the mode sheet and auto-start competitive.
+  const seriesInProgress = room?.series &&
+    room.series.currentGameNumber < room.series.totalGames;
+
   const handleStart = (
     mode: "classic" | "competitive",
     seriesLength?: 3 | 5
@@ -137,10 +142,20 @@ export default function LobbyScreen() {
         {isHost ? (
           <Button
             variant="primary"
-            onClick={() => (canStart ? setShowModeSheet(true) : undefined)}
+            onClick={() => {
+              if (!canStart) return;
+              if (seriesInProgress) {
+                // Mid-series: auto-start competitive, no mode picker
+                handleStart("competitive");
+              } else {
+                setShowModeSheet(true);
+              }
+            }}
             disabled={!canStart}
           >
-            {canStart
+            {seriesInProgress
+              ? `Start Game ${(room?.series?.currentGameNumber ?? 0) + 1} of ${room?.series?.totalGames}`
+              : canStart
               ? "Start the Show"
               : `Need ${4 - connectedPlayers.length} More`}
           </Button>
