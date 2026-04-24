@@ -232,6 +232,9 @@ export default class RoomServer implements Party.Server {
   }
 
   onMessage(message: string, sender: Party.Connection) {
+    // Always log — not gated behind NODE_ENV
+    console.log(`[room] MSG ← ${message.slice(0, 80)}`);
+
     let msg: ClientMessage;
     try {
       msg = JSON.parse(message);
