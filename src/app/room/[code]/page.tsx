@@ -339,6 +339,102 @@ function ScreenTransition({
   );
 }
 
+function InfoStrip({
+  playerName,
+  code,
+  timerStartedAt,
+  timerDurationMs,
+}: {
+  playerName: string | null;
+  code: string;
+  timerStartedAt?: number | null;
+  timerDurationMs?: number;
+}) {
+  const [flash, setFlash] = useState(false);
+  const [remainingMs, setRemainingMs] = useState<number | null>(null);
+
+  // Connection state
+  const { playerStatuses, currentPlayer } = useRoom();
+  const connectionState = gameClient.isConnected()
+    ? currentPlayer && playerStatuses[currentPlayer.id] === "reconnecting"
+      ? "reconnecting"
+      : currentPlayer && playerStatuses[currentPlayer.id] === "disconnected"
+      ? "disconnected"
+      : "connected"
+    : "disconnected";
+
+  const dotColor =
+    connectionState === "connected"
+      ? "#1a1a1a"
+      : connectionState === "reconnecting"
+      ? "#b45309"
+      : "#b91c1c";
+
+  // Timer
+  useEffect(() => {
+    if (!timerStartedAt || !timerDurationMs) {
+      setRemainingMs(null);
+      return;
+    }
+    function tick() {
+      const left = Math.max(0, timerStartedAt! + timerDurationMs! - Date.now());
+      setRemainingMs(left);
+    }
+    tick();
+    const interval = setInterval(tick, 250);
+    return () => clearInterval(interval);
+  }, [timerStartedAt, timerDurationMs]);
+
+  const totalSeconds = remainingMs !== null ? Math.ceil(remainingMs / 1000) : null;
+  const timerDisplay = totalSeconds !== null
+    ? `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`
+    : null;
+  const timerColor = totalSeconds !== null && totalSeconds <= 10
+    ? "#dc2626"
+    : totalSeconds !== null && totalSeconds <= 30
+    ? "#d97706"
+    : "#ffffff";
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 1200);
+    });
+  };
+
+  return (
+    <div
+      className="bg-ink py-[6px] px-4 flex items-center justify-between cursor-pointer"
+      onClick={handleCopy}
+    >
+      <div className="flex items-center gap-2">
+        <div
+          className="w-[6px] h-[6px] rounded-full"
+          style={{ backgroundColor: dotColor }}
+        />
+        {playerName && (
+          <span className="font-sans text-[11px] uppercase tracking-[2px] font-semibold text-white">
+            {playerName}
+          </span>
+        )}
+      </div>
+
+      {timerDisplay && (
+        <span
+          className="font-sans text-[13px] font-semibold tracking-[1px]"
+          style={{ color: timerColor }}
+        >
+          {timerDisplay}
+        </span>
+      )}
+
+      <span className={`font-sans text-[11px] font-semibold tracking-[2px] ${flash ? "text-white" : "text-white"}`}>
+        {flash ? "Copied!" : code}
+      </span>
+    </div>
+  );
+}
+
 function RoomContent() {
   const {
     room,
@@ -347,6 +443,9 @@ function RoomContent() {
     playerStatuses,
     connectionError,
     roomRedirect,
+    roundStartedAt,
+    roundDurationMs,
+    votingOpen,
   } = useRoom();
   const router = useRouter();
 
@@ -428,22 +527,22 @@ function RoomContent() {
   })();
 
   const playerName = currentPlayer?.name ?? null;
-  const showIdentity =
-    playerName !== null &&
-    room !== null &&
-    room.state !== "LOBBY" &&
-    room.state !== "CREATED" &&
-    !connectionError;
+  const showStrip = room !== null && !connectionError;
+
+  // Timer: show during PLAYING and voting
+  const showTimer = room?.state === "PLAYING" || !!votingOpen;
+  const timerStartedAt = votingOpen ? votingOpen.votingStartedAt : roundStartedAt;
+  const timerDurationMs = votingOpen ? votingOpen.votingDurationMs : roundDurationMs;
 
   return (
     <>
-      {showIdentity && (
-        <div className="bg-ink py-[6px] px-4 text-center">
-          <span className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted">
-            Playing as{" "}
-            <span className="font-semibold text-white">{playerName}</span>
-          </span>
-        </div>
+      {showStrip && room?.code && (
+        <InfoStrip
+          playerName={playerName}
+          code={room.code}
+          timerStartedAt={showTimer ? timerStartedAt : null}
+          timerDurationMs={showTimer ? timerDurationMs : undefined}
+        />
       )}
       <ScreenTransition screenKey={screenKey}>{screen}</ScreenTransition>
     </>
@@ -456,11 +555,7 @@ export default function RoomPage() {
       <RoomProvider>
         <AutoConnect />
         <BackButtonGuard />
-        <RoomCodeBadge />
-        <div className="relative">
-          <ConnectionStatus />
-          <RoomContent />
-        </div>
+        <RoomContent />
       </RoomProvider>
     </ErrorBoundary>
   );

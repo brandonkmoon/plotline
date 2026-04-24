@@ -5,7 +5,6 @@ import { useRoom } from "@/lib/client/RoomContext";
 import { PROMPTS, isNamePickerRound, DESCRIPTOR_PLACEHOLDERS, PLACEHOLDERS } from "@/lib/game/prompts";
 import { extractName } from "@/lib/game/normalize";
 import Button from "@/components/Button";
-import CountdownTimer from "@/components/CountdownTimer";
 import PlayerList from "@/components/PlayerList";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
@@ -146,11 +145,6 @@ export default function PromptScreen() {
 
   return (
     <>
-      <CountdownTimer
-        roundStartedAt={roundStartedAt}
-        roundDurationMs={roundDurationMs}
-        roomState={room?.state}
-      />
       <div className="screen">
         <hr className="rule prompt-rule-enter" />
 

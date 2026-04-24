@@ -2,7 +2,6 @@
 
 import { useRoom } from "@/lib/client/RoomContext";
 import Button from "@/components/Button";
-import CountdownTimer from "@/components/CountdownTimer";
 import PlayerList from "@/components/PlayerList";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 
@@ -34,12 +33,6 @@ export default function WaitingScreen() {
             You&rsquo;re now the host
           </p>
         )}
-
-        <CountdownTimer
-          roundStartedAt={roundStartedAt}
-          roundDurationMs={roundDurationMs}
-          roomState={room?.state}
-        />
 
         <hr className="rule" />
         <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">

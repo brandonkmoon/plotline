@@ -123,17 +123,6 @@ export default function VotingScreen() {
 
   return (
     <div className="screen anim-fade-in">
-      {/* Timer bar — shrinks from full to zero, turns red at 5s */}
-      <div className="w-full h-[3px] bg-list-border mb-6 overflow-hidden">
-        <div
-          className="h-full transition-all duration-100 ease-linear"
-          style={{
-            width: `${timerFraction * 100}%`,
-            backgroundColor: totalSeconds <= 5 ? "#dc2626" : totalSeconds <= 10 ? "#d97706" : "#1a1a1a",
-          }}
-        />
-      </div>
-
       {/* First-time hint */}
       {showFirstTimeHint && (
         <div className="mx-4 mb-4 border border-ink p-4 bg-banner/10">
