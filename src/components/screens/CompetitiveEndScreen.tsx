@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
 import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
@@ -75,6 +75,13 @@ export default function CompetitiveEndScreen() {
   const [showAwards, setShowAwards] = useState(true);
   const [expandedStory, setExpandedStory] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [advanceCountdown, setAdvanceCountdown] = useState(15);
+
+  useEffect(() => {
+    if (advanceCountdown <= 0) return;
+    const t = setTimeout(() => setAdvanceCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [advanceCountdown]);
 
   const handleShare = (story: { storyIndex: number; title?: string; sections?: { text: string }[] }) => {
     const full = archiveUrl
@@ -287,8 +294,10 @@ export default function CompetitiveEndScreen() {
               New Series
             </Button>
           ) : (
-            <Button variant="primary" onClick={() => playAgain()}>
-              Next Game ({gameNumber} of {room.series?.totalGames ?? "?"})
+            <Button variant="primary" onClick={() => playAgain()} disabled={advanceCountdown > 0}>
+              {advanceCountdown > 0
+                ? `Next Game in ${advanceCountdown}s`
+                : `Next Game (${gameNumber} of ${room.series?.totalGames ?? "?"})`}
             </Button>
           )}
         </div>
