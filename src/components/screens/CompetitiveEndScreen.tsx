@@ -69,10 +69,37 @@ export default function CompetitiveEndScreen() {
     createNextRoom,
     queueNextGame,
     playAgain,
+    archiveUrl,
   } = useRoom();
 
   const [showAwards, setShowAwards] = useState(true);
   const [expandedStory, setExpandedStory] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = (story: { storyIndex: number; title?: string; sections?: { text: string }[] }) => {
+    const full = archiveUrl
+      ? (archiveUrl.startsWith("http") ? archiveUrl : `${window.location.origin}${archiveUrl}`)
+      : null;
+    const storyText = story.sections?.map((s) => s.text).join("\n\n") ?? "";
+    if (typeof navigator !== "undefined" && navigator.share) {
+      navigator.share({
+        title: story.title ?? "A Plotline story",
+        text: `"${story.title}" — a story from Plotline\n\n${storyText}`,
+        ...(full ? { url: full } : {}),
+      }).catch(() => {});
+    } else {
+      const toCopy = full ?? storyText;
+      navigator.clipboard.writeText(toCopy).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  };
+
+  const handleSaveImage = (storyIndex: number) => {
+    if (!room?.code) return;
+    window.open(`/api/og/${room.code}/${storyIndex}`, "_blank");
+  };
 
   if (!room || !gameScores) return null;
 
@@ -228,6 +255,22 @@ export default function CompetitiveEndScreen() {
                     </div>
                   );
                 })}
+
+                <hr className="border-t border-ink/20 mb-4 mt-2" />
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => handleShare(story)}
+                    className="font-sans text-[12px] uppercase tracking-[2px] text-ink hover:text-text-dim transition-colors"
+                  >
+                    Share ↗
+                  </button>
+                  <button
+                    onClick={() => handleSaveImage(story.storyIndex)}
+                    className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
+                  >
+                    Save Image ↗
+                  </button>
+                </div>
               </div>
             )}
           </div>
