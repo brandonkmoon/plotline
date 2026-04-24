@@ -12,6 +12,7 @@ import WaitingScreen from "@/components/screens/WaitingScreen";
 import RevealScreen from "@/components/screens/RevealScreen";
 import VotingScreen from "@/components/screens/VotingScreen";
 import EndScreen from "@/components/screens/EndScreen";
+import CompetitiveEndScreen from "@/components/screens/CompetitiveEndScreen";
 import SpectatorScreen from "@/components/screens/SpectatorScreen";
 import Button from "@/components/Button";
 import { gameClient } from "@/lib/multiplayer/gameClient";
@@ -414,7 +415,7 @@ function RoomContent() {
 
       case "END":
       case "DESTROYED":
-        return <EndScreen />;
+        return room.gameMode === "competitive" ? <CompetitiveEndScreen /> : <EndScreen />;
 
       default:
         return (
