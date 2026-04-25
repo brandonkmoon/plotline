@@ -172,7 +172,7 @@ export default function LobbyScreen() {
               ? `Start Game ${(room?.series?.currentGameNumber ?? 0) + 1} of ${room?.series?.totalGames}`
               : canStart
               ? "Start the Show"
-              : `Need ${4 - connectedPlayers.length} More`}
+              : `${4 - connectedPlayers.length} More for the Cast`}
           </Button>
         ) : (
           <p className="text-center font-body italic text-[16px] text-text-muted">

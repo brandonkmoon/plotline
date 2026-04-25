@@ -70,7 +70,7 @@ export default function SpectatorScreen() {
           Act {currentRound + 1} of {TOTAL_ROUNDS}
         </h1>
         <p className="font-body italic text-[16px] text-text-dim text-center">
-          Watch along &mdash; you&rsquo;ll play next game
+          You&rsquo;re in the wings &mdash; you&rsquo;ll join next game
         </p>
 
         <hr className="rule" />

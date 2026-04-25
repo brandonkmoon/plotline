@@ -172,9 +172,9 @@ export default function PromptScreen() {
             <p className="font-body italic text-[14px] text-text-muted text-center mb-3">
               {currentRound === 0
                 ? "Tap a name to cast them, then write a short character description."
-                : "Someone different this time \u2014 tap a name, then make something up."}
+                : "New character \u2014 tap a name and give them a role."}
             </p>
-            <p className="font-sans text-[13px] text-center mb-5" style={{ color: "#bbb" }}>
+            <p className="font-sans text-[13px] text-text-muted text-center mb-5">
               {selectedName
                 ? <>{selectedName} &mdash; {descriptor || <span style={{ fontStyle: "italic" }}>description&hellip;</span>}</>
                 : <span style={{ fontStyle: "italic" }}>Name &mdash; a brief, funny description</span>

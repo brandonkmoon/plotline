@@ -198,7 +198,7 @@ export default function RevealScreen() {
                 If {readerName} isn&rsquo;t reading, you can take over.
               </p>
               <Button variant="secondary" onClick={() => setHostTookOver(true)}>
-                Read on Their Behalf
+                Take Over Reading
               </Button>
             </div>
           )}

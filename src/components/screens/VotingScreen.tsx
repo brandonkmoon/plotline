@@ -26,6 +26,7 @@ export default function VotingScreen() {
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [longPressFired, setLongPressFired] = useState(false);
+  const [pressingLine, setPressingLine] = useState<number | null>(null);
   const [hintDismissed, setHintDismissed] = useState(false);
 
   const storyIndex = votingOpen?.storyIndex ?? room?.votingState?.storyIndex ?? 0;
@@ -97,9 +98,11 @@ export default function VotingScreen() {
   const handleLongPressStart = useCallback(
     (lineIndex: number) => {
       if (submitted || myLineIndices.has(lineIndex) || standingOvationUsed) return;
+      setPressingLine(lineIndex);
       setLongPressFired(false);
       const timer = setTimeout(() => {
         setLongPressFired(true);
+        setPressingLine(null);
         if (selectedLine === lineIndex && isStandingOvation) {
           setIsStandingOvation(false);
         } else {
@@ -113,6 +116,7 @@ export default function VotingScreen() {
   );
 
   const handleLongPressEnd = useCallback(() => {
+    setPressingLine(null);
     if (longPressTimer) { clearTimeout(longPressTimer); setLongPressTimer(null); }
   }, [longPressTimer]);
 
@@ -182,6 +186,7 @@ export default function VotingScreen() {
           const isMine = myLineIndices.has(i);
           const isSelected = selectedLine === i;
           const isOvation = isSelected && isStandingOvation;
+          const isPressing = pressingLine === i;
 
           return (
             <button
@@ -195,6 +200,8 @@ export default function VotingScreen() {
                 w-full text-left p-4 border-2 transition-all duration-150
                 ${isMine
                   ? "opacity-50 cursor-not-allowed border-list-border"
+                  : isPressing
+                  ? "border-ink bg-banner/20 scale-[1.01]"
                   : isOvation
                   ? "border-ink bg-banner shadow-md scale-[1.02]"
                   : isSelected
@@ -245,7 +252,7 @@ export default function VotingScreen() {
             {selectedLine === null
               ? "Select a Line"
               : isStandingOvation
-              ? "★ Submit Standing Ovation"
+              ? "★ Standing Ovation"
               : "Submit Vote"}
           </Button>
         ) : (

@@ -538,7 +538,7 @@ export default function CompetitiveEndScreen() {
                 {readyCount}/{connectedPlayers.length} ready
                 {!timerExpired && (
                   <span className="ml-2">
-                    &middot; {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+                    &middot; auto-advance in {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
                   </span>
                 )}
               </p>
