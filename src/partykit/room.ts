@@ -672,7 +672,8 @@ export default class RoomServer implements Party.Server {
     if (!this.gameState) {
       // First player creates the room — their premium status locks the room tier
       this.gameState = createRoom(this.room.id, { id: playerId, name: msg.playerName }, now);
-      this.gameState.isPremium = !!msg.isPremium;
+      // TODO: wire up payment — for now all rooms are premium
+      this.gameState.isPremium = true;
     } else {
       // Enforce player limit based on room tier
       const maxPlayers = this.gameState.isPremium ? MAX_PLAYERS_PREMIUM : MAX_PLAYERS_FREE;
