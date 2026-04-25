@@ -2113,17 +2113,6 @@ export default class RoomServer implements Party.Server {
     const nameOf = (id: string) =>
       players.find((p) => p.id === id)?.name ?? "Unknown";
 
-    // MVP — most cumulative points
-    const mvpId = findTop(this.seriesState.cumulativePoints);
-    if (mvpId) {
-      awards.push({
-        id: "mvp",
-        title: "MVP",
-        playerId: mvpId,
-        playerName: nameOf(mvpId),
-      });
-    }
-
     // Casting Director — most votes on acts 0-1 (character names)
     const castingCounts = pointsByPlayerByActs([0, 1]);
     const castingId = findTop(castingCounts);

@@ -168,26 +168,80 @@ export default function CompetitiveEndScreen() {
 
   // If final game and awards exist and we haven't dismissed them yet, show ceremony
   if (isFinalGame && awards.length > 0 && showAwards) {
+    const podium = sortedPlayers.slice(0, 3);
+    const winner = podium[0];
+    const runnerUp = podium[1];
+    const thirdPlace = podium[2];
+
     return (
       <div className="screen anim-fade-in">
         <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
-          Awards Ceremony
-        </p>
-        <h1 className="font-serif font-bold text-[28px] text-ink text-center mb-2">
           Series Complete
-        </h1>
-        <p className="font-body italic text-[16px] text-text-dim text-center mb-6">
+        </p>
+        <p className="font-body italic text-[14px] text-text-dim text-center mb-6">
           {gameNumber} games played
         </p>
 
+        {/* Winner */}
+        {winner && (
+          <div className="text-center mb-2 anim-fade-in" style={{ animationDelay: "200ms", opacity: 0, animationFillMode: "forwards" }}>
+            <p className="font-sans text-[11px] uppercase tracking-[3px] text-text-muted mb-1">
+              Winner
+            </p>
+            <h1 className="font-serif font-bold text-ink" style={{ fontSize: "clamp(28px, 8vw, 40px)" }}>
+              {winner.name}
+            </h1>
+            <p className="font-serif font-bold text-[20px] text-ink">
+              {standings[winner.id] ?? 0} pts
+            </p>
+          </div>
+        )}
+
+        {/* 2nd & 3rd */}
+        {(runnerUp || thirdPlace) && (
+          <div className="flex justify-center gap-8 mt-4 mb-2">
+            {runnerUp && (
+              <div className="text-center anim-fade-in" style={{ animationDelay: "500ms", opacity: 0, animationFillMode: "forwards" }}>
+                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">2nd</p>
+                <p className="font-serif font-bold text-[18px] text-ink">{runnerUp.name}</p>
+                <p className="font-sans text-[13px] text-text-dim">{standings[runnerUp.id] ?? 0} pts</p>
+              </div>
+            )}
+            {thirdPlace && (
+              <div className="text-center anim-fade-in" style={{ animationDelay: "700ms", opacity: 0, animationFillMode: "forwards" }}>
+                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">3rd</p>
+                <p className="font-serif font-bold text-[18px] text-ink">{thirdPlace.name}</p>
+                <p className="font-sans text-[13px] text-text-dim">{standings[thirdPlace.id] ?? 0} pts</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Full standings (4th place onward) */}
+        {sortedPlayers.length > 3 && (
+          <div className="mt-4 mb-2">
+            {sortedPlayers.slice(3).map((player, i) => (
+              <ScoreRow
+                key={player.id}
+                rank={i + 4}
+                name={player.name}
+                points={standings[player.id] ?? 0}
+                isCurrentPlayer={player.id === currentPlayer?.id}
+              />
+            ))}
+          </div>
+        )}
+
         <hr className="rule" />
 
+        {/* Awards */}
         {awards.map((award, i) => (
           <AwardCard key={award.id} award={award} index={i} />
         ))}
 
         <hr className="rule" />
 
+        {/* Play again */}
         <div className="flex flex-col gap-3">
           {room.nextRoomCode ? (
             <>
@@ -216,10 +270,6 @@ export default function CompetitiveEndScreen() {
               </p>
             </>
           )}
-
-          <Button variant="secondary" onClick={() => setShowAwards(false)}>
-            See Scoreboard
-          </Button>
         </div>
       </div>
     );
