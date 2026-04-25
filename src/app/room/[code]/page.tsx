@@ -135,6 +135,16 @@ function ConnectionErrorView() {
         </Link>
       );
       break;
+    case "ROOM_FULL":
+      title = "Room full";
+      message =
+        "This room has reached its player limit. Ask the host to upgrade for up to 12 players.";
+      action = (
+        <Link href="/">
+          <Button variant="primary">Back to home</Button>
+        </Link>
+      );
+      break;
   }
 
   return (

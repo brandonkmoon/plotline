@@ -293,7 +293,7 @@ export default function RevealScreen() {
 
         {allRevealed && (
           <div className="mt-8">
-            {room.gameMode === "competitive" && !votingOpen ? (
+            {room.gameMode === "competitive" && !room.votingState ? (
               <Button variant="primary" onClick={() => startVoting()}>
                 Start Voting
               </Button>

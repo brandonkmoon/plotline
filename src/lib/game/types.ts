@@ -120,6 +120,9 @@ export interface Room {
   pendingPlayers: PendingPlayer[];
   nextRoomCode?: string;
   archiveUrl?: string;
+  // Room tier — set at creation based on whether the host has paid.
+  // Persists for the life of the room even if host transfers.
+  isPremium?: boolean;
   // Competitive mode (defaults to "classic" if absent)
   gameMode?: GameMode;
   series?: SeriesState;

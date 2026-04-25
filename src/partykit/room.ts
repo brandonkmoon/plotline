@@ -30,6 +30,8 @@ const ROUND_TIMER_MS = 90_000;
 const RECONNECT_TIMEOUT_MS = 120_000; // 2 minutes
 const HOST_TRANSFER_TIMEOUT_MS = 30_000; // 30 seconds
 const ROOM_DESTROY_TIMEOUT_MS = 600_000; // 10 minutes
+const MAX_PLAYERS_FREE = 8;
+const MAX_PLAYERS_PREMIUM = 12;
 
 export default class RoomServer implements Party.Server {
   room: Party.Room;
@@ -668,9 +670,21 @@ export default class RoomServer implements Party.Server {
     }
 
     if (!this.gameState) {
-      // First player creates the room
+      // First player creates the room — their premium status locks the room tier
       this.gameState = createRoom(this.room.id, { id: playerId, name: msg.playerName }, now);
+      this.gameState.isPremium = !!msg.isPremium;
     } else {
+      // Enforce player limit based on room tier
+      const maxPlayers = this.gameState.isPremium ? MAX_PLAYERS_PREMIUM : MAX_PLAYERS_FREE;
+      if (this.gameState.players.length >= maxPlayers) {
+        this.sendTo(sender, {
+          type: "ERROR",
+          reason: "ROOM_FULL",
+        });
+        sender.close();
+        return;
+      }
+
       // Subsequent players join
       const player: Player = {
         id: playerId,
@@ -750,6 +764,15 @@ export default class RoomServer implements Party.Server {
     // Set game mode before starting
     const mode = msg.mode ?? "classic";
     this.gameState = { ...this.gameState, gameMode: mode };
+
+    // Block competitive mode for free rooms
+    if (mode === "competitive" && !this.gameState.isPremium) {
+      this.sendTo(sender, {
+        type: "ERROR",
+        reason: "Competitive mode requires a premium upgrade",
+      });
+      return;
+    }
 
     // Initialize series state for competitive mode
     if (mode === "competitive") {
@@ -1849,6 +1872,9 @@ export default class RoomServer implements Party.Server {
     });
 
     this.currentVotes.clear();
+
+    // Notify clients that voting is closed so votingOpen state resets
+    this.broadcast({ type: "VOTING_CLOSED", storyIndex } as ServerMessage);
 
     // Now advance — mark story revealed, clear voting, move to next
     this.advanceAfterVoting();

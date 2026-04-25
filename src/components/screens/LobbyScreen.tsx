@@ -10,9 +10,11 @@ import PendingPlayersBadge from "@/components/PendingPlayersBadge";
 function ModeSheet({
   onStart,
   onClose,
+  isPremium,
 }: {
   onStart: (mode: "classic" | "competitive", seriesLength?: 3 | 5) => void;
   onClose: () => void;
+  isPremium: boolean;
 }) {
   const [seriesLength, setSeriesLength] = useState<3 | 5>(3);
 
@@ -47,9 +49,10 @@ function ModeSheet({
         </button>
 
         {/* Competitive */}
-        <div className="border-2 border-ink p-4">
-          <span className="font-serif font-bold text-[16px] uppercase tracking-[2px] block text-ink">
+        <div className={`border-2 p-4 ${isPremium ? "border-ink" : "border-list-border"}`}>
+          <span className={`font-serif font-bold text-[16px] uppercase tracking-[2px] block ${isPremium ? "text-ink" : "text-text-muted"}`}>
             Competitive Series
+            {!isPremium && <span className="font-sans text-[10px] normal-case tracking-[1px] ml-2 bg-banner text-ink px-2 py-0.5">Premium</span>}
           </span>
           <span className="font-body italic text-[14px] text-text-dim block mt-1">
             Vote on the best lines. Points, awards, a winner.
@@ -85,12 +88,18 @@ function ModeSheet({
             </button>
           </div>
 
-          <Button
-            variant="primary"
-            onClick={() => onStart("competitive", seriesLength)}
-          >
-            Start Series
-          </Button>
+          {isPremium ? (
+            <Button
+              variant="primary"
+              onClick={() => onStart("competitive", seriesLength)}
+            >
+              Start Series
+            </Button>
+          ) : (
+            <p className="font-body italic text-[14px] text-text-muted text-center mt-2">
+              Upgrade to unlock competitive mode and up to 12 players.
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -184,8 +193,7 @@ export default function LobbyScreen() {
         />
 
         <p className="font-sans text-[13px] text-text-muted text-center mt-2 mb-2">
-          {connectedPlayers.length} player
-          {connectedPlayers.length !== 1 ? "s" : ""}
+          {connectedPlayers.length}/{room?.isPremium ? 12 : 8} players
         </p>
       </div>
 
@@ -193,6 +201,7 @@ export default function LobbyScreen() {
         <ModeSheet
           onStart={handleStart}
           onClose={() => setShowModeSheet(false)}
+          isPremium={!!room?.isPremium}
         />
       )}
 

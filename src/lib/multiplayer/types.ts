@@ -15,7 +15,8 @@ export type ConnectionErrorReason =
   | "PROTOCOL_MISMATCH"
   | "CONNECT_TIMEOUT"
   | "PLAYER_ALREADY_CONNECTED"
-  | "NAME_TAKEN";
+  | "NAME_TAKEN"
+  | "ROOM_FULL";
 
 export type ClientMessage =
   | {
@@ -24,6 +25,7 @@ export type ClientMessage =
       playerId?: string;
       protocolVersion: number;
       previousHostName?: string;
+      isPremium?: boolean;
     }
   | { type: "START_GAME"; mode?: "classic" | "competitive"; seriesLength?: 3 | 5 }
   | {

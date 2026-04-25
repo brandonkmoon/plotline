@@ -215,7 +215,7 @@ class GameClient {
     roomCode: string,
     playerName: string,
     existingPlayerId?: string,
-    options?: { forceNewPlayer?: boolean; previousHostName?: string }
+    options?: { forceNewPlayer?: boolean; previousHostName?: string; isPremium?: boolean }
   ): Promise<string> {
     this.roomCode = roomCode;
     this.playerName = playerName;
@@ -291,6 +291,7 @@ class GameClient {
           protocolVersion: PROTOCOL_VERSION,
           ...(idToSend ? { playerId: idToSend } : {}),
           ...(options?.previousHostName ? { previousHostName: options.previousHostName } : {}),
+          ...(options?.isPremium ? { isPremium: true } : {}),
         };
         this.send(joinMsg);
       });
@@ -382,7 +383,8 @@ class GameClient {
               msg.reason === "UNKNOWN_PLAYER" ||
               msg.reason === "PROTOCOL_MISMATCH" ||
               msg.reason === "PLAYER_ALREADY_CONNECTED" ||
-              msg.reason === "NAME_TAKEN"
+              msg.reason === "NAME_TAKEN" ||
+              msg.reason === "ROOM_FULL"
             ) {
               // Close the socket immediately on fatal errors so PartySocket
               // doesn't auto-reconnect and fire stale error events later.
