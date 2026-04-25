@@ -1156,6 +1156,9 @@ export default class RoomServer implements Party.Server {
       pendingPlayers: keepPending,
     };
 
+    // Preserve room tier across game resets
+    state.isPremium = this.gameState.isPremium;
+
     // Preserve competitive mode and series state across game resets
     if (this.seriesState && this.seriesState.currentGameNumber < this.seriesState.totalGames) {
       state.gameMode = "competitive";
