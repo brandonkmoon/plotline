@@ -151,9 +151,13 @@ export default function VotingScreen() {
 
       {/* Standing ovation status + vote progress */}
       <div className="flex justify-between items-center mb-2 px-1">
-        <span className="font-sans text-[11px] text-text-muted">
-          {standingOvationAvailable ? "★ 1 standing ovation" : "★ Used"}
-        </span>
+        {isSpectator ? (
+          <span className="font-sans text-[11px] text-text-muted">Spectating</span>
+        ) : (
+          <span className="font-sans text-[11px] text-text-muted">
+            {standingOvationAvailable ? "★ 1 standing ovation" : "★ Used"}
+          </span>
+        )}
         <span className="font-sans text-[11px] text-text-muted">
           {votesIn}/{totalPlayers} voted
         </span>

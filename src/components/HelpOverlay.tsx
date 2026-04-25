@@ -211,8 +211,8 @@ export default function HelpOverlay() {
                 <li>&bull; Final game of the series = double points</li>
               </ul>
               <p className="help-a mt-2">
-                Awards at the end: MVP, Casting Director, Scene Stealer,
-                Speechwriter, Closer, Fan Favorite, Line of the Series.
+                Awards at the end: Casting Director, Scene Stealer,
+                Speechwriter, Closer, Fan Favorite, Popularity, Line of the Series.
               </p>
             </div>
 

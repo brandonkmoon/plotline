@@ -69,12 +69,12 @@ export default function PlayerList({
               )}
 
               {isReader && (
-                <span className="font-sans text-[10px] font-semibold uppercase tracking-[1px] bg-ink text-white px-2 py-[1px] rounded-[3px]">
+                <span className="font-sans text-[10px] font-semibold uppercase tracking-[1px] bg-ink text-white px-2 py-[1px] rounded-none">
                   Reading
                 </span>
               )}
               {player.isHost && !isReader && (
-                <span className="font-sans text-[10px] font-semibold uppercase tracking-[1px] bg-ink text-white px-2 py-[1px] rounded-[3px]">
+                <span className="font-sans text-[10px] font-semibold uppercase tracking-[1px] bg-ink text-white px-2 py-[1px] rounded-none">
                   Host
                 </span>
               )}
