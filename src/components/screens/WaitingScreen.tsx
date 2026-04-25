@@ -36,7 +36,7 @@ export default function WaitingScreen() {
 
         <hr className="rule" />
         <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted mb-2">
-          Between Rounds
+          Between Acts
         </p>
         <h1 className="font-serif font-bold text-[24px] text-ink mb-1">
           Sit Tight

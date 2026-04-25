@@ -46,7 +46,7 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`${base} text-[14px] py-3 px-6 bg-transparent text-ink border-2 border-ink hover:bg-ink hover:text-white disabled:opacity-40 ${className}`}
+      className={`${base} text-[14px] py-3 px-6 bg-transparent text-ink border-2 border-ink hover:bg-ink hover:text-white disabled:border-[#ccc] disabled:text-[#ccc] ${className}`}
       style={{ letterSpacing: "2px", borderRadius: 0 }}
     >
       {children}
