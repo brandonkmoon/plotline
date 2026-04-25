@@ -7,11 +7,24 @@ import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
 import type { SeriesAward, StoryVoteResult } from "@/lib/game/types";
 
+const AWARD_DESCRIPTIONS: Record<string, string> = {
+  "casting-director": "Most points earned on character introductions.",
+  "scene-stealer": "Most points earned on settings and actions.",
+  "speechwriter": "Most points earned on dialogue lines.",
+  "closer": "Most points earned on story endings.",
+  "fan-favorite": "Received the most standing ovations.",
+  "popularity": "Appeared as a character in the most stories.",
+};
+
 function AwardCard({ award, delay }: { award: SeriesAward; delay: number }) {
+  const [showDetail, setShowDetail] = useState(false);
+  const description = AWARD_DESCRIPTIONS[award.id];
+
   return (
     <div
-      className="border-2 border-ink p-5 text-center mb-4 anim-fade-in"
+      className="border-2 border-ink p-5 text-center mb-4 anim-fade-in cursor-pointer select-none"
       style={{ animationDelay: `${delay}ms`, opacity: 0, animationFillMode: "forwards" }}
+      onClick={() => description && setShowDetail((v) => !v)}
     >
       <p className="font-serif font-medium text-[12px] uppercase tracking-[3px] mb-1" style={{ color: "var(--banner-text, #b8960c)" }}>
         {award.title}
@@ -19,10 +32,18 @@ function AwardCard({ award, delay }: { award: SeriesAward; delay: number }) {
       <p className="font-serif font-bold text-[24px] text-ink mb-1">
         {award.playerName}
       </p>
-      {award.detail && (
-        <p className="font-body italic text-[12px] text-text-dim mt-1">
-          {award.detail}
-        </p>
+      {showDetail && (
+        <div className="mt-2">
+          {description && (
+            <p className="font-body italic text-[12px] text-text-dim">{description}</p>
+          )}
+          {award.detail && (
+            <p className="font-sans text-[12px] text-text-muted mt-1">{award.detail}</p>
+          )}
+        </div>
+      )}
+      {description && !showDetail && (
+        <p className="font-sans text-[10px] text-text-muted mt-1">tap for details</p>
       )}
     </div>
   );
