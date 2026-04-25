@@ -7,23 +7,37 @@ import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
 import type { SeriesAward, StoryVoteResult } from "@/lib/game/types";
 
-function AwardCard({ award, index }: { award: SeriesAward; index: number }) {
+function AwardCard({ award, delay }: { award: SeriesAward; delay: number }) {
   return (
     <div
       className="border-2 border-ink p-5 text-center mb-4 anim-fade-in"
-      style={{ animationDelay: `${index * 300}ms`, opacity: 0, animationFillMode: "forwards" }}
+      style={{ animationDelay: `${delay}ms`, opacity: 0, animationFillMode: "forwards" }}
     >
-      <p className="font-serif font-medium text-[12px] uppercase tracking-[3px] text-text-muted mb-1">
+      <p className="font-serif font-medium text-[12px] uppercase tracking-[3px] mb-1" style={{ color: "var(--banner-text, #b8960c)" }}>
         {award.title}
       </p>
       <p className="font-serif font-bold text-[24px] text-ink mb-1">
         {award.playerName}
       </p>
-      {award.detail && (
-        <p className="font-body italic text-[14px] text-text-dim mt-2">
-          &ldquo;{award.detail}&rdquo;
-        </p>
-      )}
+    </div>
+  );
+}
+
+function LineOfTheSeriesCard({ award, delay }: { award: SeriesAward; delay: number }) {
+  return (
+    <div
+      className="border-l-2 pl-4 py-3 mb-4 anim-fade-in"
+      style={{ borderLeftColor: "var(--banner)", animationDelay: `${delay}ms`, opacity: 0, animationFillMode: "forwards" }}
+    >
+      <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">
+        Line of the Series
+      </p>
+      <p className="font-body italic text-[17px] text-ink leading-[1.5]">
+        &ldquo;{award.detail}&rdquo;
+      </p>
+      <p className="font-sans text-[12px] text-text-dim mt-1">
+        &mdash; {award.playerName}
+      </p>
     </div>
   );
 }
@@ -173,23 +187,35 @@ export default function CompetitiveEndScreen() {
     const runnerUp = podium[1];
     const thirdPlace = podium[2];
 
+    const lineAward = awards.find((a) => a.id === "line-of-the-series");
+    const otherAwards = awards.filter((a) => a.id !== "line-of-the-series");
+
     return (
       <div className="screen anim-fade-in">
-        <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
-          Series Complete
+        <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-1">
+          The Final Curtain
         </p>
         <p className="font-body italic text-[14px] text-text-dim text-center mb-6">
-          {gameNumber} games played
+          The votes are in.
         </p>
 
-        {/* Winner */}
+        {/* Winner — yellow marquee */}
         {winner && (
-          <div className="text-center mb-2 anim-fade-in" style={{ animationDelay: "200ms", opacity: 0, animationFillMode: "forwards" }}>
-            <p className="font-sans text-[11px] uppercase tracking-[3px] text-text-muted mb-1">
+          <div
+            className="text-center py-5 px-4 mb-4 anim-fade-in"
+            style={{
+              background: "var(--banner)",
+              border: "2px solid var(--ink)",
+              animationDelay: "300ms",
+              opacity: 0,
+              animationFillMode: "forwards",
+            }}
+          >
+            <p className="font-sans text-[11px] uppercase tracking-[3px] text-ink/50 mb-2">
               Winner
             </p>
-            <h1 className="font-serif font-bold text-ink" style={{ fontSize: "clamp(28px, 8vw, 40px)" }}>
-              {winner.name}
+            <h1 className="font-serif font-bold text-ink mb-1" style={{ fontSize: "clamp(28px, 8vw, 40px)" }}>
+              &#9733; {winner.name} &#9733;
             </h1>
             <p className="font-serif font-bold text-[20px] text-ink">
               {standings[winner.id] ?? 0} pts
@@ -197,19 +223,19 @@ export default function CompetitiveEndScreen() {
           </div>
         )}
 
-        {/* 2nd & 3rd */}
+        {/* Runner-Up & Third */}
         {(runnerUp || thirdPlace) && (
-          <div className="flex justify-center gap-8 mt-4 mb-2">
+          <div className="flex justify-center gap-8 mb-2 anim-fade-in" style={{ animationDelay: "800ms", opacity: 0, animationFillMode: "forwards" }}>
             {runnerUp && (
-              <div className="text-center anim-fade-in" style={{ animationDelay: "500ms", opacity: 0, animationFillMode: "forwards" }}>
-                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">2nd</p>
+              <div className="text-center">
+                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">Runner-Up</p>
                 <p className="font-serif font-bold text-[18px] text-ink">{runnerUp.name}</p>
                 <p className="font-sans text-[13px] text-text-dim">{standings[runnerUp.id] ?? 0} pts</p>
               </div>
             )}
             {thirdPlace && (
-              <div className="text-center anim-fade-in" style={{ animationDelay: "700ms", opacity: 0, animationFillMode: "forwards" }}>
-                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">3rd</p>
+              <div className="text-center">
+                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">Third</p>
                 <p className="font-serif font-bold text-[18px] text-ink">{thirdPlace.name}</p>
                 <p className="font-sans text-[13px] text-text-dim">{standings[thirdPlace.id] ?? 0} pts</p>
               </div>
@@ -217,9 +243,9 @@ export default function CompetitiveEndScreen() {
           </div>
         )}
 
-        {/* Full standings (4th place onward) */}
+        {/* 4th place onward */}
         {sortedPlayers.length > 3 && (
-          <div className="mt-4 mb-2">
+          <div className="mt-2 mb-2 anim-fade-in" style={{ animationDelay: "1000ms", opacity: 0, animationFillMode: "forwards" }}>
             {sortedPlayers.slice(3).map((player, i) => (
               <ScoreRow
                 key={player.id}
@@ -234,10 +260,22 @@ export default function CompetitiveEndScreen() {
 
         <hr className="rule" />
 
-        {/* Awards */}
-        {awards.map((award, i) => (
-          <AwardCard key={award.id} award={award} index={i} />
+        {/* Line of the Series — special treatment */}
+        {lineAward && (
+          <LineOfTheSeriesCard award={lineAward} delay={1300} />
+        )}
+
+        {/* Other awards */}
+        {otherAwards.map((award, i) => (
+          <AwardCard key={award.id} award={award} delay={1600 + i * 400} />
         ))}
+
+        {/* Closing line */}
+        <p className="font-body italic text-[15px] text-text-dim text-center mt-4 mb-6 anim-fade-in"
+          style={{ animationDelay: `${1600 + otherAwards.length * 400 + 300}ms`, opacity: 0, animationFillMode: "forwards" }}
+        >
+          Take a bow, everyone.
+        </p>
 
         <hr className="rule" />
 
