@@ -2114,7 +2114,7 @@ export default class RoomServer implements Party.Server {
     const nameOf = (id: string) =>
       players.find((p) => p.id === id)?.name ?? "Unknown";
 
-    // Casting Director — most votes on acts 0-1 (character names)
+    // Casting Director — most points on acts 0-1 (character names)
     const castingCounts = pointsByPlayerByActs([0, 1]);
     const castingId = findTop(castingCounts);
     if (castingId) {
@@ -2123,10 +2123,11 @@ export default class RoomServer implements Party.Server {
         title: "Casting Director",
         playerId: castingId,
         playerName: nameOf(castingId),
+        detail: `${castingCounts[castingId]} pts on character intros`,
       });
     }
 
-    // Scene Stealer — most votes on acts 2-3 (location/action)
+    // Scene Stealer — most points on acts 2-3 (location/action)
     const sceneCounts = pointsByPlayerByActs([2, 3]);
     const sceneId = findTop(sceneCounts);
     if (sceneId) {
@@ -2135,10 +2136,11 @@ export default class RoomServer implements Party.Server {
         title: "Scene Stealer",
         playerId: sceneId,
         playerName: nameOf(sceneId),
+        detail: `${sceneCounts[sceneId]} pts on settings & actions`,
       });
     }
 
-    // Speechwriter — most votes on acts 4-5 (dialogue)
+    // Speechwriter — most points on acts 4-5 (dialogue)
     const speechCounts = pointsByPlayerByActs([4, 5]);
     const speechId = findTop(speechCounts);
     if (speechId) {
@@ -2147,10 +2149,11 @@ export default class RoomServer implements Party.Server {
         title: "Speechwriter",
         playerId: speechId,
         playerName: nameOf(speechId),
+        detail: `${speechCounts[speechId]} pts on dialogue`,
       });
     }
 
-    // Closer — most votes on act 6 (ending)
+    // Closer — most points on act 6 (ending)
     const closerCounts = pointsByPlayerByActs([6]);
     const closerId = findTop(closerCounts);
     if (closerId) {
@@ -2159,6 +2162,7 @@ export default class RoomServer implements Party.Server {
         title: "Closer",
         playerId: closerId,
         playerName: nameOf(closerId),
+        detail: `${closerCounts[closerId]} pts on endings`,
       });
     }
 
@@ -2176,11 +2180,13 @@ export default class RoomServer implements Party.Server {
     }
     const fanFavId = findTop(ovationCounts);
     if (fanFavId) {
+      const count = ovationCounts[fanFavId];
       awards.push({
         id: "fan-favorite",
         title: "Fan Favorite",
         playerId: fanFavId,
         playerName: nameOf(fanFavId),
+        detail: `${count} standing ovation${count !== 1 ? "s" : ""} received`,
       });
     }
 
@@ -2243,11 +2249,13 @@ export default class RoomServer implements Party.Server {
     }
     const popularId = findTop(nameCounts);
     if (popularId) {
+      const count = nameCounts[popularId];
       awards.push({
         id: "popularity",
         title: "Popularity",
         playerId: popularId,
         playerName: nameOf(popularId),
+        detail: `Featured in ${count} stor${count !== 1 ? "ies" : "y"}`,
       });
     }
 

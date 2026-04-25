@@ -7,24 +7,11 @@ import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
 import type { SeriesAward, StoryVoteResult } from "@/lib/game/types";
 
-const AWARD_DESCRIPTIONS: Record<string, string> = {
-  "casting-director": "Most points earned on character introductions across all games.",
-  "scene-stealer": "Most points earned on settings and actions across all games.",
-  "speechwriter": "Most points earned on dialogue lines across all games.",
-  "closer": "Most points earned on story endings across all games.",
-  "fan-favorite": "Received the most standing ovations across all games.",
-  "popularity": "Appeared as a character in the most stories across the series.",
-};
-
 function AwardCard({ award, delay }: { award: SeriesAward; delay: number }) {
-  const [showDetail, setShowDetail] = useState(false);
-  const description = AWARD_DESCRIPTIONS[award.id];
-
   return (
     <div
-      className="border-2 border-ink p-5 text-center mb-4 anim-fade-in cursor-pointer select-none"
+      className="border-2 border-ink p-5 text-center mb-4 anim-fade-in"
       style={{ animationDelay: `${delay}ms`, opacity: 0, animationFillMode: "forwards" }}
-      onClick={() => description && setShowDetail((v) => !v)}
     >
       <p className="font-serif font-medium text-[12px] uppercase tracking-[3px] mb-1" style={{ color: "var(--banner-text, #b8960c)" }}>
         {award.title}
@@ -32,13 +19,10 @@ function AwardCard({ award, delay }: { award: SeriesAward; delay: number }) {
       <p className="font-serif font-bold text-[24px] text-ink mb-1">
         {award.playerName}
       </p>
-      {showDetail && description && (
-        <p className="font-body italic text-[12px] text-text-dim mt-2">
-          {description}
+      {award.detail && (
+        <p className="font-body italic text-[12px] text-text-dim mt-1">
+          {award.detail}
         </p>
-      )}
-      {description && !showDetail && (
-        <p className="font-sans text-[10px] text-text-muted mt-1">tap for details</p>
       )}
     </div>
   );
