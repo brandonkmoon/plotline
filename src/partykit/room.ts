@@ -1069,12 +1069,20 @@ export default class RoomServer implements Party.Server {
       ? this.gameState.players.find((p) => p.id === senderPlayerId)
       : null;
 
-    // In competitive mid-series, the host can advance directly without
-    // queueing — the series continuation is automatic.
+    const isHost = senderPlayerId === this.gameState.hostId;
     const isMidSeries = this.seriesState &&
       this.seriesState.currentGameNumber < this.seriesState.totalGames;
-    const isHost = senderPlayerId === this.gameState.hostId;
+    const isFinalCompetitive = this.seriesState &&
+      this.seriesState.currentGameNumber >= this.seriesState.totalGames;
 
+    // Final competitive game: host force-advance → broadcast awards
+    if (isFinalCompetitive && isHost) {
+      this.autoAdvanceAfterReady();
+      return;
+    }
+
+    // In competitive mid-series, the host can advance directly without
+    // queueing — the series continuation is automatic.
     if (isMidSeries && isHost) {
       // Auto-queue all connected players for the next game
       this.gameState = {
@@ -1195,6 +1203,41 @@ export default class RoomServer implements Party.Server {
     const action: GameAction = { type: "PLAYER_QUEUED_NEXT", playerId };
     this.gameState = gameReducer(this.gameState, action);
     this.broadcastStateUpdate();
+
+    // In competitive mode, check if all connected players are ready.
+    // If so, auto-advance: mid-series → lobby, final game → awards.
+    if (this.gameState.gameMode === "competitive" && this.seriesState) {
+      const connectedPlayers = this.gameState.players.filter((p) => p.isConnected);
+      const allReady = connectedPlayers.every((p) => p.queuedForNextGame);
+      if (allReady && connectedPlayers.length > 0) {
+        this.autoAdvanceAfterReady();
+      }
+    }
+  }
+
+  /** Called when all connected players are ready after a competitive game. */
+  private autoAdvanceAfterReady() {
+    if (!this.gameState || !this.seriesState) return;
+
+    const isFinalGame =
+      this.seriesState.currentGameNumber >= this.seriesState.totalGames;
+
+    if (isFinalGame) {
+      // Broadcast awards — they were already computed in computeAndBroadcastScores
+      this.broadcast({
+        type: "SERIES_AWARDS",
+        awards: this.seriesState.awards,
+        finalStandings: { ...this.seriesState.cumulativePoints },
+      } as ServerMessage);
+    } else {
+      // Mid-series: advance everyone to lobby for the next game.
+      // Simulate the host calling playAgain.
+      const hostConn = [...this.connectionToPlayer.entries()]
+        .find(([, pid]) => pid === this.gameState!.hostId);
+      if (hostConn) {
+        this.handlePlayAgain(this.room.getConnection(hostConn[0])!);
+      }
+    }
   }
 
   private handleCreateNextRoom(sender: Party.Connection) {
@@ -2023,15 +2066,11 @@ export default class RoomServer implements Party.Server {
       seriesStandings: { ...this.seriesState.cumulativePoints },
     });
 
-    // If final game, compute and broadcast awards
+    // If final game, compute awards but don't broadcast yet —
+    // wait for all players to ready up or host to force-advance.
     if (isFinalGame) {
       const awards = this.computeSeriesAwards();
       this.seriesState.awards = awards;
-      this.broadcast({
-        type: "SERIES_AWARDS",
-        awards,
-        finalStandings: { ...this.seriesState.cumulativePoints },
-      });
     }
   }
 

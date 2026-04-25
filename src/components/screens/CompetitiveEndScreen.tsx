@@ -78,13 +78,15 @@ export default function CompetitiveEndScreen() {
   const [showAwards, setShowAwards] = useState(true);
   const [expandedStory, setExpandedStory] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
-  const [advanceCountdown, setAdvanceCountdown] = useState(15);
+  const READY_TIMER_SECONDS = 90;
+  const [secondsLeft, setSecondsLeft] = useState(READY_TIMER_SECONDS);
+  const timerExpired = secondsLeft <= 0;
 
   useEffect(() => {
-    if (advanceCountdown <= 0) return;
-    const t = setTimeout(() => setAdvanceCountdown((c) => c - 1), 1000);
+    if (secondsLeft <= 0) return;
+    const t = setTimeout(() => setSecondsLeft((c) => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [advanceCountdown]);
+  }, [secondsLeft]);
 
   const handleShare = (story: { storyIndex: number; title?: string; sections?: { text: string }[] }) => {
     const full = archiveUrl
@@ -306,50 +308,49 @@ export default function CompetitiveEndScreen() {
 
       <hr className="rule" />
 
-      {/* Actions */}
-      {isFinalGame ? (
-        <div className="flex flex-col gap-3">
-          {room.nextRoomCode ? (
-            <>
-              <div className="border border-ink px-4 py-3 text-center">
-                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">
-                  New Room Code
+      {/* Ready flow */}
+      {(() => {
+        const connectedPlayers = room.players.filter((p) => p.isConnected);
+        const readyCount = connectedPlayers.filter((p) => p.queuedForNextGame).length;
+        const isReady = currentPlayer?.queuedForNextGame;
+
+        return (
+          <>
+            <div className="text-center mb-4">
+              {!isReady ? (
+                <Button variant="primary" onClick={() => queueNextGame()}>
+                  Ready
+                </Button>
+              ) : (
+                <p className="font-sans text-[13px] text-text-muted">
+                  &#10003; You&rsquo;re ready
                 </p>
-                <p className="font-serif font-bold text-[22px] text-ink tracking-widest">
-                  {room.nextRoomCode}
-                </p>
-              </div>
-              <Button variant="primary" onClick={() => {
-                const name = currentPlayer?.name ?? "";
-                if (name) {
-                  try { sessionStorage.setItem(`plotline.nextJoin.${room.nextRoomCode}`, name); } catch {}
-                }
-                router.push(`/room/${room.nextRoomCode}`);
-              }}>
-                Join New Series
+              )}
+
+              <p className="font-sans text-[12px] text-text-muted mt-3">
+                {readyCount}/{connectedPlayers.length} ready
+                {!timerExpired && (
+                  <span className="ml-2">
+                    &middot; {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {timerExpired && isHost && (
+              <Button variant="secondary" onClick={() => playAgain()}>
+                {isFinalGame ? "Show Awards" : `Start Game ${gameNumber + 1} of ${room.series?.totalGames ?? "?"}`}
               </Button>
-            </>
-          ) : isHost ? (
-            <Button variant="secondary" onClick={() => createNextRoom()}>
-              New Series
-            </Button>
-          ) : (
-            <p className="font-body italic text-[14px] text-text-muted text-center">
-              The host can start a new series when everyone&rsquo;s ready.
-            </p>
-          )}
-        </div>
-      ) : isHost ? (
-        <Button variant="primary" onClick={() => playAgain()} disabled={advanceCountdown > 0}>
-          {advanceCountdown > 0
-            ? `Next Game in ${advanceCountdown}s`
-            : `Next Game (${gameNumber + 1} of ${room.series?.totalGames ?? "?"})`}
-        </Button>
-      ) : (
-        <p className="font-body italic text-[16px] text-text-dim text-center">
-          Waiting for the host...
-        </p>
-      )}
+            )}
+
+            {timerExpired && !isHost && (
+              <p className="font-body italic text-[14px] text-text-muted text-center">
+                Waiting for the host&hellip;
+              </p>
+            )}
+          </>
+        );
+      })()}
 
       <PlayerList players={room.players} playerStatuses={playerStatuses} />
     </div>
