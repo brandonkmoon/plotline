@@ -293,10 +293,12 @@ export default function RevealScreen() {
 
         {allRevealed && (
           <div className="mt-8">
-            {room.gameMode === "competitive" && !room.votingState ? (
-              <Button variant="primary" onClick={() => startVoting()}>
-                Start Voting
-              </Button>
+            {room.gameMode === "competitive" ? (
+              !room.votingState && (
+                <Button variant="primary" onClick={() => startVoting()}>
+                  Start Voting
+                </Button>
+              )
             ) : (
               <Button variant="secondary" onClick={handleNextStory}>
                 {isFinalStory ? "That\u2019s a Wrap \u2192" : "Next Story \u2192"}

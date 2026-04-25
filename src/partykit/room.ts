@@ -1827,7 +1827,7 @@ export default class RoomServer implements Party.Server {
   // Host taps "Next Story" during or after voting. Tallies whatever
   // votes are in, stores results, marks story as revealed, advances.
   // One action — no intermediate "closed" state.
-  private handleAdvanceVoting(sender: Party.Connection) {
+  private async handleAdvanceVoting(sender: Party.Connection) {
     if (!this.gameState) return;
     if (this.gameState.state !== "REVEAL") return;
     if (this.gameState.votingState?.phase !== "voting") return;
@@ -1924,12 +1924,12 @@ export default class RoomServer implements Party.Server {
     this.broadcast({ type: "VOTING_CLOSED", storyIndex } as ServerMessage);
 
     // Now advance — mark story revealed, clear voting, move to next
-    this.advanceAfterVoting();
+    await this.advanceAfterVoting();
   }
 
   // Marks the current story as revealed, clears voting state, and
   // advances to the next story in the shuffled reveal order.
-  private advanceAfterVoting() {
+  private async advanceAfterVoting() {
     if (!this.gameState || this.gameState.state !== "REVEAL") return;
 
     const storyIndex = this.revealStoryIndex;
@@ -1961,7 +1961,8 @@ export default class RoomServer implements Party.Server {
 
     // If all stories revealed → END
     if (this.gameState.state === "END") {
-      this.archiveRoom();
+      // Await archive so Save Image works immediately on scores screen
+      await this.archiveRoom();
       if (this.gameState.gameMode === "competitive") {
         this.computeAndBroadcastScores();
       }
@@ -2207,6 +2208,46 @@ export default class RoomServer implements Party.Server {
         playerId: bestLineAuthorId,
         playerName: nameOf(bestLineAuthorId),
         detail: bestLineText,
+      });
+    }
+
+    // Popularity — the player name featured as a character in the most stories.
+    // Character names are in slots 0 and 1. The response text starts with the
+    // player's name (e.g., "Brandon — a retired detective"). Count appearances
+    // across all completed games.
+    const nameCounts: Record<string, number> = {};
+    const extractCharName = (text: string) => {
+      for (const sep of [" \u2014 ", " \u2013 ", " - "]) {
+        const idx = text.indexOf(sep);
+        if (idx !== -1) return text.slice(0, idx).trim().toLowerCase();
+      }
+      return text.trim().toLowerCase();
+    };
+    for (const game of this.seriesState.completedGames) {
+      // Each story in each game
+      for (const result of game.voteResults) {
+        for (const slotIdx of [0, 1]) {
+          const charText = result.lineTexts[slotIdx];
+          if (!charText) continue;
+          const charName = extractCharName(charText);
+          // Match against player names (case-insensitive)
+          const matchedPlayer = players.find(
+            (p) => p.name.toLowerCase() === charName
+          );
+          if (matchedPlayer) {
+            nameCounts[matchedPlayer.id] =
+              (nameCounts[matchedPlayer.id] ?? 0) + 1;
+          }
+        }
+      }
+    }
+    const popularId = findTop(nameCounts);
+    if (popularId) {
+      awards.push({
+        id: "popularity",
+        title: "Popularity",
+        playerId: popularId,
+        playerName: nameOf(popularId),
       });
     }
 
