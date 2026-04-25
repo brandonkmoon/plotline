@@ -78,6 +78,7 @@ export default function CompetitiveEndScreen() {
   const [showAwards, setShowAwards] = useState(true);
   const [expandedStory, setExpandedStory] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [creatingLobby, setCreatingLobby] = useState(false);
   const READY_TIMER_SECONDS = 90;
   const [secondsLeft, setSecondsLeft] = useState(READY_TIMER_SECONDS);
   const timerExpired = secondsLeft <= 0;
@@ -87,6 +88,32 @@ export default function CompetitiveEndScreen() {
     const t = setTimeout(() => setSecondsLeft((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [secondsLeft]);
+
+  // Auto-navigate when new lobby is created (same as classic EndScreen)
+  useEffect(() => {
+    if (creatingLobby && room?.nextRoomCode) {
+      const name = currentPlayer?.name ?? "";
+      if (name) {
+        try { sessionStorage.setItem(`plotline.nextJoin.${room.nextRoomCode}`, name); } catch {}
+      }
+      router.push(`/room/${room.nextRoomCode}`);
+    }
+  }, [creatingLobby, room?.nextRoomCode, router, currentPlayer]);
+
+  const handleCreateLobby = () => {
+    if (creatingLobby) return;
+    setCreatingLobby(true);
+    createNextRoom();
+  };
+
+  const handleJoinLobby = () => {
+    if (!room?.nextRoomCode) return;
+    const name = currentPlayer?.name ?? "";
+    if (name) {
+      try { sessionStorage.setItem(`plotline.nextJoin.${room.nextRoomCode}`, name); } catch {}
+    }
+    router.push(`/room/${room.nextRoomCode}`);
+  };
 
   const handleShare = (story: { storyIndex: number; title?: string; sections?: { text: string }[] }) => {
     const full = archiveUrl
@@ -159,8 +186,38 @@ export default function CompetitiveEndScreen() {
           <AwardCard key={award.id} award={award} index={i} />
         ))}
 
-        <div className="mt-6">
-          <Button variant="primary" onClick={() => setShowAwards(false)}>
+        <hr className="rule" />
+
+        <div className="flex flex-col gap-3">
+          {room.nextRoomCode ? (
+            <>
+              <Button variant="primary" onClick={handleJoinLobby}>
+                Join Lobby &rarr;
+              </Button>
+              <div className="border border-ink px-4 py-3 text-center">
+                <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">
+                  New Room Code
+                </p>
+                <p className="font-serif font-bold text-[22px] text-ink tracking-widest">
+                  {room.nextRoomCode}
+                </p>
+              </div>
+              <p className="font-body italic text-[13px] text-text-muted text-center">
+                Share this code so friends can join
+              </p>
+            </>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={handleCreateLobby}>
+                {creatingLobby ? "Creating lobby\u2026" : "Play Again"}
+              </Button>
+              <p className="font-body italic text-[13px] text-text-muted text-center">
+                Start a fresh lobby &mdash; others can join with the new code
+              </p>
+            </>
+          )}
+
+          <Button variant="secondary" onClick={() => setShowAwards(false)}>
             See Scoreboard
           </Button>
         </div>
