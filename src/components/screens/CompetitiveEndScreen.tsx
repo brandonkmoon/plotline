@@ -46,11 +46,13 @@ function ScoreRow({
   rank,
   name,
   points,
+  gamePoints,
   isCurrentPlayer,
 }: {
   rank: number;
   name: string;
   points: number;
+  gamePoints?: number;
   isCurrentPlayer: boolean;
 }) {
   return (
@@ -65,9 +67,14 @@ function ScoreRow({
         </span>
         <span className="font-body text-[17px] text-ink">{name}</span>
       </div>
-      <span className="font-serif font-bold text-[18px] text-ink">
-        {points}
-      </span>
+      <div className="flex items-center gap-2">
+        {gamePoints !== undefined && gamePoints > 0 && (
+          <span className="font-sans text-[11px] text-text-muted">+{gamePoints}</span>
+        )}
+        <span className="font-serif font-bold text-[18px] text-ink">
+          {points}
+        </span>
+      </div>
     </div>
   );
 }
@@ -313,14 +320,39 @@ export default function CompetitiveEndScreen() {
     );
   }
 
+  // Find this game's top performer
+  const topPerformerEntry = Object.entries(scores.points)
+    .sort(([, a], [, b]) => b - a)[0];
+  const topPerformerId = topPerformerEntry?.[0];
+  const topPerformerPts = topPerformerEntry?.[1] ?? 0;
+  const topPerformerName = room.players.find((p) => p.id === topPerformerId)?.name ?? "";
+
   return (
     <div className="screen anim-fade-in">
-      <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-2">
-        {isFinalGame ? "Final Standings" : `Game ${gameNumber} of ${room.series?.totalGames ?? "?"}`}
+      <p className="font-serif font-medium text-[13px] uppercase tracking-[3px] text-text-muted text-center mb-1">
+        Intermission
       </p>
-      <h1 className="font-serif font-bold text-[28px] text-ink text-center mb-1">
-        Scoreboard
-      </h1>
+      <p className="font-body italic text-[14px] text-text-dim text-center mb-1">
+        The scores so far.
+      </p>
+      <p className="font-sans text-[11px] uppercase tracking-[2px] text-text-muted text-center mb-4">
+        Game {gameNumber} of {room.series?.totalGames ?? "?"}
+      </p>
+
+      {/* Top Performer this game */}
+      {topPerformerName && topPerformerPts > 0 && (
+        <div className="text-center border-2 border-ink py-3 px-4 mb-2">
+          <p className="font-sans text-[10px] uppercase tracking-[2px] text-text-muted mb-1">
+            Top Performer
+          </p>
+          <p className="font-serif font-bold text-[22px] text-ink">
+            {topPerformerName}
+          </p>
+          <p className="font-sans text-[12px] text-text-dim">
+            +{topPerformerPts} pts this game
+          </p>
+        </div>
+      )}
 
       {/* Line of the Game */}
       {scores.lineOfTheGame && (
@@ -342,29 +374,19 @@ export default function CompetitiveEndScreen() {
 
       <hr className="rule" />
 
-      {/* Ranked scores */}
-      <div className="mb-6">
+      {/* Ranked scores with inline +pts */}
+      <div className="mb-4">
         {sortedPlayers.map((player, i) => (
           <ScoreRow
             key={player.id}
             rank={i + 1}
             name={player.name}
             points={standings[player.id] ?? 0}
+            gamePoints={!isFinalGame ? scores.points[player.id] : undefined}
             isCurrentPlayer={player.id === currentPlayer?.id}
           />
         ))}
       </div>
-
-      {/* This game's points (if not final, show both game + cumulative) */}
-      {!isFinalGame && (
-        <p className="font-sans text-[12px] text-text-muted text-center mb-4">
-          This game: {Object.entries(scores.points)
-            .filter(([, pts]) => pts > 0)
-            .sort(([, a], [, b]) => b - a)
-            .map(([id, pts]) => `${room.players.find((p) => p.id === id)?.name ?? "?"} +${pts}`)
-            .join(", ")}
-        </p>
-      )}
 
       {/* Story cards with author names */}
       <p className="font-serif font-medium text-[14px] uppercase tracking-[3px] text-text-muted mb-4">
@@ -452,6 +474,13 @@ export default function CompetitiveEndScreen() {
       })}
 
       <hr className="rule" />
+
+      {/* Closing line */}
+      {!isFinalGame && (
+        <p className="font-body italic text-[15px] text-text-dim text-center mb-6">
+          On to the next act.
+        </p>
+      )}
 
       {/* Ready flow */}
       {(() => {
