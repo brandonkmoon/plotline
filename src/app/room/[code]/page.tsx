@@ -30,7 +30,7 @@ function RoomCodeBadge() {
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({ title: "Join my Plotline game", text: `Room code: ${room.code}`, url: joinUrl }).catch(() => {});
+      navigator.share({ title: "Join my Plotline game", text: "Join my Plotline game!", url: joinUrl }).catch(() => {});
     } else {
       navigator.clipboard.writeText(joinUrl);
     }
@@ -416,7 +416,7 @@ function InfoStrip({
     if (navigator.share) {
       navigator.share({
         title: "Join my Plotline game",
-        text: `Join the show! Room code: ${code}`,
+        text: "Join my Plotline game!",
         url: joinUrl,
       }).catch(() => {});
       setFlash(true);
