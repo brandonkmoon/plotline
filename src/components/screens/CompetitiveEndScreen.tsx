@@ -520,7 +520,7 @@ export default function CompetitiveEndScreen() {
                     onClick={() => handleSaveImage(story.storyIndex)}
                     className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
                   >
-                    {savingImage === story.storyIndex ? "Saving..." : "Save Image ↗"}
+                    {savingImage === story.storyIndex ? "Saving..." : "Share Image ↗"}
                   </button>
                 </div>
               </div>
