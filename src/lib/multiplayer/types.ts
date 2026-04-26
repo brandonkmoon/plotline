@@ -27,7 +27,7 @@ export type ClientMessage =
       previousHostName?: string;
       isPremium?: boolean;
     }
-  | { type: "START_GAME"; mode?: "classic" | "competitive"; seriesLength?: 3 | 5 }
+  | { type: "START_GAME"; mode?: "classic" | "competitive"; seriesLength?: 1 | 2 | 3 | 4 | 5 }
   | {
       type: "SUBMIT_PROMPT";
       storyIndex: number;

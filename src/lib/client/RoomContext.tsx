@@ -46,7 +46,7 @@ interface RoomContextValue {
     existingPlayerId?: string
   ) => Promise<string>;
   disconnect: () => void;
-  startGame: (mode?: "classic" | "competitive", seriesLength?: 3 | 5) => void;
+  startGame: (mode?: "classic" | "competitive", seriesLength?: 1 | 2 | 3 | 4 | 5) => void;
   submitPrompt: (
     storyIndex: number,
     promptIndex: number,

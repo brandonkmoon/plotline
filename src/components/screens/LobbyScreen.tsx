@@ -12,11 +12,11 @@ function ModeSheet({
   onClose,
   isPremium,
 }: {
-  onStart: (mode: "classic" | "competitive", seriesLength?: 3 | 5) => void;
+  onStart: (mode: "classic" | "competitive", seriesLength?: 1 | 2 | 3 | 4 | 5) => void;
   onClose: () => void;
   isPremium: boolean;
 }) {
-  const [seriesLength, setSeriesLength] = useState<3 | 5>(3);
+  const [seriesLength, setSeriesLength] = useState<1 | 2 | 3 | 4 | 5>(3);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50">
@@ -65,28 +65,24 @@ function ModeSheet({
           </ul>
 
           {/* Series length picker */}
-          <div className="flex gap-3 mt-4 mb-4">
-            <button
-              onClick={() => setSeriesLength(3)}
-              className={`flex-1 py-2 font-sans text-[13px] uppercase tracking-[2px] border-2 transition-colors ${
-                seriesLength === 3
-                  ? "bg-ink text-white border-ink"
-                  : "bg-transparent text-ink border-ink hover:bg-ink/5"
-              }`}
-            >
-              3 Games
-            </button>
-            <button
-              onClick={() => setSeriesLength(5)}
-              className={`flex-1 py-2 font-sans text-[13px] uppercase tracking-[2px] border-2 transition-colors ${
-                seriesLength === 5
-                  ? "bg-ink text-white border-ink"
-                  : "bg-transparent text-ink border-ink hover:bg-ink/5"
-              }`}
-            >
-              5 Games
-            </button>
+          <div className="flex gap-2 mt-4 mb-4">
+            {([1, 2, 3, 4, 5] as const).map((n) => (
+              <button
+                key={n}
+                onClick={() => setSeriesLength(n)}
+                className={`flex-1 py-2 font-sans text-[13px] uppercase tracking-[1px] border-2 transition-colors ${
+                  seriesLength === n
+                    ? "bg-ink text-white border-ink"
+                    : "bg-transparent text-ink border-ink hover:bg-ink/5"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
           </div>
+          <p className="font-sans text-[11px] text-text-muted text-center mb-4">
+            {seriesLength === 1 ? "1 game" : `${seriesLength} games`}
+          </p>
 
           {isPremium ? (
             <Button
@@ -122,7 +118,7 @@ export default function LobbyScreen() {
 
   const handleStart = (
     mode: "classic" | "competitive",
-    seriesLength?: 3 | 5
+    seriesLength?: 1 | 2 | 3 | 4 | 5
   ) => {
     setShowModeSheet(false);
     trackEvent(mode === "competitive" ? "series_started" : "game_started");
