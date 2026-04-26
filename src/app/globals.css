@@ -225,6 +225,15 @@ body {
   50%       { opacity: 0.65; }
 }
 
+@keyframes timerUrgent {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+
+.timer-urgent {
+  animation: timerUrgent 0.8s ease-in-out infinite;
+}
+
 /* ── Prompt screen theatrical header entrance ──────────────── */
 
 /* Header block (eyebrow + prompt text) floats in at center,

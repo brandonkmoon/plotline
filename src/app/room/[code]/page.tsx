@@ -431,7 +431,11 @@ function InfoStrip({
 
       {timerDisplay && (
         <span
-          className="font-sans text-[13px] font-semibold tracking-[1px]"
+          className={`font-sans font-semibold tracking-[1px] transition-all duration-300 origin-center ${
+            totalSeconds !== null && totalSeconds <= 10
+              ? "text-[22px] timer-urgent"
+              : "text-[13px]"
+          }`}
           style={{ color: timerColor }}
         >
           {timerDisplay}
