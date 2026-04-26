@@ -436,11 +436,12 @@ function InfoStrip({
         const activeColor = isUrgent ? "#dc2626" : isWarning ? "#facc15" : timerColor;
         return (
           <span
-            className={`absolute left-1/2 top-0 z-20 flex items-center justify-center font-sans font-semibold tracking-[1px] transition-all duration-300 ${
+            className={`absolute left-1/2 z-20 flex items-center justify-center font-sans font-semibold tracking-[1px] transition-all duration-300 ${
               (isUrgent || isWarning) ? (isUrgent ? "timer-urgent" : "timer-warning") : ""
             }`}
             style={{
-              transform: "translateX(-50%)",
+              top: (isUrgent || isWarning) ? 0 : "50%",
+              transform: (isUrgent || isWarning) ? "translateX(-50%)" : "translate(-50%, -50%)",
               fontSize: timerFontSize,
               color: activeColor,
               ...(isUrgent ? {
@@ -451,9 +452,7 @@ function InfoStrip({
                 backgroundColor: "#1a1a1a",
                 padding: "4px 12px 6px",
                 boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-              } : {
-                padding: "6px 0",
-              }),
+              } : {}),
             }}
           >
             {timerDisplay}
