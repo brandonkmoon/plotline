@@ -189,9 +189,32 @@ export default function CompetitiveEndScreen() {
     }
   };
 
-  const handleSaveImage = (storyIndex: number) => {
-    if (!room?.code) return;
-    window.open(`/api/og/${room.code}/${storyIndex}`, "_blank");
+  const [savingImage, setSavingImage] = useState<number | null>(null);
+
+  const handleSaveImage = async (storyIndex: number) => {
+    if (!room?.code || savingImage !== null) return;
+    setSavingImage(storyIndex);
+    try {
+      const res = await fetch(`/api/og/${room.code}/${storyIndex}`);
+      if (!res.ok) throw new Error("not ready");
+      const blob = await res.blob();
+      const file = new File([blob], `plotline-story-${storyIndex + 1}.png`, { type: "image/png" });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      window.open(`/api/og/${room.code}/${storyIndex}`, "_blank");
+    } finally {
+      setSavingImage(null);
+    }
   };
 
   if (!room || !gameScores) return null;
@@ -497,7 +520,7 @@ export default function CompetitiveEndScreen() {
                     onClick={() => handleSaveImage(story.storyIndex)}
                     className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
                   >
-                    Save Image ↗
+                    {savingImage === story.storyIndex ? "Saving..." : "Save Image ↗"}
                   </button>
                 </div>
               </div>

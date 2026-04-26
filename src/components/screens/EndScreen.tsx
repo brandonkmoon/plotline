@@ -127,10 +127,35 @@ export default function EndScreen() {
     }
   };
 
-  const handleSaveImage = (storyIndex: number) => {
-    if (!room?.code) return;
+  const [savingImage, setSavingImage] = useState<number | null>(null);
+
+  const handleSaveImage = async (storyIndex: number) => {
+    if (!room?.code || savingImage !== null) return;
     trackEvent("save_story_card");
-    window.open(`/api/og/${room.code}/${storyIndex}`, "_blank");
+    setSavingImage(storyIndex);
+    try {
+      const res = await fetch(`/api/og/${room.code}/${storyIndex}`);
+      if (!res.ok) throw new Error("not ready");
+      const blob = await res.blob();
+      const file = new File([blob], `plotline-story-${storyIndex + 1}.png`, { type: "image/png" });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        // Desktop fallback: trigger download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      // Image not ready or share cancelled — open in new tab as last resort
+      window.open(`/api/og/${room.code}/${storyIndex}`, "_blank");
+    } finally {
+      setSavingImage(null);
+    }
   };
 
   const toggleCard = (index: number) => {
@@ -229,7 +254,7 @@ export default function EndScreen() {
                           onClick={() => handleSaveImage(story.storyIndex)}
                           className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"
                         >
-                          {archived ? "Save Image ↗" : "Saving..."}
+                          {savingImage === story.storyIndex ? "Saving..." : "Save Image ↗"}
                         </button>
                       </div>
                     </div>
