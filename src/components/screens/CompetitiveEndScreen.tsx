@@ -11,9 +11,9 @@ const AWARD_DESCRIPTIONS: Record<string, string> = {
   "casting-director": "Most points earned on character introductions.",
   "scene-stealer": "Most points earned on settings and actions.",
   "speechwriter": "Most points earned on dialogue lines.",
-  "closer": "Most points earned on story endings.",
+  "closer": "Most points earned on scene endings.",
   "fan-favorite": "Received the most standing ovations.",
-  "popularity": "Appeared as a character in the most stories.",
+  "popularity": "Appeared as a character in the most scenes.",
 };
 
 function AwardCard({ award, delay }: { award: SeriesAward; delay: number }) {
@@ -176,8 +176,8 @@ export default function CompetitiveEndScreen() {
     const storyText = story.sections?.map((s) => s.text).join("\n\n") ?? "";
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator.share({
-        title: story.title ?? "A Plotline story",
-        text: `"${story.title}" — a story from Plotline\n\n${storyText}`,
+        title: story.title ?? "A Plotline scene",
+        text: `"${story.title}" — a scene from Plotline\n\n${storyText}`,
         ...(full ? { url: full } : {}),
       }).catch(() => {});
     } else {
@@ -444,9 +444,9 @@ export default function CompetitiveEndScreen() {
         ))}
       </div>
 
-      {/* Story cards with author names */}
+      {/* Scene cards with author names */}
       <p className="font-serif font-medium text-[14px] uppercase tracking-[3px] text-text-muted mb-4">
-        Stories
+        Scenes
       </p>
       {(room.revealOrder
         ? room.revealOrder.map((idx) => assembledStories.find((s) => s.storyIndex === idx)).filter(Boolean)
@@ -463,7 +463,7 @@ export default function CompetitiveEndScreen() {
             >
               <div className="flex flex-col pr-4">
                 <span className="font-sans text-[10px] uppercase tracking-[2px] mb-0.5" style={{ color: "rgba(26,26,26,0.5)" }}>
-                  Story {i + 1}
+                  Scene {i + 1}
                 </span>
                 <span className="font-serif font-bold text-[15px] text-ink leading-snug">
                   {story.title}
@@ -514,7 +514,7 @@ export default function CompetitiveEndScreen() {
                     onClick={() => handleShare(story)}
                     className="font-sans text-[12px] uppercase tracking-[2px] text-ink hover:text-text-dim transition-colors"
                   >
-                    Share Story ↗
+                    Share Scene ↗
                   </button>
                   <button
                     onClick={() => handleSaveImage(story.storyIndex)}

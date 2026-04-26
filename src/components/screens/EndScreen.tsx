@@ -113,8 +113,8 @@ export default function EndScreen() {
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator
         .share({
-          title: story.title ?? "A Plotline story",
-          text: `"${story.title}" — a story from Plotline\n\n${storyText}`,
+          title: story.title ?? "A Plotline scene",
+          text: `"${story.title}" — a scene from Plotline\n\n${storyText}`,
           ...(full ? { url: full } : {}),
         })
         .catch(() => {});
@@ -173,7 +173,7 @@ export default function EndScreen() {
           That&apos;s a Wrap
         </h1>
         <p className="font-body italic text-[16px] text-text-dim">
-          {storyCount} {storyCount === 1 ? "story" : "stories"} &middot;{" "}
+          {storyCount} {storyCount === 1 ? "scene" : "scenes"} &middot;{" "}
           {totalPlayers} {totalPlayers === 1 ? "player" : "players"}
         </p>
       </div>
@@ -210,7 +210,7 @@ export default function EndScreen() {
                   >
                     <div className="flex flex-col pr-4">
                       <span className="font-sans text-[10px] uppercase tracking-[2px] mb-0.5" style={{ color: "rgba(26,26,26,0.5)" }}>
-                        Story {i + 1} of {storyCount}
+                        Scene {i + 1} of {storyCount}
                       </span>
                       <span className="font-serif font-bold text-[15px] text-ink leading-snug">
                         {story.title}
@@ -248,7 +248,7 @@ export default function EndScreen() {
                           onClick={() => handleShare(story)}
                           className="font-sans text-[12px] uppercase tracking-[2px] text-ink hover:text-text-dim transition-colors"
                         >
-                          Share Story ↗
+                          Share Scene ↗
                         </button>
                         <button
                           onClick={() => handleSaveImage(story.storyIndex)}

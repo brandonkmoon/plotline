@@ -148,12 +148,12 @@ export default function RevealScreen() {
             Up Next
           </p>
           <h1 className="font-serif font-bold text-[24px] text-ink mb-1">
-            Story {nextStoryNumber} of {totalStories}
+            Scene {nextStoryNumber} of {totalStories}
           </h1>
           <p className="font-body italic text-[16px] text-text-dim">
             {nextReaderName
-              ? `${nextReaderName} will read the next story aloud`
-              : "Get ready for the next story"}
+              ? `${nextReaderName} will read the next scene aloud`
+              : "Get ready for the next scene"}
           </p>
         </div>
         <PendingPlayersBadge />
@@ -176,7 +176,7 @@ export default function RevealScreen() {
             Now Playing
           </p>
           <h1 className="font-serif font-bold text-[24px] text-ink text-center mb-1">
-            Story {storiesAlreadyRevealed + 1} of {totalStories}
+            Scene {storiesAlreadyRevealed + 1} of {totalStories}
           </h1>
           {story.title && (
             <p className="font-serif font-bold text-[21px] text-ink text-center mb-1">
@@ -230,7 +230,7 @@ export default function RevealScreen() {
           Now Playing
         </p>
         <h1 className="font-serif font-bold text-[24px] text-ink text-center mb-1">
-          Story {storiesAlreadyRevealed + 1} of {totalStories}
+          Scene {storiesAlreadyRevealed + 1} of {totalStories}
         </h1>
         {story.title && (
           <p className="font-serif font-bold text-[21px] text-ink text-center mb-1">
@@ -301,7 +301,7 @@ export default function RevealScreen() {
               )
             ) : (
               <Button variant="secondary" onClick={handleNextStory}>
-                {isFinalStory ? "That\u2019s a Wrap \u2192" : "Next Story \u2192"}
+                {isFinalStory ? "That\u2019s a Wrap \u2192" : "Next Scene \u2192"}
               </Button>
             )}
           </div>
