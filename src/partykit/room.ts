@@ -181,22 +181,29 @@ export default class RoomServer implements Party.Server {
 
   // Persist critical state to durable storage after every mutation.
   // Fire-and-forget — we never block the synchronous game loop on I/O.
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Debounced state save — coalesces rapid writes into one storage put. */
   private saveState(): void {
-    if (!this.gameState) {
-      this.room.storage.deleteAll().catch(() => {});
-      return;
-    }
-    this.room.storage
-      .put("snapshot", {
-        gameState: this.gameState,
-        playerStatuses: Object.fromEntries(this.playerStatuses),
-        roundStartedAt: this.roundStartedAt,
-        revealStoryIndex: this.revealStoryIndex,
-        revealedLineCount: this.revealedLineCount,
-      })
-      .catch((err) => {
-        console.error("[room] Failed to save state:", err);
-      });
+    if (this.saveTimer) return; // already scheduled
+    this.saveTimer = setTimeout(() => {
+      this.saveTimer = null;
+      if (!this.gameState) {
+        this.room.storage.deleteAll().catch(() => {});
+        return;
+      }
+      this.room.storage
+        .put("snapshot", {
+          gameState: this.gameState,
+          playerStatuses: Object.fromEntries(this.playerStatuses),
+          roundStartedAt: this.roundStartedAt,
+          revealStoryIndex: this.revealStoryIndex,
+          revealedLineCount: this.revealedLineCount,
+        })
+        .catch((err) => {
+          console.error("[room] Failed to save state:", err);
+        });
+    }, 50); // 50ms debounce — coalesces back-to-back calls
   }
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
@@ -1336,7 +1343,7 @@ export default class RoomServer implements Party.Server {
     if (currentStatus === "submitted") return;
 
     this.playerStatuses.set(playerId, msg.status);
-    this.broadcastPlayerStatuses();
+    this.broadcastPlayerStatuses(true); // skip save — typing is ephemeral
   }
 
   // --- Timers ---
@@ -1700,8 +1707,8 @@ export default class RoomServer implements Party.Server {
     }
   }
 
-  private broadcastPlayerStatuses() {
-    this.saveState();
+  private broadcastPlayerStatuses(skipSave = false) {
+    if (!skipSave) this.saveState();
     const statuses: Record<string, PlayerStatus> = {};
     for (const [id, status] of this.playerStatuses) {
       statuses[id] = status;
