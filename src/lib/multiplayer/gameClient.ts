@@ -174,6 +174,18 @@ class GameClient {
   private playerName: string = "";
   private unknownPlayerRetries: number = 0;
   private readonly MAX_UNKNOWN_PLAYER_RETRIES = 2;
+
+  constructor() {
+    // When the tab becomes visible again, force reconnect immediately
+    // rather than waiting for PartySocket's heartbeat to detect the drop.
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && this.socket) {
+          this.socket.reconnect();
+        }
+      });
+    }
+  }
   private stateListeners: Set<StateCallback> = new Set();
   private statusListeners: Set<StatusCallback> = new Set();
   private errorListeners: Set<ErrorCallback> = new Set();
