@@ -540,13 +540,16 @@ function RoomContent() {
     if (!room) return <ConnectingView />;
 
     // Spectators (pending/late-join players) get contextual views:
-    // REVEAL → full non-reader RevealScreen (isReader fixed for null currentPlayer)
-    // END    → full EndScreen with spectator queue controls
-    // else   → SpectatorScreen (handles PLAYING + LOBBY/CREATED)
+    // REVEAL + voting → VotingScreen (read-only, can't vote)
+    // REVEAL           → RevealScreen (read-only)
+    // END              → EndScreen or CompetitiveEndScreen
+    // else             → SpectatorScreen (PLAYING / LOBBY / CREATED)
     if (isPending) {
       if (room.state === "REVEAL" && room.votingState) return <VotingScreen />;
       if (room.state === "REVEAL") return <RevealScreen />;
-      if (room.state === "END" || room.state === "DESTROYED") return <EndScreen />;
+      if (room.state === "END" || room.state === "DESTROYED") {
+        return room.gameMode === "competitive" ? <CompetitiveEndScreen /> : <EndScreen />;
+      }
       return <SpectatorScreen />;
     }
 
