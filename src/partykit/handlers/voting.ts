@@ -339,20 +339,24 @@ export function computeSeriesAwards(server: RoomServer): SeriesAward[] {
     return counts;
   };
 
+  const nameOf = (id: string) =>
+    players.find((p) => p.id === id)?.name ?? "Unknown";
+
+  // Find the player with the highest count. Ties broken alphabetically by name.
   const findTop = (counts: Record<string, number>) => {
     let topId = "";
     let topCount = 0;
     for (const [id, count] of Object.entries(counts)) {
-      if (count > topCount) {
+      if (
+        count > topCount ||
+        (count === topCount && nameOf(id) < nameOf(topId))
+      ) {
         topCount = count;
         topId = id;
       }
     }
     return topId;
   };
-
-  const nameOf = (id: string) =>
-    players.find((p) => p.id === id)?.name ?? "Unknown";
 
   // Casting Director
   const castingCounts = pointsByPlayerByActs([0, 1]);

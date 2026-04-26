@@ -587,6 +587,11 @@ function makeMockPartyRoom(id: string, connections: Map<string, MockConnection>)
     getConnection(connId: string) {
       return connections.get(connId);
     },
+    storage: {
+      get: async () => null,
+      put: async () => {},
+      deleteAll: async () => {},
+    },
   } as any;
 }
 
