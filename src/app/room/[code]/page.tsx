@@ -433,7 +433,7 @@ function InfoStrip({
         <span
           className={`font-sans font-semibold tracking-[1px] transition-all duration-300 ${
             totalSeconds !== null && totalSeconds <= 10
-              ? "text-[20px] timer-urgent bg-ink px-3 py-1 -my-1 relative z-20"
+              ? "text-[20px] timer-urgent bg-ink px-3 pt-1 pb-2 -mb-2 relative z-20"
               : "text-[13px]"
           }`}
           style={{

@@ -232,6 +232,7 @@ body {
 
 .timer-urgent {
   animation: timerUrgent 0.8s ease-in-out infinite;
+  transform-origin: top center;
 }
 
 /* ── Prompt screen theatrical header entrance ──────────────── */
