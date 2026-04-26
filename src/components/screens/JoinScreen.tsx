@@ -6,9 +6,9 @@ import { gameClient } from "@/lib/multiplayer/gameClient";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
 
-export default function JoinScreen() {
+export default function JoinScreen({ initialCode }: { initialCode?: string } = {}) {
   const router = useRouter();
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(initialCode?.toUpperCase() ?? "");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

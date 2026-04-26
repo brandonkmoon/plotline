@@ -26,17 +26,22 @@ function RoomCodeBadge() {
 
   if (!room?.code) return null;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(room.code).then(() => {
-      setFlash(true);
-      setTimeout(() => setFlash(false), 1200);
-    });
+  const joinUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/join/${room.code}`;
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({ title: "Join my Plotline game", text: `Room code: ${room.code}`, url: joinUrl }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(joinUrl);
+    }
+    setFlash(true);
+    setTimeout(() => setFlash(false), 1200);
   };
 
   return (
     <button
-      onClick={handleCopy}
-      aria-label="Copy room code"
+      onClick={handleShare}
+      aria-label="Share room code"
       style={{
         position: "fixed",
         top: 12,
@@ -405,17 +410,29 @@ function InfoStrip({
     ? "#fceb00"
     : "#ffffff";
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code).then(() => {
+  const joinUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/join/${code}`;
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: "Join my Plotline game",
+        text: `Join the show! Room code: ${code}`,
+        url: joinUrl,
+      }).catch(() => {});
       setFlash(true);
       setTimeout(() => setFlash(false), 1200);
-    });
+    } else {
+      navigator.clipboard.writeText(joinUrl).then(() => {
+        setFlash(true);
+        setTimeout(() => setFlash(false), 1200);
+      });
+    }
   };
 
   return (
     <div
       className="bg-ink py-[6px] px-4 flex items-center justify-between cursor-pointer sticky top-0 z-10 relative overflow-visible"
-      onClick={handleCopy}
+      onClick={handleShare}
     >
       <div className="flex items-center gap-2">
         <div
@@ -460,8 +477,8 @@ function InfoStrip({
         );
       })()}
 
-      <span className={`font-sans text-[11px] font-semibold tracking-[2px] ${flash ? "text-white" : "text-white"}`}>
-        {flash ? "Copied!" : code}
+      <span className="font-sans text-[11px] font-semibold tracking-[2px] text-white flex items-center gap-1">
+        {flash ? "Shared!" : <>{code} <span className="text-[9px]">↗</span></>}
       </span>
     </div>
   );
