@@ -414,7 +414,7 @@ function InfoStrip({
 
   return (
     <div
-      className="bg-ink py-[6px] px-4 flex items-center justify-between cursor-pointer sticky top-0 z-10"
+      className="bg-ink py-[6px] px-4 flex items-center justify-between cursor-pointer sticky top-0 z-10 relative overflow-visible"
       onClick={handleCopy}
     >
       <div className="flex items-center gap-2">
@@ -432,30 +432,31 @@ function InfoStrip({
       {timerDisplay && (() => {
         const isUrgent = totalSeconds !== null && totalSeconds <= 10;
         const isWarning = totalSeconds !== null && totalSeconds > 10 && totalSeconds <= 30;
+        const timerFontSize = isUrgent ? 22 : isWarning ? 16 : 13;
+        const activeColor = isUrgent ? "#dc2626" : isWarning ? "#facc15" : timerColor;
         return (
-          <span className="relative z-20">
-            <span
-              className={`font-sans font-semibold tracking-[1px] relative z-10 ${
-                isUrgent ? "text-[13px]" : "text-[13px]"
-              }`}
-              style={{ color: isUrgent ? "#dc2626" : isWarning ? "#facc15" : timerColor }}
-            >
-              {timerDisplay}
-            </span>
-            {(isUrgent || isWarning) && (
-              <span
-                className={`absolute left-1/2 top-1/2 bg-ink z-0 ${
-                  isUrgent ? "timer-urgent" : "timer-warning"
-                }`}
-                style={{
-                  transform: "translate(-50%, -40%)",
-                  transformOrigin: "top center",
-                  width: isUrgent ? 64 : 52,
-                  height: isUrgent ? 36 : 28,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                }}
-              />
-            )}
+          <span
+            className={`absolute left-1/2 top-0 z-20 flex items-center justify-center font-sans font-semibold tracking-[1px] transition-all duration-300 ${
+              (isUrgent || isWarning) ? (isUrgent ? "timer-urgent" : "timer-warning") : ""
+            }`}
+            style={{
+              transform: "translateX(-50%)",
+              fontSize: timerFontSize,
+              color: activeColor,
+              ...(isUrgent ? {
+                backgroundColor: "#1a1a1a",
+                padding: "6px 16px 10px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+              } : isWarning ? {
+                backgroundColor: "#1a1a1a",
+                padding: "4px 12px 6px",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              } : {
+                padding: "6px 0",
+              }),
+            }}
+          >
+            {timerDisplay}
           </span>
         );
       })()}
