@@ -414,7 +414,7 @@ function InfoStrip({
 
   return (
     <div
-      className="bg-ink py-[6px] px-4 flex items-center justify-between cursor-pointer"
+      className="bg-ink py-[6px] px-4 flex items-center justify-between cursor-pointer sticky top-0 z-10"
       onClick={handleCopy}
     >
       <div className="flex items-center gap-2">
