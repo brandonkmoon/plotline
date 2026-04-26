@@ -33,6 +33,19 @@ const HOST_TRANSFER_TIMEOUT_MS = 30_000; // 30 seconds
 const ROOM_DESTROY_TIMEOUT_MS = 600_000; // 10 minutes
 const MAX_PLAYERS_FREE = 8;
 const MAX_PLAYERS_PREMIUM = 12;
+const MAX_NAME_LENGTH = 20;
+const MAX_RESPONSE_LENGTH = 500;
+
+/** Strip HTML tags and trim whitespace from user input. */
+function sanitize(input: string, maxLength: number): string {
+  return input
+    .replace(/<[^>]*>/g, "")  // strip HTML tags
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .trim()
+    .slice(0, maxLength);
+}
 
 export default class RoomServer implements Party.Server {
   room: Party.Room;
@@ -258,6 +271,14 @@ export default class RoomServer implements Party.Server {
       console.log(
         `[room] ← ${msg.type} from conn=${sender.id} player=${playerId}`
       );
+    }
+
+    // Sanitize user input at the boundary
+    if (msg.type === "JOIN_ROOM" && msg.playerName) {
+      msg = { ...msg, playerName: sanitize(msg.playerName, MAX_NAME_LENGTH) };
+    }
+    if (msg.type === "SUBMIT_PROMPT" && msg.response) {
+      msg = { ...msg, response: sanitize(msg.response, MAX_RESPONSE_LENGTH) };
     }
 
     switch (msg.type) {
