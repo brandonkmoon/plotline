@@ -52,101 +52,107 @@ export default function TitleScreen() {
   const ready = phase === "done";
 
   return (
-    <div className="screen">
-      {/* Generous whitespace — pushes buttons down the page.
-          clamp() keeps it reasonable on small screens. */}
-      <div style={{ height: "clamp(80px, 20vh, 200px)" }} />
-
-      {/* Create — primary */}
+    <>
+      {/* ── Hero: fills viewport below banner ── */}
       <div
-        className={`title-btn-wrapper ${
-          showButtons ? "title-btn-animate" : ""
-        }`}
+        className="screen flex flex-col"
+        style={{ minHeight: "calc(100vh - 100px)", paddingBottom: 0 }}
       >
-        <div style={{ pointerEvents: ready ? "auto" : "none" }}>
-          <Button variant="primary" onClick={handleCreate}>
-            <span className={`title-btn-text ${ready ? "visible" : ""}`}>
-              Create a Show
-            </span>
-          </Button>
-        </div>
-      </div>
+        {/* Push buttons to vertical center */}
+        <div className="flex-1" />
 
-      {/* Join — secondary, staggered 150ms */}
-      <div
-        className={`title-btn-wrapper mt-3 ${
-          showButtons ? "title-btn-animate title-btn-delay" : ""
-        }`}
-      >
-        <div style={{ pointerEvents: ready ? "auto" : "none" }}>
-          <Button variant="secondary" onClick={handleJoin}>
-            <span className={`title-btn-text ${ready ? "visible" : ""}`}>
-              Join a Show
-            </span>
-          </Button>
+        {/* Create — primary */}
+        <div
+          className={`title-btn-wrapper ${
+            showButtons ? "title-btn-animate" : ""
+          }`}
+        >
+          <div style={{ pointerEvents: ready ? "auto" : "none" }}>
+            <Button variant="primary" onClick={handleCreate}>
+              <span className={`title-btn-text ${ready ? "visible" : ""}`}>
+                Create a Show
+              </span>
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Rejoin prompt — shown when a game is in progress */}
-      {rejoinInfo && (
+        {/* Join — secondary, staggered 150ms */}
         <div
           className={`title-btn-wrapper mt-3 ${
             showButtons ? "title-btn-animate title-btn-delay" : ""
           }`}
-          style={{ transitionDelay: showButtons ? "300ms" : "0ms" }}
         >
           <div style={{ pointerEvents: ready ? "auto" : "none" }}>
-            <button
-              onClick={() => router.push(`/room/${rejoinInfo.code}`)}
-              className="w-full border border-ink px-6 py-3 font-sans text-[13px] uppercase tracking-[2px] text-text-dim hover:text-ink hover:bg-ink/5 transition-colors"
-            >
+            <Button variant="secondary" onClick={handleJoin}>
               <span className={`title-btn-text ${ready ? "visible" : ""}`}>
-                Rejoin{" "}
-                {rejoinInfo.name ? `as ${rejoinInfo.name} · ` : ""}
-                {rejoinInfo.code}
+                Join a Show
               </span>
-            </button>
+            </Button>
           </div>
         </div>
-      )}
 
-      {/* Supporting text — opacity-only fade, staggered after buttons settle */}
-      <p
-        className="mt-10 font-sans text-[11px] uppercase text-text-muted text-center tracking-[3px] transition-opacity duration-500"
-        style={{
-          opacity: ready ? 1 : 0,
-          transitionDelay: ready ? "200ms" : "0ms",
-        }}
-      >
-        4 &ndash; 12 Players
-      </p>
+        {/* Rejoin prompt — shown when a game is in progress */}
+        {rejoinInfo && (
+          <div
+            className={`title-btn-wrapper mt-3 ${
+              showButtons ? "title-btn-animate title-btn-delay" : ""
+            }`}
+            style={{ transitionDelay: showButtons ? "300ms" : "0ms" }}
+          >
+            <div style={{ pointerEvents: ready ? "auto" : "none" }}>
+              <button
+                onClick={() => router.push(`/room/${rejoinInfo.code}`)}
+                className="w-full border border-ink px-6 py-3 font-sans text-[13px] uppercase tracking-[2px] text-text-dim hover:text-ink hover:bg-ink/5 transition-colors"
+              >
+                <span className={`title-btn-text ${ready ? "visible" : ""}`}>
+                  Rejoin{" "}
+                  {rejoinInfo.name ? `as ${rejoinInfo.name} · ` : ""}
+                  {rejoinInfo.code}
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
 
-      {/* Down arrow — hints at scrollable content below */}
-      <div
-        className="flex justify-center mt-6 transition-opacity duration-500"
-        style={{ opacity: ready ? 1 : 0, transitionDelay: ready ? "400ms" : "0ms" }}
-      >
-        <span
-          className="text-text-muted animate-bounce"
-          style={{ fontSize: 20, lineHeight: 1 }}
-          aria-hidden="true"
+        {/* Supporting text */}
+        <p
+          className="mt-10 font-sans text-[11px] uppercase text-text-muted text-center tracking-[3px] transition-opacity duration-500"
+          style={{
+            opacity: ready ? 1 : 0,
+            transitionDelay: ready ? "200ms" : "0ms",
+          }}
         >
-          &darr;
-        </span>
+          4 &ndash; 12 Players
+        </p>
+
+        {/* Spacer — pushes arrow to bottom */}
+        <div className="flex-1" />
+
+        {/* Down arrow — pinned to bottom of viewport */}
+        <div
+          className="flex justify-center pb-6 transition-opacity duration-500"
+          style={{ opacity: ready ? 1 : 0, transitionDelay: ready ? "400ms" : "0ms" }}
+        >
+          <span
+            className="text-text-muted animate-bounce"
+            style={{ fontSize: 20, lineHeight: 1 }}
+            aria-hidden="true"
+          >
+            &darr;
+          </span>
+        </div>
       </div>
 
       {/* ── Below-fold marketing content ─────────────────────────── */}
-      <div
-        className="transition-opacity duration-700 mt-16"
-        style={{ opacity: ready ? 1 : 0, transitionDelay: ready ? "600ms" : "0ms" }}
-      >
+      <div className="screen" style={{ paddingTop: 0 }}>
+
         {/* Scene example */}
         <p className="font-sans text-[10px] uppercase tracking-[3px] text-text-muted text-center mb-6">
           A scene from last night.
         </p>
 
         <div className="border-t border-b border-ink py-8 space-y-3">
-          <p className="font-serif font-bold text-[22px] text-ink leading-tight mb-6">
+          <p className="font-serif font-bold text-[22px] text-ink leading-tight mb-6 text-center">
             &ldquo;Brenda and Gary at the Hospital&rdquo;
           </p>
 
@@ -168,23 +174,22 @@ export default function TitleScreen() {
           ))}
         </div>
 
-        <p className="font-sans text-[12px] uppercase tracking-[2px] text-ink text-center mt-6 mb-12">
+        <p className="font-sans text-[12px] uppercase tracking-[2px] text-ink text-center my-8">
           Different writers. Zero coordination.
         </p>
 
-        {/* Practical info */}
         <hr className="rule" />
-        <p className="font-body italic text-[15px] text-text-dim text-center leading-relaxed my-6">
-          4&ndash;12 players &middot; No app required &middot; Guests join from any browser
-        </p>
-        <p className="font-body text-[15px] text-ink text-center leading-relaxed mb-12">
+
+        {/* Occasions — left-aligned */}
+        <p className="font-body text-[15px] text-ink leading-relaxed my-8">
           Works for game nights, dinner parties, bachelorette parties, team offsites,
           family reunions, improv groups, and theater classes. Also: situations you
           haven&rsquo;t thought of yet.
         </p>
 
-        {/* Competitive mode */}
         <hr className="rule" />
+
+        {/* Competitive mode — left-aligned */}
         <div className="my-8 space-y-3">
           <p className="font-serif font-bold text-[20px] text-ink">Want a winner?</p>
           <p className="font-body text-[15px] text-ink leading-relaxed">
@@ -198,14 +203,22 @@ export default function TitleScreen() {
           </p>
         </div>
 
-        {/* Closing */}
         <hr className="rule" />
-        <p className="font-serif font-bold text-[22px] text-ink text-center leading-snug mt-8 mb-16">
+
+        {/* Closing — centered */}
+        <p className="font-serif font-bold text-[22px] text-ink text-center leading-snug mt-8 mb-4">
           The stories are different every time.<br />
           Yours is next.
         </p>
-      </div>
 
-    </div>
+        {/* Footer — centered */}
+        <p className="font-sans text-[11px] text-text-muted text-center tracking-[1px] mb-8">
+          <a href="/privacy.html" className="hover:text-ink transition-colors">Privacy</a>
+          <span className="mx-2 opacity-40">|</span>
+          Created by Brandon Moon
+        </p>
+      </div>
+    </>
+
   );
 }
