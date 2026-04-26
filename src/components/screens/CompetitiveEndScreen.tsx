@@ -514,7 +514,7 @@ export default function CompetitiveEndScreen() {
                     onClick={() => handleShare(story)}
                     className="font-sans text-[12px] uppercase tracking-[2px] text-ink hover:text-text-dim transition-colors"
                   >
-                    Share ↗
+                    Share Story ↗
                   </button>
                   <button
                     onClick={() => handleSaveImage(story.storyIndex)}
