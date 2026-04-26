@@ -208,14 +208,16 @@ export default function TitleScreen() {
 
         <hr className="rule" />
 
-        {/* Closing — centered */}
-        <p className="font-serif font-bold text-[22px] text-ink text-center leading-snug mt-8 mb-4">
+        {/* Closing — centered vertically between rules */}
+        <p className="font-serif font-bold text-[22px] text-ink text-center leading-snug my-12">
           Your group has a scene like this.<br />
           You just haven&rsquo;t written it yet.
         </p>
 
+        <hr className="rule" />
+
         {/* Footer — centered */}
-        <p className="font-sans text-[11px] text-text-muted text-center tracking-[1px] mb-8">
+        <p className="font-sans text-[11px] text-text-muted text-center tracking-[1px] my-8">
           <a href="/privacy.html" className="hover:text-ink transition-colors">Privacy</a>
           <span className="mx-2 opacity-40">|</span>
           Created by Brandon Moon
