@@ -198,7 +198,7 @@ export default function TitleScreen() {
           <p className="font-body text-[15px] text-ink leading-relaxed">
             Upgrade to Producer and unlock Competitive Mode &mdash; vote on the best lines,
             deploy your one standing ovation per game for something truly exceptional,
-            and play a 3 or 5-game series with cumulative standings and a full awards
+            and play a series with cumulative standings and a full awards
             ceremony.
           </p>
           <p className="font-body italic text-[15px] text-text-dim">
