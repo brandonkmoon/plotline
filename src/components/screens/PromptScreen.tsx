@@ -154,10 +154,10 @@ export default function PromptScreen() {
           </p>
 
           <p className="font-body text-[24px] text-ink text-center leading-[1.5] mb-2">
-            {currentRound === 4
-              ? "What does the first character say?"
-              : currentRound === 5
-              ? "What does the second character say in reply?"
+            {currentRound === 4 && char1Name
+              ? `What does ${char1Name} say?`
+              : currentRound === 5 && char2Name
+              ? `What does ${char2Name} say back?`
               : prompt.text}
           </p>
         </div>
