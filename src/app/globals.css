@@ -227,7 +227,7 @@ body {
 
 @keyframes timerUrgent {
   0%, 100% { transform: translateX(-50%) scale(1); }
-  50%      { transform: translateX(-50%) scale(1.12); }
+  50%      { transform: translateX(-50%) scale(1.06); }
 }
 
 @keyframes timerWarning {
@@ -236,7 +236,7 @@ body {
 }
 
 .timer-urgent {
-  animation: timerUrgent 0.8s ease-in-out infinite;
+  animation: timerUrgent 1.2s ease-in-out infinite;
   transform-origin: top center;
 }
 
