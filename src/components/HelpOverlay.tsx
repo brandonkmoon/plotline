@@ -196,6 +196,33 @@ export default function HelpOverlay() {
                 The show must go on.
               </p>
             </div>
+
+            {/* About */}
+            <p className="help-group-label">About the Show</p>
+
+            <div className="help-section">
+              <p className="help-a">
+                Plotline is a modern take on <em>Consequences</em>, a parlor
+                game from Victorian England. The original version was played
+                with folded paper &mdash; each player wrote a line, folded
+                the paper to hide it, and passed it along. When unfolded,
+                the result was a story nobody intended to write.
+              </p>
+              <p className="help-a mt-3">
+                The game spread through drawing rooms and dinner parties
+                across Europe. The Surrealists adopted it in the 1920s
+                as <em>Cadavre Exquis</em> (Exquisite Corpse), using it
+                to create poetry and art. Andr&eacute; Breton, Yves Tanguy,
+                and Marcel Duchamp all played.
+              </p>
+              <p className="help-a mt-3">
+                Plotline brings the same idea to your phone &mdash; no
+                paper, no folding, same chaos.
+              </p>
+              <p className="help-a mt-3 font-sans text-[11px] uppercase tracking-[2px] text-text-muted">
+                Created by Brandon Moon
+              </p>
+            </div>
           </div>
         </div>
       )}
