@@ -402,7 +402,7 @@ function InfoStrip({
   const timerColor = totalSeconds !== null && totalSeconds <= 10
     ? "#dc2626"
     : totalSeconds !== null && totalSeconds <= 30
-    ? "#d97706"
+    ? "#facc15"
     : "#ffffff";
 
   const handleCopy = () => {
@@ -429,21 +429,36 @@ function InfoStrip({
         )}
       </div>
 
-      {timerDisplay && (
-        <span
-          className={`font-sans font-semibold tracking-[1px] transition-all duration-300 ${
-            totalSeconds !== null && totalSeconds <= 10
-              ? "text-[20px] timer-urgent bg-ink px-3 pt-1 pb-2 -mb-2 relative z-20"
-              : "text-[13px]"
-          }`}
-          style={{
-            color: totalSeconds !== null && totalSeconds <= 10 ? "#dc2626" : timerColor,
-            ...(totalSeconds !== null && totalSeconds <= 10 ? { boxShadow: "0 2px 8px rgba(0,0,0,0.4)" } : {}),
-          }}
-        >
-          {timerDisplay}
-        </span>
-      )}
+      {timerDisplay && (() => {
+        const isUrgent = totalSeconds !== null && totalSeconds <= 10;
+        const isWarning = totalSeconds !== null && totalSeconds > 10 && totalSeconds <= 30;
+        return (
+          <span className="relative z-20">
+            <span
+              className={`font-sans font-semibold tracking-[1px] relative z-10 ${
+                isUrgent ? "text-[13px]" : "text-[13px]"
+              }`}
+              style={{ color: isUrgent ? "#dc2626" : isWarning ? "#facc15" : timerColor }}
+            >
+              {timerDisplay}
+            </span>
+            {(isUrgent || isWarning) && (
+              <span
+                className={`absolute left-1/2 top-1/2 bg-ink z-0 ${
+                  isUrgent ? "timer-urgent" : "timer-warning"
+                }`}
+                style={{
+                  transform: "translate(-50%, -40%)",
+                  transformOrigin: "top center",
+                  width: isUrgent ? 64 : 52,
+                  height: isUrgent ? 36 : 28,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                }}
+              />
+            )}
+          </span>
+        );
+      })()}
 
       <span className={`font-sans text-[11px] font-semibold tracking-[2px] ${flash ? "text-white" : "text-white"}`}>
         {flash ? "Copied!" : code}
