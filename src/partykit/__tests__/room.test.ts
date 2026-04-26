@@ -1372,7 +1372,11 @@ describe("RoomServer instance behavior", () => {
       >;
       expect(atEnd.room.state).toBe("END");
 
-      // Host sends PLAY_AGAIN
+      // Host queues for next game, then sends PLAY_AGAIN
+      server.onMessage(
+        JSON.stringify({ type: "QUEUE_NEXT_GAME" }),
+        c1 as any
+      );
       server.onMessage(
         JSON.stringify({ type: "PLAY_AGAIN" }),
         c1 as any

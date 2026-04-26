@@ -115,8 +115,9 @@ describe("assembleStories", () => {
     expect(assembled[0].responses[3]).toBeTruthy();
     expect(assembled[0].responses[5]).toBeTruthy();
 
-    // The placeholders should be from the correct prompt bucket
-    expect(PLACEHOLDERS[1]).toContain(assembled[0].responses[1]);
+    // Name-picker placeholder (slot 1) contains a dash separator
+    expect(assembled[0].responses[1]).toContain(" \u2014 ");
+    // Free-text placeholders should come from the correct bucket
     expect(PLACEHOLDERS[3]).toContain(assembled[0].responses[3]);
     expect(PLACEHOLDERS[5]).toContain(assembled[0].responses[5]);
   });
