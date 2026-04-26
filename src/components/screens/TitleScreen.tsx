@@ -55,77 +55,80 @@ export default function TitleScreen() {
     <>
       {/* ── Hero: fills viewport below banner ── */}
       <div
-        className="screen flex flex-col"
+        className="screen flex flex-col items-stretch"
         style={{ minHeight: "calc(100vh - 100px)", paddingBottom: 0 }}
       >
-        {/* Push buttons to vertical center */}
+        {/* Top spacer — equal weight with bottom spacer to center the group */}
         <div className="flex-1" />
 
-        {/* Create — primary */}
-        <div
-          className={`title-btn-wrapper ${
-            showButtons ? "title-btn-animate" : ""
-          }`}
-        >
-          <div style={{ pointerEvents: ready ? "auto" : "none" }}>
-            <Button variant="primary" onClick={handleCreate}>
-              <span className={`title-btn-text ${ready ? "visible" : ""}`}>
-                Create a Show
-              </span>
-            </Button>
+        {/* Centered button group */}
+        <div>
+          {/* Create — primary */}
+          <div
+            className={`title-btn-wrapper ${
+              showButtons ? "title-btn-animate" : ""
+            }`}
+          >
+            <div style={{ pointerEvents: ready ? "auto" : "none" }}>
+              <Button variant="primary" onClick={handleCreate}>
+                <span className={`title-btn-text ${ready ? "visible" : ""}`}>
+                  Create a Show
+                </span>
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {/* Join — secondary, staggered 150ms */}
-        <div
-          className={`title-btn-wrapper mt-3 ${
-            showButtons ? "title-btn-animate title-btn-delay" : ""
-          }`}
-        >
-          <div style={{ pointerEvents: ready ? "auto" : "none" }}>
-            <Button variant="secondary" onClick={handleJoin}>
-              <span className={`title-btn-text ${ready ? "visible" : ""}`}>
-                Join a Show
-              </span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Rejoin prompt — shown when a game is in progress */}
-        {rejoinInfo && (
+          {/* Join — secondary, staggered 150ms */}
           <div
             className={`title-btn-wrapper mt-3 ${
               showButtons ? "title-btn-animate title-btn-delay" : ""
             }`}
-            style={{ transitionDelay: showButtons ? "300ms" : "0ms" }}
           >
             <div style={{ pointerEvents: ready ? "auto" : "none" }}>
-              <button
-                onClick={() => router.push(`/room/${rejoinInfo.code}`)}
-                className="w-full border border-ink px-6 py-3 font-sans text-[13px] uppercase tracking-[2px] text-text-dim hover:text-ink hover:bg-ink/5 transition-colors"
-              >
+              <Button variant="secondary" onClick={handleJoin}>
                 <span className={`title-btn-text ${ready ? "visible" : ""}`}>
-                  Rejoin{" "}
-                  {rejoinInfo.name ? `as ${rejoinInfo.name} · ` : ""}
-                  {rejoinInfo.code}
+                  Join a Show
                 </span>
-              </button>
+              </Button>
             </div>
           </div>
-        )}
 
-        {/* Supporting text */}
-        <p
-          className="mt-10 font-sans text-[11px] uppercase text-text-muted text-center tracking-[3px] transition-opacity duration-500"
-          style={{
-            opacity: ready ? 1 : 0,
-            transitionDelay: ready ? "200ms" : "0ms",
-          }}
-        >
-          4 &ndash; 12 Players
-        </p>
+          {/* Rejoin prompt — shown when a game is in progress */}
+          {rejoinInfo && (
+            <div
+              className={`title-btn-wrapper mt-3 ${
+                showButtons ? "title-btn-animate title-btn-delay" : ""
+              }`}
+              style={{ transitionDelay: showButtons ? "300ms" : "0ms" }}
+            >
+              <div style={{ pointerEvents: ready ? "auto" : "none" }}>
+                <button
+                  onClick={() => router.push(`/room/${rejoinInfo.code}`)}
+                  className="w-full border border-ink px-6 py-3 font-sans text-[13px] uppercase tracking-[2px] text-text-dim hover:text-ink hover:bg-ink/5 transition-colors"
+                >
+                  <span className={`title-btn-text ${ready ? "visible" : ""}`}>
+                    Rejoin{" "}
+                    {rejoinInfo.name ? `as ${rejoinInfo.name} · ` : ""}
+                    {rejoinInfo.code}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
 
-        {/* Spacer — pushes arrow to bottom */}
+          {/* Supporting text */}
+          <p
+            className="mt-10 font-sans text-[11px] uppercase text-text-muted text-center tracking-[3px] transition-opacity duration-500"
+            style={{
+              opacity: ready ? 1 : 0,
+              transitionDelay: ready ? "200ms" : "0ms",
+            }}
+          >
+            4 &ndash; 12 Players
+          </p>
+        </div>
+
+        {/* Bottom spacer — equal weight with top spacer */}
         <div className="flex-1" />
 
         {/* Down arrow — pinned to bottom of viewport */}
