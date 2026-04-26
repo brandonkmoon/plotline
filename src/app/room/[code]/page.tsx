@@ -431,12 +431,15 @@ function InfoStrip({
 
       {timerDisplay && (
         <span
-          className={`font-sans font-semibold tracking-[1px] transition-all duration-300 origin-center ${
+          className={`font-sans font-semibold tracking-[1px] transition-all duration-300 ${
             totalSeconds !== null && totalSeconds <= 10
-              ? "text-[22px] timer-urgent"
+              ? "text-[20px] timer-urgent bg-ink px-3 py-1 -my-1 relative z-20"
               : "text-[13px]"
           }`}
-          style={{ color: timerColor }}
+          style={{
+            color: totalSeconds !== null && totalSeconds <= 10 ? "#dc2626" : timerColor,
+            ...(totalSeconds !== null && totalSeconds <= 10 ? { boxShadow: "0 2px 8px rgba(0,0,0,0.4)" } : {}),
+          }}
         >
           {timerDisplay}
         </span>
