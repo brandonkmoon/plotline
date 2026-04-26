@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
 import { getCurrentRoomInfo } from "@/lib/multiplayer/gameClient";
+import { setHelpScreen } from "@/lib/helpContext";
 
 // Module-level flag so the entrance animation plays once per browser
 // session. Stays true across remounts (e.g. navigating to /create or
@@ -17,6 +18,10 @@ export default function TitleScreen() {
   // If we've already animated once this session, jump straight to "done".
   const [phase, setPhase] = useState<Phase>(hasAnimated ? "done" : "pause");
   const [rejoinInfo, setRejoinInfo] = useState<{ code: string; name: string } | null>(null);
+
+  useEffect(() => {
+    setHelpScreen("title");
+  }, []);
 
   useEffect(() => {
     setRejoinInfo(getCurrentRoomInfo());

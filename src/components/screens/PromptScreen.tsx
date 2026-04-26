@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
+import { setHelpScreen } from "@/lib/helpContext";
 import { PROMPTS, isNamePickerRound, DESCRIPTOR_PLACEHOLDERS, PLACEHOLDERS } from "@/lib/game/prompts";
 import { extractName } from "@/lib/game/normalize";
 import Button from "@/components/Button";
@@ -70,6 +71,10 @@ export default function PromptScreen() {
   // In round 1, block the name already used as character 1 in this story.
   const slot0TakenName: string | null =
     currentRound === 1 ? char1Name : null;
+
+  useEffect(() => {
+    setHelpScreen(isNameRound ? "prompt-name" : "prompt-text");
+  }, [isNameRound]);
 
   // Reset state when the round changes
   useEffect(() => {

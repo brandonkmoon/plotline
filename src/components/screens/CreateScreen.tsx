@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { gameClient } from "@/lib/multiplayer/gameClient";
+import { setHelpScreen } from "@/lib/helpContext";
 import { generateRoomCode } from "@/lib/game";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
 
 export default function CreateScreen() {
   const router = useRouter();
+  useEffect(() => {
+    setHelpScreen("title");
+  }, []);
+
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

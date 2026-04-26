@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useRoom } from "@/lib/client/RoomContext";
+import { setHelpScreen } from "@/lib/helpContext";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
@@ -21,6 +22,10 @@ export default function EndScreen() {
 
   const router = useRouter();
   const isSpectator = currentPendingPlayer !== null;
+
+  useEffect(() => {
+    setHelpScreen("end");
+  }, []);
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
   const [creatingLobby, setCreatingLobby] = useState(false);

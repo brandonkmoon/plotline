@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
+import { setHelpScreen } from "@/lib/helpContext";
 import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
@@ -24,6 +25,10 @@ export default function RevealScreen() {
     votingOpen,
     startVoting,
   } = useRoom();
+
+  useEffect(() => {
+    setHelpScreen("reveal");
+  }, []);
 
   const [localStoryIdx, setLocalStoryIdx] = useState(0);
   const [localRevealedLines, setLocalRevealedLines] = useState(0);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
+import { setHelpScreen } from "@/lib/helpContext";
 import Button from "@/components/Button";
 
 const VOTING_DURATION_MS = 30_000;
@@ -19,6 +20,10 @@ export default function VotingScreen() {
   } = useRoom();
 
   const isSpectator = currentPendingPlayer !== null;
+
+  useEffect(() => {
+    setHelpScreen("voting");
+  }, []);
 
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
   const [isStandingOvation, setIsStandingOvation] = useState(false);

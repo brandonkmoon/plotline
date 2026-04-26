@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
+import { setHelpScreen } from "@/lib/helpContext";
 import Button from "@/components/Button";
 import CountdownTimer from "@/components/CountdownTimer";
 import PlayerList from "@/components/PlayerList";
@@ -17,6 +19,10 @@ export default function SpectatorScreen() {
     roundDurationMs,
     playerStatuses,
   } = useRoom();
+
+  useEffect(() => {
+    setHelpScreen("spectator");
+  }, []);
 
   if (!room) return null;
 

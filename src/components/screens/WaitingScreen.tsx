@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
+import { setHelpScreen } from "@/lib/helpContext";
 import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
 import PendingPlayersBadge from "@/components/PendingPlayersBadge";
@@ -18,6 +20,10 @@ export default function WaitingScreen() {
     pendingDisconnected,
     playerStatuses,
   } = useRoom();
+
+  useEffect(() => {
+    setHelpScreen("waiting");
+  }, []);
 
   const totalPending = pendingConnected + pendingDisconnected;
   const connectedPlayers = room?.players.filter((p) => p.isConnected) ?? [];

@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { gameClient } from "@/lib/multiplayer/gameClient";
+import { setHelpScreen } from "@/lib/helpContext";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
 
 export default function JoinScreen({ initialCode }: { initialCode?: string } = {}) {
   const router = useRouter();
+  useEffect(() => {
+    setHelpScreen("title");
+  }, []);
+
   const [code, setCode] = useState(initialCode?.toUpperCase() ?? "");
   const [name, setName] = useState("");
   const [error, setError] = useState("");

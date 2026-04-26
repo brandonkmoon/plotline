@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useRoom } from "@/lib/client/RoomContext";
+import { setHelpScreen } from "@/lib/helpContext";
 import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
 import type { SeriesAward, StoryVoteResult } from "@/lib/game/types";
@@ -121,6 +122,10 @@ export default function CompetitiveEndScreen() {
   } = useRoom();
 
   const router = useRouter();
+
+  useEffect(() => {
+    setHelpScreen("competitive-end");
+  }, []);
 
   const [showAwards, setShowAwards] = useState(true);
   const [expandedStory, setExpandedStory] = useState<number | null>(null);

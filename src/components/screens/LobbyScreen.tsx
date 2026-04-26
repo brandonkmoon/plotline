@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
+import { setHelpScreen } from "@/lib/helpContext";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
 import PlayerList from "@/components/PlayerList";
@@ -105,6 +106,10 @@ function ModeSheet({
 export default function LobbyScreen() {
   const { room, isHost, startGame, playerStatuses } = useRoom();
   const [showModeSheet, setShowModeSheet] = useState(false);
+
+  useEffect(() => {
+    setHelpScreen("lobby");
+  }, []);
 
   if (!room) return null;
 
