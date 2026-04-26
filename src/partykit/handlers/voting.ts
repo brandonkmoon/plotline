@@ -342,17 +342,25 @@ export function computeSeriesAwards(server: RoomServer): SeriesAward[] {
   const nameOf = (id: string) =>
     players.find((p) => p.id === id)?.name ?? "Unknown";
 
-  // Find the player with the highest count. Ties broken alphabetically by name.
+  // Find the player with the highest count.
+  // Tie-break 1: fewer awards already → spread the love
+  // Tie-break 2: alphabetical by name
   const findTop = (counts: Record<string, number>) => {
     let topId = "";
     let topCount = 0;
     for (const [id, count] of Object.entries(counts)) {
-      if (
-        count > topCount ||
-        (count === topCount && nameOf(id) < nameOf(topId))
-      ) {
+      if (count > topCount) {
         topCount = count;
         topId = id;
+      } else if (count === topCount && topId) {
+        const existingAwards = awards.filter((a) => a.playerId === id).length;
+        const topAwards = awards.filter((a) => a.playerId === topId).length;
+        if (
+          existingAwards < topAwards ||
+          (existingAwards === topAwards && nameOf(id) < nameOf(topId))
+        ) {
+          topId = id;
+        }
       }
     }
     return topId;

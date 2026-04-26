@@ -207,7 +207,7 @@ describe("computeAndBroadcastScores", () => {
 // ── Tie-breaking tests ──
 
 describe("award tie-breaking", () => {
-  it("breaks ties alphabetically by player name", () => {
+  it("breaks ties by fewest existing awards, then alphabetically", () => {
     // Both p1 (Alice) and p2 (Bob) get 1 point on character intros
     const votes = [
       makeVote("p3", 0, 0), // 1 pt to p1 (line 0, character intro)
@@ -233,7 +233,7 @@ describe("award tie-breaking", () => {
     const awards = computeSeriesAwards(server);
     const casting = awards.find((a) => a.id === "casting-director");
 
-    // Alice < Bob alphabetically, so Alice wins the tie
+    // Neither has awards yet, so alphabetical: Alice < Bob → Alice wins
     expect(casting?.playerId).toBe("p1");
     expect(casting?.playerName).toBe("Alice");
   });
