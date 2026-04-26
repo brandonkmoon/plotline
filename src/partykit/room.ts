@@ -26,7 +26,8 @@ import { serializeRoomForArchive } from "@/lib/archive/serialize";
  *                        and closes the connection.
  */
 
-const ROUND_TIMER_MS = 90_000;
+const ROUND_TIMER_FIRST_GAME_MS = 90_000;
+const ROUND_TIMER_SUBSEQUENT_MS = 60_000;
 const RECONNECT_TIMEOUT_MS = 120_000; // 2 minutes
 const HOST_TRANSFER_TIMEOUT_MS = 30_000; // 30 seconds
 const ROOM_DESTROY_TIMEOUT_MS = 600_000; // 10 minutes
@@ -127,7 +128,7 @@ export default class RoomServer implements Party.Server {
       ) {
         this.roundStartedAt = stored.roundStartedAt;
         const elapsed = Date.now() - stored.roundStartedAt;
-        const remaining = ROUND_TIMER_MS - elapsed;
+        const remaining = this.roundTimerMs - elapsed;
 
         if (remaining > 0) {
           this.roundTimer = setTimeout(() => {
@@ -1358,7 +1359,15 @@ export default class RoomServer implements Party.Server {
         type: "ADVANCE_AVAILABLE",
         unsubmittedCount,
       });
-    }, ROUND_TIMER_MS);
+    }, this.roundTimerMs);
+  }
+
+  /** 90s for the first game of a series, 60s for subsequent games. Classic mode always uses 90s. */
+  private get roundTimerMs(): number {
+    if (this.seriesState && this.seriesState.currentGameNumber > 1) {
+      return ROUND_TIMER_SUBSEQUENT_MS;
+    }
+    return ROUND_TIMER_FIRST_GAME_MS;
   }
 
   private clearRoundTimer() {
@@ -1676,7 +1685,7 @@ export default class RoomServer implements Party.Server {
         room: this.gameState,
         playerId,
         roundStartedAt: this.roundStartedAt,
-        roundDurationMs: ROUND_TIMER_MS,
+        roundDurationMs: this.roundTimerMs,
         pendingConnected,
         pendingDisconnected,
         protocolVersion: PROTOCOL_VERSION,
