@@ -121,6 +121,91 @@ export default function TitleScreen() {
         4 &ndash; 12 Players
       </p>
 
+      {/* Down arrow — hints at scrollable content below */}
+      <div
+        className="flex justify-center mt-6 transition-opacity duration-500"
+        style={{ opacity: ready ? 1 : 0, transitionDelay: ready ? "400ms" : "0ms" }}
+      >
+        <span
+          className="text-text-muted animate-bounce"
+          style={{ fontSize: 20, lineHeight: 1 }}
+          aria-hidden="true"
+        >
+          &darr;
+        </span>
+      </div>
+
+      {/* ── Below-fold marketing content ─────────────────────────── */}
+      <div
+        className="transition-opacity duration-700 mt-16"
+        style={{ opacity: ready ? 1 : 0, transitionDelay: ready ? "600ms" : "0ms" }}
+      >
+        {/* Scene example */}
+        <p className="font-sans text-[10px] uppercase tracking-[3px] text-text-muted text-center mb-6">
+          A scene from last night.
+        </p>
+
+        <div className="border-t border-b border-ink py-8 space-y-3">
+          <p className="font-serif font-bold text-[22px] text-ink leading-tight mb-6">
+            &ldquo;Brenda and Gary at the Hospital&rdquo;
+          </p>
+
+          {[
+            { line: "Brenda \u2014 a woman who irons her socks", by: "Rachel" },
+            { line: "and Gary \u2014 a semi-professional kazoo player who is between gigs", by: "Tom" },
+            { line: "are in a hospital waiting room that smells like a Subway restaurant,", by: "Brenda" },
+            { line: "teaching a pigeon to sit.", by: "Gary" },
+            { line: "Brenda says, \u201cI didn\u2019t come here to make friends, and yet.\u201d", by: "Nadia" },
+            { line: "Gary says, \u201cThe thing about geese is you can\u2019t reason with them.\u201d", by: "Phil" },
+            { line: "Then, the vending machine gave everyone their money back, which felt like a sign, but wasn\u2019t.", by: "Carmen" },
+          ].map(({ line, by }) => (
+            <div key={by}>
+              <p className="font-body text-[16px] text-ink leading-[1.6]">{line}</p>
+              <p className="font-sans text-[11px] text-text-muted tracking-[1px] mt-0.5">
+                &mdash; written by {by}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <p className="font-sans text-[12px] uppercase tracking-[2px] text-ink text-center mt-6 mb-12">
+          Different writers. Zero coordination.
+        </p>
+
+        {/* Practical info */}
+        <hr className="rule" />
+        <p className="font-body italic text-[15px] text-text-dim text-center leading-relaxed my-6">
+          4&ndash;12 players &middot; No app required &middot; Guests join from any browser
+        </p>
+        <p className="font-body text-[15px] text-ink text-center leading-relaxed mb-12">
+          Works for game nights, dinner parties, bachelorette parties, team offsites,
+          family reunions, improv groups, and theater classes. Also: situations you
+          haven&rsquo;t thought of yet.
+        </p>
+
+        {/* Competitive mode */}
+        <hr className="rule" />
+        <div className="my-8 space-y-3">
+          <p className="font-serif font-bold text-[20px] text-ink">Want a winner?</p>
+          <p className="font-body text-[15px] text-ink leading-relaxed">
+            Upgrade to Producer and unlock Competitive Mode &mdash; vote on the best lines,
+            deploy your one standing ovation per game for something truly exceptional,
+            and play a 3 or 5-game series with cumulative standings and a full awards
+            ceremony.
+          </p>
+          <p className="font-body italic text-[15px] text-text-dim">
+            Every great show needs a producer.
+          </p>
+        </div>
+
+        {/* Closing */}
+        <hr className="rule" />
+        <p className="font-serif font-bold text-[22px] text-ink text-center leading-snug mt-8 mb-16">
+          The stories are different every time.<br />
+          Yours is next.
+        </p>
+      </div>
+
     </div>
   );
 }
