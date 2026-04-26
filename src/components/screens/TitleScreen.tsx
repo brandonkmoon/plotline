@@ -210,8 +210,8 @@ export default function TitleScreen() {
 
         {/* Closing — centered */}
         <p className="font-serif font-bold text-[22px] text-ink text-center leading-snug mt-8 mb-4">
-          The stories are different every time.<br />
-          Yours is next.
+          Your group has a scene like this.<br />
+          You just haven&rsquo;t written it yet.
         </p>
 
         {/* Footer — centered */}
