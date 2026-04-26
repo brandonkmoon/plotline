@@ -402,7 +402,7 @@ function InfoStrip({
   const timerColor = totalSeconds !== null && totalSeconds <= 10
     ? "#dc2626"
     : totalSeconds !== null && totalSeconds <= 30
-    ? "#facc15"
+    ? "#fceb00"
     : "#ffffff";
 
   const handleCopy = () => {
@@ -433,7 +433,7 @@ function InfoStrip({
         const isUrgent = totalSeconds !== null && totalSeconds <= 10;
         const isWarning = totalSeconds !== null && totalSeconds > 10 && totalSeconds <= 30;
         const timerFontSize = isUrgent ? 22 : isWarning ? 16 : 13;
-        const activeColor = isUrgent ? "#dc2626" : isWarning ? "#facc15" : timerColor;
+        const activeColor = isUrgent ? "#dc2626" : isWarning ? "#fceb00" : timerColor;
         return (
           <span
             className={`absolute left-1/2 z-20 flex items-center justify-center font-sans font-semibold tracking-[1px] transition-all duration-300 ${
