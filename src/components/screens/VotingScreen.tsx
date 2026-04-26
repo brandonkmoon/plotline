@@ -98,6 +98,7 @@ export default function VotingScreen() {
   const handleLongPressStart = useCallback(
     (lineIndex: number) => {
       if (submitted || myLineIndices.has(lineIndex) || standingOvationUsed) return;
+      if (longPressTimer) return; // prevent double-fire from touch + mouse
       setPressingLine(lineIndex);
       setLongPressFired(false);
       const timer = setTimeout(() => {
@@ -112,7 +113,7 @@ export default function VotingScreen() {
       }, 500);
       setLongPressTimer(timer);
     },
-    [submitted, selectedLine, isStandingOvation, standingOvationUsed, myLineIndices]
+    [submitted, selectedLine, isStandingOvation, standingOvationUsed, myLineIndices, longPressTimer]
   );
 
   const handleLongPressEnd = useCallback(() => {
@@ -195,9 +196,11 @@ export default function VotingScreen() {
               onMouseDown={() => handleLongPressStart(i)}
               onMouseUp={handleLongPressEnd}
               onMouseLeave={handleLongPressEnd}
+              onTouchStart={() => handleLongPressStart(i)}
+              onTouchEnd={handleLongPressEnd}
               onClick={() => handleTap(i)}
               className={`
-                w-full text-left p-4 border-2 transition-all duration-150
+                w-full text-left p-4 border-2 transition-all duration-150 select-none
                 ${isMine
                   ? "opacity-50 cursor-not-allowed border-list-border"
                   : isPressing
@@ -209,6 +212,8 @@ export default function VotingScreen() {
                   : "border-list-border hover:border-ink/30 hover:bg-ink/[0.02]"
                 }
               `}
+              style={{ WebkitUserSelect: "none", WebkitTouchCallout: "none" }}
+              onContextMenu={(e) => e.preventDefault()}
             >
               <p
                 className={`font-body text-[17px] leading-[1.6] ${
