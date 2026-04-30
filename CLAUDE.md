@@ -1,6 +1,6 @@
 # Plotline
 
-A multiplayer blind collaborative storytelling party game for 4–12 players, inspired by the Victorian parlor game "Consequences." Players each contribute one piece of a story without seeing what others wrote, then the stories are revealed for laughs.
+A multiplayer blind collaborative storytelling party game for 4–12 players, inspired by the Victorian parlor game "Consequences." Players each contribute one piece of a scene without seeing what others wrote, then the scenes are revealed for laughs.
 
 Built by Brandon Moon.
 
@@ -8,33 +8,53 @@ Built by Brandon Moon.
 
 Playbill / Broadway theater program aesthetic. Yellow (`#fceb00`) banner header, black (`#1a1a1a`) ink, white (`#ffffff`) background, sharp editorial typography. No rounded corners. The title "PLOTLINE" is rendered as a pre-generated PNG (`public/plotline-title.png`) using Latin CG Bold to avoid font-loading flash. Fonts: Playfair Display (headings), Lora (body/italic), Inter (UI/sans).
 
+**Terminology**: Acts = the 7 writing rounds. Scenes = the finished collaborative stories. Series = a multi-game competitive run.
+
 ## How the Game Works
 
-Each game has 7 rounds. Every player writes one response per round, contributing to multiple stories simultaneously (round-robin rotation). The prompts:
+Each game has 7 acts. Every player writes one response per act, contributing to multiple scenes simultaneously (round-robin rotation). The prompts:
 
-| Round | Prompt | UI |
-|-------|--------|----|
+| Act | Prompt | UI |
+|-----|--------|----|
 | 0 | "Pick someone in this room. Who are they really?" | Name picker + descriptor |
 | 1 | "Pick someone else. What's their deal?" | Name picker + descriptor |
 | 2 | "Where are they?" | Free text |
 | 3 | "What are they doing?" | Free text |
-| 4 | "What does the first one say?" | Free text |
-| 5 | "What does the other one say back?" | Free text |
+| 4 | "What does [Character 1] say?" | Free text (shows actual character name) |
+| 5 | "What does [Character 2] say back?" | Free text (shows actual character name) |
 | 6 | "How does it end?" | Free text |
 
-Rounds 0–1 use a name-picker UI where players tap another player's name, then write a character descriptor (e.g., "Dave — a retired sword swallower with trust issues"). Round 0 picks are dimmed in round 1 to encourage variety. The full "Name — descriptor" is used in story introductions, but dialogue attribution uses only the short name extracted via `extractName()`.
+Acts 0–1 use a name-picker UI where players tap another player's name, then write a character descriptor. Acts 4–5 show the actual character names from the scene the player is writing for, so they know who they're writing dialogue for.
 
-All prompts use present tense. Placeholder examples model correct phrasing so players imitate the style.
+Scenes are assembled in `storyAssembly.ts` into a template: "[Name1] and [Name2] are [location], [action]. [Name1] says, '[dialogue]' [Name2] says, '[dialogue]' Then, [ending]."
 
-Stories are assembled in `storyAssembly.ts` into a template: "[Name1] and [Name2] are [location], [action]. [Name1] says, '[dialogue]' [Name2] says, '[dialogue]' Then, [ending]."
+## Game Modes
+
+### Classic (Free)
+- 7 acts, scenes assembled and read aloud
+- No scoring, just fun
+- Up to 8 players
+
+### Competitive (Producer upgrade — $3.99 lifetime IAP)
+- Voting on best lines after each scene reveal
+- Standing ovations: 1 per game, 3 pts to author, 2 pts to voter
+- 1-5 game series with cumulative standings
+- Double points on final game
+- 90-second ready/timer flow between games
+- Awards ceremony: Casting Director, Scene Stealer, Speechwriter, Closer, Fan Favorite, Popularity, Line of the Series
+- Tie-breaking: fewest existing awards first, then alphabetical
+- Up to 12 players
+- Round timer: 90s for game 1, 60s for games 2+
 
 ## Tech Stack
 
 - **Framework**: Next.js 14 (App Router, Server Components)
-- **Realtime**: PartyKit (Cloudflare-based WebSocket server) — `src/partykit/room.ts`
+- **Mobile**: Expo (React Native) — `~/Desktop/plotline-app/`
+- **Realtime**: PartyKit (Cloudflare-based WebSocket server)
 - **Database**: Turso (libSQL/SQLite) via Drizzle ORM — for archiving completed games
+- **Payments**: RevenueCat (react-native-purchases v9.15.2) — iOS IAP only for now
 - **Styling**: Tailwind CSS + custom CSS variables in `globals.css`
-- **Testing**: Vitest
+- **Testing**: Vitest (172 tests)
 - **Analytics**: Plausible
 - **Hosting**: Vercel (web) + PartyKit (WebSocket server)
 - **Domain**: plotlinegame.com
@@ -45,61 +65,77 @@ Stories are assembled in `storyAssembly.ts` into a template: "[Name1] and [Name2
 ```
 src/
 ├── app/                    # Next.js pages & API routes
-│   ├── layout.tsx          # Root layout, fonts, meta tags, SW registration
-│   ├── page.tsx            # Home → TitleScreen
+│   ├── layout.tsx          # Root layout, fonts, meta tags, Smart Banner
+│   ├── page.tsx            # Home → TitleScreen (with landing page)
 │   ├── create/page.tsx     # Create room flow
 │   ├── join/page.tsx       # Join room flow
+│   ├── join/[code]/page.tsx # Direct join via shared link
 │   ├── room/[code]/page.tsx # Main game room (lobby → play → reveal → end)
 │   ├── archive/[code]/     # Read-only archived game view
-│   └── api/archive/        # Archive API endpoints
+│   └── api/
+│       ├── archive/        # Archive API endpoints
+│       └── og/[code]/[storyIndex]/ # OG image generation
 ├── components/
 │   ├── screens/            # Full-screen game phases
-│   │   ├── TitleScreen.tsx      # Landing with animated buttons
+│   │   ├── TitleScreen.tsx      # Landing with animated buttons + below-fold content
 │   │   ├── CreateScreen.tsx     # Host enters name, generates room code
 │   │   ├── JoinScreen.tsx       # Player enters code + name
-│   │   ├── LobbyScreen.tsx      # Waiting room, shows cast, "Start the Show"
-│   │   ├── PendingLobbyScreen.tsx # Mid-game joiners wait here
-│   │   ├── PromptScreen.tsx     # Name picker (rounds 0-1) or free text input
-│   │   ├── WaitingScreen.tsx    # "Waiting for others..." between rounds
-│   │   ├── RevealScreen.tsx     # Stories revealed one by one
-│   │   └── EndScreen.tsx        # Game over, archive link
+│   │   ├── LobbyScreen.tsx      # Waiting room, mode picker, Producer upgrade
+│   │   ├── SpectatorScreen.tsx  # Mid-game joiners watch + ready up
+│   │   ├── PromptScreen.tsx     # Name picker (acts 0-1) or free text input
+│   │   ├── WaitingScreen.tsx    # "Between Acts" screen
+│   │   ├── RevealScreen.tsx     # Scenes revealed one by one
+│   │   ├── VotingScreen.tsx     # Competitive: vote on best lines
+│   │   ├── EndScreen.tsx        # Classic game over, share/archive
+│   │   └── CompetitiveEndScreen.tsx # Scores, awards, series flow
 │   ├── Button.tsx          # Primary/secondary button component
 │   ├── PlaybillBanner.tsx  # Yellow header banner with title PNG
-│   ├── HelpOverlay.tsx     # How-to-play overlay (? button, bottom-right)
-│   ├── PlayerTag.tsx       # Player name pill with status indicators
+│   ├── HelpOverlay.tsx     # Context-sensitive tips + Full Program overlay
+│   ├── PlayerList.tsx      # Unified player list with badges
 │   └── PendingPlayersBadge.tsx  # Badge for pending mid-game joiners
 ├── lib/
 │   ├── game/
-│   │   ├── types.ts        # Room, Player, Story, PromptSlot, GameAction types
+│   │   ├── types.ts        # Room, Player, Story, GameMode, Vote, SeriesState, etc.
 │   │   ├── prompts.ts      # 7 prompts, placeholders, name-picker helpers
 │   │   ├── storyAssembly.ts # Assembles responses into narrative sections
 │   │   ├── rotation.ts     # Round-robin story assignment logic
 │   │   ├── normalize.ts    # Text normalization (capitalization, punctuation)
 │   │   ├── roomCode.ts     # Room code generation
-│   │   └── game.ts         # Core game state machine
+│   │   └── game.ts         # Core game state machine (reducer)
 │   ├── multiplayer/
 │   │   ├── gameClient.ts   # Client-side WebSocket connection manager
-│   │   └── types.ts        # Wire protocol types, ConnectionErrorReason
+│   │   └── types.ts        # Wire protocol types (ClientMessage, ServerMessage)
 │   ├── client/
 │   │   └── RoomContext.tsx  # React context for room state, player info
+│   ├── helpContext.ts      # Global store for context-sensitive help tips
 │   ├── db/                 # Drizzle schema + client for Turso
 │   └── analytics.ts        # Plausible event tracking
 └── partykit/
-    ├── room.ts             # Main PartyKit server — all game logic
-    └── registry.ts         # Room registry for cleanup
+    ├── constants.ts        # Config values, sanitize function
+    ├── room.ts             # Main server class, lifecycle, broadcasting
+    ├── registry.ts         # Room registry for cleanup
+    └── handlers/
+        ├── connection.ts   # Join, disconnect, host transfer
+        ├── gameplay.ts     # Start, submit, advance, timers
+        ├── lobby.ts        # Play again, queue, ready flow
+        └── voting.ts       # Vote, tally, scores, awards
 ```
 
 ## Key Architecture Decisions
 
-**Identity & Reconnection**: Players are identified by `playerId` stored in `sessionStorage` (per-tab) with `localStorage` fallback (cross-tab reconnection). The server supports name-based reconnection: if a player reconnects without a stored `playerId` but their name matches a disconnected player, they're reconnected rather than duplicated.
+**Identity & Reconnection**: Players are identified by `playerId` stored in `sessionStorage` (per-tab) with `localStorage` fallback (cross-tab reconnection). The server supports name-based reconnection. Mobile app uses AsyncStorage. Both platforms force reconnect on app foreground (AppState/visibilitychange).
 
 **Unique Names**: Enforced server-side at join time (case-insensitive). Returns `NAME_TAKEN` error if duplicate.
 
-**`forceNewPlayer: true`**: Used in JoinScreen and CreateScreen to clear stored identity and always create a fresh player. This is intentional — it prevents stale reconnections when someone starts a new game.
+**`forceNewPlayer: true`**: Used in JoinScreen and CreateScreen to clear stored identity and always create a fresh player.
 
-**Round-robin rotation**: Each player writes for a different story each round. With N players and 7 rounds, there are N stories. Player assignments rotate so no one writes two prompts for the same story.
+**Round-robin rotation**: Each player writes for a different scene each act. With N players and 7 acts, there are N scenes.
 
-**Submitted-then-disconnected**: If a player submits their response then disconnects, the server preserves their "submitted" status instead of overwriting it with "reconnecting."
+**isPremium**: Set on room creation based on host's Producer purchase status. Persists for the life of the room, even across game resets and host transfers. Free rooms: 8 players, classic only. Premium rooms: 12 players, competitive unlocked.
+
+**Input sanitization**: All player names and responses are sanitized at the server boundary (HTML tags stripped, special chars escaped, max lengths enforced).
+
+**Shareable join links**: `plotlinegame.com/join/ABCD` pre-fills room code. Auto-reconnects if player has stored identity. Universal Links configured for iOS native app.
 
 ## Environment Variables
 
@@ -117,15 +153,28 @@ NEXT_PUBLIC_PLAUSIBLE_DOMAIN # Plausible analytics domain
 ```bash
 npm run dev          # Next.js dev server (port 3000)
 npx partykit dev     # PartyKit dev server (port 1999) — run in separate terminal
-npm run test         # Vitest
-npm run test:watch   # Vitest watch mode
+npx vitest run       # Run all tests
+npx vitest run --watch # Vitest watch mode
 ```
 
 ## Deploy
 
-Web app deploys to Vercel on push to `main`. PartyKit deploys separately via `npx partykit deploy`. The Turso database is remote and shared across environments.
+```bash
+# Web app — auto-deploys on push to main via Vercel
+git push origin main
+
+# PartyKit server — manual deploy
+npx partykit deploy
+
+# iOS build + submit
+cd ~/Desktop/plotline-app
+eas build --platform ios --profile production
+eas submit --platform ios --latest
+```
 
 ## Known Cleanup Items
 
 - `public/fonts/Latin CG Bold Regular.otf` — dead file, can be deleted (title is now a PNG)
 - Duplicate `sw 2-6.js` and `workbox-*.js` files in `public/` — stale copies, delete them
+- `LatinCGBold.otf` and `icon-mock.html` in project root — icon design artifacts, can be deleted
+- `landing-mock.html` in project root — landing page prototype, can be deleted
