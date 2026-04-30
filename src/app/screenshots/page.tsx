@@ -244,6 +244,60 @@ function MockVoting() {
   );
 }
 
+const ALL_SCENE_CARDS = [
+  { title: "Brenda and Gary at the Hospital", expanded: true },
+  { title: "Dave and Rachel at the Moon Base", expanded: false },
+  { title: "Captain Socks and Nadia at IKEA", expanded: false },
+  { title: "Phil and Sarah at the DMV", expanded: false },
+  { title: "Marcus and Dani on a Train", expanded: false },
+];
+
+function SceneCards({ showPoints }: { showPoints?: boolean }) {
+  return (
+    <>
+      {ALL_SCENE_CARDS.map((card, i) => (
+        <div key={i} style={{ marginTop: i === 0 ? 0 : 8 }}>
+          <div className="w-full text-left px-4 py-3 flex items-center justify-between border border-ink" style={{ background: "var(--banner)" }}>
+            <div className="flex flex-col pr-4">
+              <span className="font-sans text-[10px] uppercase tracking-[2px] mb-0.5" style={{ color: "rgba(26,26,26,0.5)" }}>Scene {i + 1} of 5</span>
+              <span className="font-serif font-bold text-[15px] text-ink leading-snug">{card.title}</span>
+            </div>
+            <span className="font-sans text-[16px] text-ink">{card.expanded ? "↑" : "↓"}</span>
+          </div>
+          {card.expanded && (
+            <div className="border border-t-0 border-ink bg-white px-4 pb-5 pt-4">
+              {MOCK_SECTIONS.map((section, si) => {
+                const authors = ["Rachel", "Tom", "Brenda", "Gary", "Nadia", "Phil", "Carmen"];
+                const pts = showPoints ? [0, 0, 1, 0, 4, 2, 1][si] : 0;
+                return (
+                  <div key={si} className="mb-3 flex gap-3 items-start">
+                    <div className="flex-1">
+                      <p className={`font-body text-[17px] leading-[1.6] ${section.style === "dialogue" ? "italic" : ""} text-ink`}>
+                        {section.text}
+                      </p>
+                      <p className="font-sans text-[11px] text-text-muted mt-0.5">&mdash; {authors[si]}</p>
+                    </div>
+                    {showPoints && pts > 0 && (
+                      <span className="font-sans text-[11px] font-semibold text-ink bg-banner px-2 py-0.5 shrink-0 mt-1">
+                        {pts} pt{pts !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              <hr className="border-t border-ink/20 mb-4 mt-2" />
+              <div className="flex items-center justify-between">
+                <span className="font-sans text-[12px] uppercase tracking-[2px] text-ink">Share Scene ↗</span>
+                <span className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim">Share Image ↗</span>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
 function MockEndClassic() {
   return (
     <div className="screen anim-fade-in">
@@ -253,17 +307,7 @@ function MockEndClassic() {
         <p className="font-body italic text-[14px] text-text-dim">5 scenes &middot; 5 players</p>
       </div>
       <hr className="rule" />
-      {MOCK_STORIES.map((story, i) => (
-        <div key={i}>
-          <button className="w-full text-left px-4 py-3 flex items-center justify-between border border-ink" style={{ background: "var(--banner)" }}>
-            <div className="flex flex-col pr-4">
-              <span className="font-sans text-[10px] uppercase tracking-[2px] mb-0.5" style={{ color: "rgba(26,26,26,0.5)" }}>Scene 1 of 5</span>
-              <span className="font-serif font-bold text-[15px] text-ink leading-snug">{story.title}</span>
-            </div>
-            <span className="font-sans text-[16px] text-ink">↓</span>
-          </button>
-        </div>
-      ))}
+      <SceneCards />
       <hr className="rule" />
       <button className="w-full font-serif font-medium uppercase text-[14px] py-3 px-6 bg-transparent text-ink border-2 border-ink" style={{ letterSpacing: "2px" }}>
         Play Again
@@ -312,6 +356,9 @@ function MockEndCompetitive() {
           <span className="font-serif font-bold text-[18px] text-ink">{p.pts}</span>
         </div>
       ))}
+
+      <p className="font-serif font-medium text-[14px] uppercase tracking-[3px] text-text-muted mt-6 mb-4">Scenes</p>
+      <SceneCards showPoints />
     </div>
   );
 }
