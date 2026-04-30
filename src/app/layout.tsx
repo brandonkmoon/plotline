@@ -39,6 +39,7 @@ export const metadata: Metadata = {
   },
   other: {
     "mobile-web-app-capable": "yes",
+    "apple-itunes-app": "app-id=6763647982",
   },
   metadataBase: new URL(
     (() => {
