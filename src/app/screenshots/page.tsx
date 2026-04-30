@@ -410,6 +410,26 @@ export default function ScreenshotPage() {
         <div className="banner-subtitle">The Collaborative Storytelling Game</div>
       </div>
 
+      {/* InfoStrip — shown on all screens except lobby */}
+      {active !== "lobby" && (
+        <div className="bg-ink py-[6px] px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: "#1a1a1a" }} />
+            <span className="font-sans text-[11px] uppercase tracking-[2px] font-semibold text-white">
+              Brandon
+            </span>
+          </div>
+          {(active === "prompt-name" || active === "prompt-text" || active === "voting") && (
+            <span className="font-sans text-[13px] font-semibold tracking-[1px] text-white">
+              1:12
+            </span>
+          )}
+          <span className="font-sans text-[11px] font-semibold tracking-[2px] text-white">
+            KXMR ↗
+          </span>
+        </div>
+      )}
+
       {/* Render active screen */}
       {active === "lobby" && <MockLobby />}
       {active === "prompt-name" && <MockPromptName />}
