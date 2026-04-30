@@ -480,7 +480,7 @@ body {
 
 @media (min-width: 768px) {
   .screen {
-    max-width: 560px;
+    max-width: 600px;
     padding: 48px 32px 80px;
   }
 
@@ -500,16 +500,20 @@ body {
 
 @media (min-width: 1024px) {
   .screen {
-    max-width: 640px;
+    max-width: 720px;
     padding: 56px 40px 80px;
   }
 
+  .banner {
+    padding: 48px 40px 32px;
+  }
+
   .banner-title-img {
-    height: 64px;
+    height: 72px;
   }
 
   .banner-subtitle {
-    font-size: 14px;
-    letter-spacing: 5px;
+    font-size: 15px;
+    letter-spacing: 6px;
   }
 }
