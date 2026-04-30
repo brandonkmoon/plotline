@@ -264,8 +264,7 @@ export function handleJoinRoom(
   if (!server.gameState) {
     // First player creates the room
     server.gameState = createRoom(server.room.id, { id: playerId, name: msg.playerName }, now);
-    // TODO: wire up payment — for now all rooms are premium
-    server.gameState.isPremium = true;
+    server.gameState.isPremium = !!msg.isPremium;
   } else {
     // Enforce player limit based on room tier
     const maxPlayers = server.gameState.isPremium ? MAX_PLAYERS_PREMIUM : MAX_PLAYERS_FREE;

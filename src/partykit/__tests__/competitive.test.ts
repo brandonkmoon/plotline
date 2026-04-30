@@ -482,10 +482,7 @@ describe("Competitive mode server tests", () => {
   });
 
   describe("Player limits", () => {
-    // NOTE: Free limit test is skipped because isPremium is hardcoded to true
-    // on the server until payment integration is complete. Uncomment when
-    // isPremium is wired to actual payment status.
-    it.skip("rejects players beyond free limit (8)", () => {
+    it("rejects players beyond free limit (8)", () => {
       const { server, connections } = makeServer();
       join(server, connections, "c1", "P1"); // host, no isPremium
       for (let i = 2; i <= 8; i++) {
