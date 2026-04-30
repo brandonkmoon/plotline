@@ -376,6 +376,9 @@ export default function ScreenshotPage() {
 
   return (
     <div>
+      {/* Hide the layout banner and help button on this page */}
+      <style>{`.banner:not(.screenshot-banner), .help-btn { display: none !important; }`}</style>
+
       {/* Screen selector — won't appear in screenshots */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-ink p-2 flex flex-wrap gap-2 justify-center">
         {SCREENS.map((s) => (
@@ -393,6 +396,19 @@ export default function ScreenshotPage() {
 
       {/* Spacer for fixed nav */}
       <div style={{ height: 52 }} />
+
+      {/* Banner — rendered here so it's below the selector tabs */}
+      <div className="banner screenshot-banner">
+        <img
+          src="/plotline-title.png"
+          alt="Plotline"
+          className="banner-title-img"
+          width={355}
+          height={44}
+          draggable={false}
+        />
+        <div className="banner-subtitle">The Collaborative Storytelling Game</div>
+      </div>
 
       {/* Render active screen */}
       {active === "lobby" && <MockLobby />}
