@@ -376,6 +376,18 @@ export default function CompetitiveEndScreen() {
               </p>
             </>
           )}
+
+          {/* App Store nudge */}
+          <div className="mt-8 text-center">
+            <a
+              href="https://apps.apple.com/app/id6763647982"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-body italic text-[13px] text-text-muted hover:text-ink transition-colors"
+            >
+              Loved it? Get the app &rarr;
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -588,6 +600,18 @@ export default function CompetitiveEndScreen() {
       })()}
 
       <PlayerList players={room.players} playerStatuses={playerStatuses} />
+
+      {/* App Store nudge */}
+      <div className="mt-8 text-center">
+        <a
+          href="https://apps.apple.com/app/id6763647982"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-body italic text-[13px] text-text-muted hover:text-ink transition-colors"
+        >
+          Loved it? Get the app &rarr;
+        </a>
+      </div>
     </div>
   );
 }
