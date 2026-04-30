@@ -475,3 +475,41 @@ body {
   background: var(--list-border);
   border-radius: 2px;
 }
+
+/* ── Tablet / wide screen adaptations ────────────────────────── */
+
+@media (min-width: 768px) {
+  .screen {
+    max-width: 560px;
+    padding: 48px 32px 80px;
+  }
+
+  .banner {
+    padding: 40px 32px 28px;
+  }
+
+  .banner-title-img {
+    height: 56px;
+  }
+
+  .banner-subtitle {
+    font-size: 13px;
+    letter-spacing: 4px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .screen {
+    max-width: 640px;
+    padding: 56px 40px 80px;
+  }
+
+  .banner-title-img {
+    height: 64px;
+  }
+
+  .banner-subtitle {
+    font-size: 14px;
+    letter-spacing: 5px;
+  }
+}
