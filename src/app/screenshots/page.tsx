@@ -36,6 +36,8 @@ const MOCK_STORIES = [
 ];
 
 const SCREENS = [
+  "title",
+  "below-fold",
   "lobby",
   "prompt-name",
   "prompt-text",
@@ -48,6 +50,292 @@ const SCREENS = [
 ] as const;
 
 type Screen = typeof SCREENS[number];
+
+// Mobile Producer chevron banner — SVG mock matching the native ProducerBanner
+// (5 peaks / 4 valleys on the right edge, 5pt tooth depth, half-tooth corners,
+// crisp drop shadow at +2/+3 with 25% black).
+function ChevronBanner() {
+  const VISIBLE_WIDTH = 224;
+  const HIDDEN_LEFT = 40;
+  const TOTAL_WIDTH = VISIBLE_WIDTH + HIDDEN_LEFT;
+  const HEIGHT = 74;
+  const TOOTH_DEPTH = 5;
+  const PEAKS = 5;
+  const SEGMENTS = (PEAKS - 1) * 2;
+  const SHADOW_DX = 2;
+  const SHADOW_DY = 3;
+  const segH = HEIGHT / SEGMENTS;
+
+  const parts: string[] = [];
+  parts.push(`M 0 0`);
+  parts.push(`L ${TOTAL_WIDTH} 0`);
+  for (let i = 1; i < SEGMENTS; i++) {
+    const y = (i * segH).toFixed(2);
+    const x = i % 2 === 1 ? TOTAL_WIDTH - TOOTH_DEPTH : TOTAL_WIDTH;
+    parts.push(`L ${x} ${y}`);
+  }
+  parts.push(`L ${TOTAL_WIDTH} ${HEIGHT}`);
+  parts.push(`L 0 ${HEIGHT} Z`);
+  const d = parts.join(" ");
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: 0,
+        bottom: 32,
+        width: VISIBLE_WIDTH,
+        height: HEIGHT,
+        zIndex: 40,
+      }}
+    >
+      <div style={{ marginLeft: -HIDDEN_LEFT }}>
+        <svg width={TOTAL_WIDTH + SHADOW_DX + 2} height={HEIGHT + SHADOW_DY + 3}>
+          <path d={d} fill="rgba(0,0,0,0.25)" transform={`translate(${SHADOW_DX} ${SHADOW_DY})`} />
+          <path d={d} fill="#1a1a1a" />
+        </svg>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          height: HEIGHT,
+          left: 16,
+          justifyContent: "center",
+          display: "flex",
+          alignItems: "center",
+          pointerEvents: "none",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-playfair), serif",
+            fontWeight: 700,
+            fontSize: 15,
+            color: "#fceb00",
+          }}
+        >
+          ★
+        </span>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 20,
+          right: 20,
+          height: HEIGHT,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          paddingLeft: 20,
+          pointerEvents: "none",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-playfair), serif",
+            fontWeight: 700,
+            fontSize: 16,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+            color: "#ffffff",
+          }}
+        >
+          Want a Winner?
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-lora), serif",
+            fontStyle: "italic",
+            fontSize: 14,
+            marginTop: 4,
+            color: "#ffffff",
+            textAlign: "center",
+          }}
+        >
+          Become a Producer!
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// Help FAB mock — black-bordered "?" square in bottom-right, aligned with banner center
+function HelpFab() {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        right: 20,
+        bottom: 49,
+        width: 40,
+        height: 40,
+        borderWidth: 2,
+        borderStyle: "solid",
+        borderColor: "#1a1a1a",
+        backgroundColor: "#ffffff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 40,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-playfair), serif",
+          fontWeight: 700,
+          fontSize: 20,
+          color: "#1a1a1a",
+          lineHeight: "22px",
+        }}
+      >
+        ?
+      </span>
+    </div>
+  );
+}
+
+function MockTitle() {
+  return (
+    <div
+      style={{
+        position: "relative",
+        minHeight: "calc(100vh - 100px)",
+        display: "flex",
+        flexDirection: "column",
+        paddingLeft: 20,
+        paddingRight: 20,
+      }}
+    >
+      <div style={{ flex: 1 }} />
+
+      <div className="screen" style={{ paddingTop: 0, paddingBottom: 0 }}>
+        <button
+          className="w-full font-serif font-medium uppercase text-[16px] py-4 px-6 bg-ink text-white"
+          style={{ letterSpacing: "3px" }}
+        >
+          Create a Show
+        </button>
+        <div style={{ height: 12 }} />
+        <button
+          className="w-full font-serif font-medium uppercase text-[14px] py-3 px-6 border-2 border-ink text-ink bg-transparent"
+          style={{ letterSpacing: "2px" }}
+        >
+          Join a Show
+        </button>
+        <p
+          className="font-sans text-[11px] uppercase text-text-muted text-center"
+          style={{ letterSpacing: "3px", marginTop: 40 }}
+        >
+          4 &ndash; 10 Players
+        </p>
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      {/* Down arrow at the very bottom */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 4,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          zIndex: 40,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 22,
+            color: "#777777",
+            lineHeight: "24px",
+          }}
+        >
+          ↓
+        </span>
+      </div>
+
+      <ChevronBanner />
+      <HelpFab />
+    </div>
+  );
+}
+
+function MockBelowFold() {
+  return (
+    <div className="screen" style={{ paddingTop: 32 }}>
+      <p
+        className="font-sans text-[10px] uppercase tracking-[3px] text-text-muted text-center mb-6"
+      >
+        A scene from last night.
+      </p>
+
+      <div className="border-t border-b border-ink py-6 space-y-3">
+        <p className="font-serif font-bold text-[22px] text-ink leading-tight mb-6 text-center">
+          &ldquo;Brenda and Gary at the Hospital&rdquo;
+        </p>
+
+        {[
+          { line: "Brenda — a woman who irons her socks", by: "Rachel" },
+          { line: "and Gary — a semi-professional kazoo player who is between gigs", by: "Tom" },
+          { line: "are in a hospital waiting room that smells like a Subway restaurant,", by: "Brenda" },
+          { line: "teaching a pigeon to sit.", by: "Gary" },
+          { line: "Brenda says, “I didn’t come here to make friends, and yet.”", by: "Nadia" },
+          { line: "Gary says, “The thing about geese is you can’t reason with them.”", by: "Phil" },
+          { line: "Then, the vending machine gave everyone their money back, which felt like a sign, but wasn’t.", by: "Carmen" },
+        ].map(({ line, by }) => (
+          <div key={by}>
+            <p className="font-body text-[16px] text-ink leading-[1.6]">{line}</p>
+            <p className="font-sans text-[11px] text-text-muted tracking-[1px] mt-0.5">
+              &mdash; written by {by}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <p className="font-sans text-[12px] uppercase tracking-[2px] text-ink text-center my-8">
+        Different writers. Zero coordination.
+      </p>
+
+      <hr className="rule" />
+
+      <p className="font-serif font-bold text-[20px] text-ink mt-8 mb-3">Want a winner?</p>
+      <p className="font-body text-[15px] text-ink leading-relaxed mb-3">
+        <span style={{ textDecoration: "underline" }}>Upgrade to Producer</span> and unlock
+        Competitive Mode &mdash; vote on the best lines, deploy your one standing ovation per
+        game for something truly exceptional, and play a series with cumulative standings and
+        a full awards ceremony.
+      </p>
+      <p className="font-body italic text-[15px] text-text-dim mb-4">
+        Every great show needs a producer.
+      </p>
+      <p
+        className="font-sans text-[12px] uppercase text-ink"
+        style={{ letterSpacing: "2px", textDecoration: "underline", marginBottom: 32 }}
+      >
+        Tap to Upgrade →
+      </p>
+
+      <hr className="rule" />
+
+      <p className="font-serif font-bold text-[22px] text-ink text-center leading-snug my-12">
+        Your group has a scene like this.
+        <br />
+        You just haven&rsquo;t written it yet.
+      </p>
+
+      <hr className="rule" />
+
+      <p className="font-sans text-[11px] text-text-muted text-center tracking-[1px] my-8">
+        Privacy
+        <span className="mx-2 opacity-40">|</span>
+        Created by Brandon Moon
+      </p>
+    </div>
+  );
+}
 
 function MockLobby() {
   return (
@@ -75,7 +363,7 @@ function MockLobby() {
           </li>
         ))}
       </ul>
-      <p className="font-sans text-[13px] text-text-muted text-center mt-2">5/8 players</p>
+      <p className="font-sans text-[13px] text-text-muted text-center mt-2">5/10 players</p>
     </div>
   );
 }
@@ -419,30 +707,50 @@ function MockAwards() {
 }
 
 export default function ScreenshotPage() {
-  const [active, setActive] = useState<Screen>("lobby");
+  const [active, setActive] = useState<Screen>("title");
+  const [navHidden, setNavHidden] = useState(false);
 
   return (
     <div>
       {/* Hide the layout banner and help button on this page */}
       <style>{`.banner:not(.screenshot-banner), .help-btn { display: none !important; }`}</style>
 
-      {/* Screen selector — won't appear in screenshots */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-ink p-2 flex flex-wrap gap-2 justify-center">
-        {SCREENS.map((s) => (
-          <button
-            key={s}
-            onClick={() => setActive(s)}
-            className={`px-3 py-1 text-[11px] uppercase tracking-[1px] border ${
-              active === s ? "bg-ink text-white border-ink" : "border-ink text-ink"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
+      {navHidden ? (
+        <button
+          onClick={() => setNavHidden(false)}
+          className="fixed top-2 right-2 z-50 px-3 py-1 text-[11px] uppercase tracking-[1px] border border-ink bg-white text-ink"
+        >
+          Show ▾
+        </button>
+      ) : (
+        <>
+          {/* Screen selector — single-line scrollable, won't appear in screenshots */}
+          <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-ink p-2 flex gap-2 items-center">
+            <div className="flex gap-2 overflow-x-auto flex-1">
+              {SCREENS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setActive(s)}
+                  className={`shrink-0 px-3 py-1 text-[11px] uppercase tracking-[1px] border whitespace-nowrap ${
+                    active === s ? "bg-ink text-white border-ink" : "border-ink text-ink"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setNavHidden(true)}
+              className="shrink-0 px-3 py-1 text-[11px] uppercase tracking-[1px] border border-ink bg-banner text-ink"
+            >
+              Hide ▴
+            </button>
+          </div>
 
-      {/* Spacer for fixed nav */}
-      <div style={{ height: 52 }} />
+          {/* Spacer for fixed nav */}
+          <div style={{ height: 52 }} />
+        </>
+      )}
 
       {/* Banner — rendered here so it's below the selector tabs */}
       <div className="banner screenshot-banner">
@@ -457,8 +765,8 @@ export default function ScreenshotPage() {
         <div className="banner-subtitle">The Collaborative Storytelling Game</div>
       </div>
 
-      {/* InfoStrip — shown on all screens except lobby */}
-      {active !== "lobby" && (
+      {/* InfoStrip — shown on all screens except lobby/title/below-fold */}
+      {active !== "lobby" && active !== "title" && active !== "below-fold" && (
         <div className="bg-ink py-[6px] px-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: "#1a1a1a" }} />
@@ -478,6 +786,8 @@ export default function ScreenshotPage() {
       )}
 
       {/* Render active screen */}
+      {active === "title" && <MockTitle />}
+      {active === "below-fold" && <MockBelowFold />}
       {active === "lobby" && <MockLobby />}
       {active === "prompt-name" && <MockPromptName />}
       {active === "prompt-text" && <MockPromptText />}

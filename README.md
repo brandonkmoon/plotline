@@ -1,6 +1,6 @@
 # Plotline
 
-A blind collaborative storytelling party game for 4-12 players. Players take turns filling in prompts without seeing each other's responses, then read the resulting absurd stories aloud.
+A blind collaborative storytelling party game for 4-10 players. Players take turns filling in prompts without seeing each other's responses, then read the resulting absurd stories aloud.
 
 ## Local development
 
@@ -128,7 +128,7 @@ src/
 
 ## Game Rules
 
-- 4-12 players per room
+- 4-10 players per room
 - 7 prompts per story, one story per player
 - Players answer prompts round-by-round without seeing previous answers
 - The rotation algorithm ensures no player writes adjacent prompts in any story

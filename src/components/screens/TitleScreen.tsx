@@ -129,7 +129,7 @@ export default function TitleScreen() {
               transitionDelay: ready ? "200ms" : "0ms",
             }}
           >
-            4 &ndash; 12 Players
+            4 &ndash; 10 Players
           </p>
         </div>
 

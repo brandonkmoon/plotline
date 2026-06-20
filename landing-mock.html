@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plotline — Landing Page Mock</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Lora:ital,wght@0,400;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --banner: #fceb00;
+    --ink: #1a1a1a;
+    --bg: #ffffff;
+    --muted: #888888;
+    --dim: #666666;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Banner ── */
+  .banner {
+    background: var(--banner);
+    padding: 32px 20px 24px;
+    text-align: center;
+    border-bottom: 3px solid var(--ink);
+  }
+  .banner-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 36px;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  /* ── Hero (above the fold) ── */
+  .hero {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 40px 20px 60px;
+    text-align: center;
+  }
+  .hero-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .btn-primary {
+    font-family: 'Playfair Display', serif;
+    font-weight: 500;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    background: var(--ink);
+    color: white;
+    border: none;
+    padding: 16px 24px;
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-secondary {
+    font-family: 'Playfair Display', serif;
+    font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: transparent;
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    padding: 12px 24px;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  /* ── Divider ── */
+  .rule {
+    border: none;
+    border-top: 1px solid var(--ink);
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  /* ── Sample Scene ── */
+  .scene-section {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 48px 20px 40px;
+  }
+  .scene-label {
+    font-family: 'Playfair Display', serif;
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .scene-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--ink);
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .scene-line {
+    font-family: 'Lora', serif;
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .scene-line em {
+    font-style: italic;
+  }
+  .scene-author {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: -8px;
+    margin-bottom: 12px;
+  }
+  .scene-context {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--dim);
+    text-align: center;
+    margin-top: 24px;
+  }
+
+  /* ── How it works ── */
+  .how-section {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 40px 20px 48px;
+  }
+  .how-heading {
+    font-family: 'Playfair Display', serif;
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .how-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .how-step {
+    text-align: center;
+  }
+  .how-step-number {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .how-step-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .how-step-desc {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--dim);
+    line-height: 1.5;
+  }
+
+  /* ── Info strip ── */
+  .info-section {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 40px 20px 48px;
+    text-align: center;
+  }
+  .info-line {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .info-line strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ── Occasion tags ── */
+  .occasion-tag {
+    font-family: 'Playfair Display', serif;
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    padding: 6px 14px;
+  }
+
+  /* ── Competitive teaser ── */
+  .competitive-section {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 0 20px 48px;
+  }
+  .competitive-card {
+    border: 2px solid var(--ink);
+    padding: 24px;
+  }
+  .competitive-label {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .competitive-desc {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 24px 20px 48px;
+    text-align: center;
+  }
+  .footer-text {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .footer-credits {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  .footer-credits a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .footer-divider {
+    color: var(--muted);
+    opacity: 0.4;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ── Above the fold: unchanged from current site ── -->
+  <div class="banner">
+    <div class="banner-title">Plotline</div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-buttons">
+      <button class="btn-primary">Create a Show</button>
+      <button class="btn-secondary">Join a Show</button>
+    </div>
+  </div>
+
+  <!-- ── Below the fold: the sell ── -->
+  <hr class="rule">
+
+  <!-- A real scene — the game sells itself -->
+  <div class="scene-section">
+    <div class="scene-label">A scene from last night</div>
+    <div class="scene-title">&ldquo;Brenda and Gary at the Hospital&rdquo;</div>
+
+    <div class="scene-line">
+      Brenda &mdash; a woman who irons her socks
+    </div>
+    <div class="scene-author">&mdash; written by Rachel</div>
+
+    <div class="scene-line">
+      and Gary &mdash; a semi-professional kazoo player who is between gigs
+    </div>
+    <div class="scene-author">&mdash; written by Tom</div>
+
+    <div class="scene-line">
+      are in a hospital waiting room that smells like a Subway restaurant,
+    </div>
+    <div class="scene-author">&mdash; written by Brenda</div>
+
+    <div class="scene-line">
+      teaching a pigeon to sit.
+    </div>
+    <div class="scene-author">&mdash; written by Gary</div>
+
+    <div class="scene-line">
+      <em>Brenda says, &ldquo;I didn&rsquo;t come here to make friends, and yet.&rdquo;</em>
+    </div>
+    <div class="scene-author">&mdash; written by Nadia</div>
+
+    <div class="scene-line">
+      <em>Gary says, &ldquo;The thing about geese is you can&rsquo;t reason with them.&rdquo;</em>
+    </div>
+    <div class="scene-author">&mdash; written by Phil</div>
+
+    <div class="scene-line">
+      Then, the vending machine gave everyone their money back, which felt like a sign, but wasn&rsquo;t.
+    </div>
+    <div class="scene-author">&mdash; written by Carmen</div>
+
+    <div class="scene-context">
+      Nobody saw what anyone else wrote.
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- Key facts -->
+  <div class="info-section">
+    <div class="info-line"><strong>4&ndash;12 players</strong></div>
+    <div class="info-line">No app required &mdash; guests join from any browser</div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- Occasions -->
+  <div class="info-section">
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 360px; margin: 0 auto;">
+      <span class="occasion-tag">Game Nights</span>
+      <span class="occasion-tag">Dinner Parties</span>
+      <span class="occasion-tag">Ice Breakers</span>
+      <span class="occasion-tag">Bachelorette Parties</span>
+      <span class="occasion-tag">Family Reunions</span>
+      <span class="occasion-tag">Team Offsites</span>
+      <span class="occasion-tag">Improv Groups</span>
+      <span class="occasion-tag">Theater Classes</span>
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- Competitive sell -->
+  <div class="competitive-section">
+    <div class="competitive-card">
+      <div class="competitive-label">Competitive Mode</div>
+      <div class="competitive-desc">
+        Vote on the best lines. Deploy your one standing ovation per game for something truly exceptional.
+        Play a 3 or 5-game series with cumulative standings and an awards ceremony at the end.
+      </div>
+      <div class="competitive-desc" style="margin-top: 12px; color: var(--ink); font-style: normal; font-family: 'Inter', sans-serif; font-size: 12px; letter-spacing: 1px;">
+        Every great show needs a producer.
+      </div>
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-text">The show is different every time. Yours starts now.</div>
+    <div class="footer-credits">
+      <a href="/privacy.html">Privacy</a>
+      <span class="footer-divider">|</span>
+      <span>Created by Brandon Moon</span>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -94,7 +94,7 @@ function ModeSheet({
             </Button>
           ) : (
             <p className="font-body italic text-[14px] text-text-muted text-center mt-2">
-              Upgrade to unlock competitive mode and up to 12 players.
+              Upgrade to unlock competitive mode.
             </p>
           )}
         </div>
@@ -194,7 +194,7 @@ export default function LobbyScreen() {
         />
 
         <p className="font-sans text-[13px] text-text-muted text-center mt-2 mb-2">
-          {connectedPlayers.length}/{room?.isPremium ? 12 : 8} players
+          {connectedPlayers.length}/10 players
         </p>
       </div>
 

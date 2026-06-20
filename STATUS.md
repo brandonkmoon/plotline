@@ -4,7 +4,7 @@ Last updated: 2026-04-30
 
 ## What Plotline Is
 
-A multiplayer blind collaborative storytelling party game (4-12 players). Players write parts of a story without seeing what others wrote, then the stories are read aloud. Web app + iOS app, same real-time server.
+A multiplayer blind collaborative storytelling party game (4-10 players). Players write parts of a story without seeing what others wrote, then the stories are read aloud. Web app + iOS app, same real-time server.
 
 ## Architecture
 
@@ -35,14 +35,15 @@ A multiplayer blind collaborative storytelling party game (4-12 players). Player
 - Live at plotlinegame.com
 - All features deployed automatically via Vercel on push to `main`
 - Web users cannot purchase Producer mode yet (needs Stripe — future work)
-- All rooms created from web are free tier (8 players, classic only)
+- All rooms created from web are free tier (classic only; competitive requires the iOS app's Producer IAP)
 
 ### Server (PartyKit)
 - Deployed at plotline.brandonkmoon.partykit.dev
 - Deploy command: `npx partykit deploy` (from web project root)
 - `isPremium` flag is live — set by client on room creation
-- Free rooms: 8 player max, classic mode only
-- Premium rooms: 12 player max, competitive mode unlocked
+- All rooms: 4–10 player cap
+- Free rooms: classic mode only
+- Premium rooms: competitive mode unlocked
 
 ## Game Modes
 
@@ -84,7 +85,43 @@ A multiplayer blind collaborative storytelling party game (4-12 players). Player
 ### Future Work
 - **Stripe for web**: so web users can purchase Producer mode
 - **App Store Promotion**: enable IAP promotion once purchase flow is confirmed working
-- **Async play mode**: play-by-mail style over hours/days (would need push notifications)
+- **Play-by-mail mode**: async play over hours/days (would need push notifications)
+- **In-session async pacing** (deferred 2026-05-04 — see below)
+
+### Potential upgrade: in-session async pacing
+
+Replace (or supplement) the current synchronous round-by-round play with each player pacing themselves through all 7 prompts inside a single ~15-min session. A tracker shows everyone's progress live so players know who they're waiting on.
+
+**Design questions to resolve before building:**
+
+1. **The dependency problem.** Acts 4-5 dialogue prompts ("What does Brenda say?") depend on acts 0-1 (character names) being filled in for that story. In sync mode this is automatic; in async it isn't. Three options:
+   - Show placeholder ("What does [Character 1] say?") when name isn't ready — loses named-character magic
+   - Block writing prompt 4 until prompt 0 of that story is done — partially defeats async
+   - **Force prompt order (0→6) per player** but at their own pace, fall back to placeholder when timing breaks. Probabilistically the dependency is met. Recommended.
+
+2. **Replace sync entirely vs add as new mode.** Adding is safer (compare in the wild before committing); replacing is simpler. Lean: add as a new option in the lobby's mode picker.
+
+**Other things that need to change:**
+- Per-prompt timer disappears; replace with a single ~12–15 min overall game timer
+- `WaitingScreen` ("Between Acts") goes away entirely
+- "Round 1 / Round 2" framing disappears; per-room `currentPromptIndex` becomes per-player `progress`
+- End-of-writing trigger: "all players done OR overall timer expired" (whichever first)
+- Auto-fill placeholder for unfinished prompts when timer expires, so assembly doesn't break
+- Disconnection handling gets harder — a dropped player blocks the entire game; need a 60s timeout + auto-fill rule
+
+**Tracker UI:**
+Per-player horizontal dot row, e.g. `Brandon ●●●●●●● done!` / `Rachel ●●●●●○○ 5/7`. Live updates via PartyKit broadcasts.
+
+**What's preserved:**
+- Rotation algorithm itself (same N×7 matrix)
+- Competitive mode (voting, standing ovations, awards) — orthogonal to pacing
+- Reveal flow (group-paced, one story at a time)
+- Identity, reconnection, premium gating
+
+**What's at risk:**
+- Pacing energy (sync timer keeps things urgent; async lets fast writers stew)
+- Anticipation between rounds (gone — reveal becomes more important)
+- The shared-moment feel of group-paced play
 
 ## Technical Notes
 

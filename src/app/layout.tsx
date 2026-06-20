@@ -30,7 +30,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Plotline",
   description:
-    "A blind collaborative storytelling party game for 4-12 players.",
+    "A blind collaborative storytelling party game for 4-10 players.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

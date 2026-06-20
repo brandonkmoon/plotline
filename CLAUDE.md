@@ -1,6 +1,6 @@
 # Plotline
 
-A multiplayer blind collaborative storytelling party game for 4–12 players, inspired by the Victorian parlor game "Consequences." Players each contribute one piece of a scene without seeing what others wrote, then the scenes are revealed for laughs.
+A multiplayer blind collaborative storytelling party game for 4–10 players, inspired by the Victorian parlor game "Consequences." Players each contribute one piece of a scene without seeing what others wrote, then the scenes are revealed for laughs.
 
 Built by Brandon Moon.
 
@@ -33,7 +33,6 @@ Scenes are assembled in `storyAssembly.ts` into a template: "[Name1] and [Name2]
 ### Classic (Free)
 - 7 acts, scenes assembled and read aloud
 - No scoring, just fun
-- Up to 8 players
 
 ### Competitive (Producer upgrade — $3.99 lifetime IAP)
 - Voting on best lines after each scene reveal
@@ -43,7 +42,6 @@ Scenes are assembled in `storyAssembly.ts` into a template: "[Name1] and [Name2]
 - 90-second ready/timer flow between games
 - Awards ceremony: Casting Director, Scene Stealer, Speechwriter, Closer, Fan Favorite, Popularity, Line of the Series
 - Tie-breaking: fewest existing awards first, then alphabetical
-- Up to 12 players
 - Round timer: 90s for game 1, 60s for games 2+
 
 ## Tech Stack
@@ -131,7 +129,7 @@ src/
 
 **Round-robin rotation**: Each player writes for a different scene each act. With N players and 7 acts, there are N scenes.
 
-**isPremium**: Set on room creation based on host's Producer purchase status. Persists for the life of the room, even across game resets and host transfers. Free rooms: 8 players, classic only. Premium rooms: 12 players, competitive unlocked.
+**isPremium**: Set on room creation based on host's Producer purchase status. Persists for the life of the room, even across game resets and host transfers. All rooms support 4–10 players regardless of tier — `isPremium` only gates competitive mode.
 
 **Input sanitization**: All player names and responses are sanitized at the server boundary (HTML tags stripped, special chars escaped, max lengths enforced).
 

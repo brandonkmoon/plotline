@@ -482,33 +482,31 @@ describe("Competitive mode server tests", () => {
   });
 
   describe("Player limits", () => {
-    it("rejects players beyond free limit (8)", () => {
+    it("allows up to 10 players regardless of isPremium, rejects the 11th", () => {
       const { server, connections } = makeServer();
-      join(server, connections, "c1", "P1"); // host, no isPremium
-      for (let i = 2; i <= 8; i++) {
+      join(server, connections, "c1", "P1"); // free host
+      for (let i = 2; i <= 10; i++) {
         join(server, connections, `c${i}`, `P${i}`);
       }
 
-      const c9 = join(server, connections, "c9", "P9");
-      const err = c9.sentMessages.find((m) => m.type === "ERROR");
+      const u = getLatestStateUpdate(connections.get("c10")!);
+      expect(u.room.players.length).toBe(10);
+
+      const c11 = join(server, connections, "c11", "P11");
+      const err = c11.sentMessages.find((m) => m.type === "ERROR");
       expect(err).toBeDefined();
       expect((err as any).reason).toBe("ROOM_FULL");
     });
 
-    it("allows up to 12 players in premium rooms", () => {
+    it("applies the same 10-player cap when host is Premium", () => {
       const { server, connections } = makeServer();
       join(server, connections, "c1", "P1", { isPremium: true });
-      for (let i = 2; i <= 12; i++) {
+      for (let i = 2; i <= 10; i++) {
         join(server, connections, `c${i}`, `P${i}`);
       }
 
-      // 12th player should be in
-      const u = getLatestStateUpdate(connections.get("c12")!);
-      expect(u.room.players.length).toBe(12);
-
-      // 13th should be rejected
-      const c13 = join(server, connections, "c13", "P13");
-      const err = c13.sentMessages.find((m) => m.type === "ERROR");
+      const c11 = join(server, connections, "c11", "P11");
+      const err = c11.sentMessages.find((m) => m.type === "ERROR");
       expect(err).toBeDefined();
       expect((err as any).reason).toBe("ROOM_FULL");
     });

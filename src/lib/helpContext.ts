@@ -33,7 +33,7 @@ export function onHelpScreenChange(fn: () => void): () => void {
 }
 
 export const HELP_TIPS: Record<string, string> = {
-  "title": "Create a room and share the code. 4\u201312 players, no app required.",
+  "title": "Create a room and share the code. 4\u201310 players, no app required.",
   "lobby": "Share the room code. The host starts the game when 4+ players have joined.",
   "prompt-name": "Tap someone\u2019s name, then write a short character description for them.",
   "prompt-text": "Write your answer in present tense. Keep it short \u2014 one line is perfect.",

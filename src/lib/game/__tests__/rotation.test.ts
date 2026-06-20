@@ -71,11 +71,11 @@ describe("generateAssignments", () => {
     expect(() => generateAssignments(makePlayerIds(3))).toThrow();
   });
 
-  it("throws for more than 12 players", () => {
-    expect(() => generateAssignments(makePlayerIds(13))).toThrow();
+  it("throws for more than 10 players", () => {
+    expect(() => generateAssignments(makePlayerIds(11))).toThrow();
   });
 
-  for (const n of [4, 5, 6, 7, 8, 10, 12]) {
+  for (const n of [4, 5, 6, 7, 8, 9, 10]) {
     it(`produces valid assignments for N=${n}`, () => {
       const playerIds = makePlayerIds(n);
       const assignments = generateAssignments(playerIds);

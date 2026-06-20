@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Plotline Icon Mock</title>
+<style>
+  @font-face {
+    font-family: 'Latin CG Bold';
+    src: url('LatinCGBold.otf');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #e0e0e0;
+  }
+  canvas {
+    transform: scale(0.75);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+  <canvas id="icon" width="1024" height="1024"></canvas>
+
+  <script>
+    (async () => {
+      const font = new FontFace('Latin CG Bold', 'url(LatinCGBold.otf)');
+      await font.load();
+      document.fonts.add(font);
+
+      const cv = document.getElementById('icon');
+      const ctx = cv.getContext('2d');
+
+      const W = 1024, H = 1024;
+      const RULE = 6;
+      const TOP_H = Math.round((H - RULE) * 0.70);  // 711px
+      const BOT_H = H - RULE - TOP_H;               // 307px
+
+      // Backgrounds
+      ctx.fillStyle = '#fceb00';
+      ctx.fillRect(0, 0, W, TOP_H);
+
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, TOP_H, W, RULE);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, TOP_H + RULE, W, BOT_H);
+
+      // Binary-search for the largest font size where the actual glyph fits
+      function findSize(text, maxW, maxH, pad) {
+        let lo = 1, hi = 4000;
+        while (hi - lo > 1) {
+          const mid = (lo + hi) >> 1;
+          ctx.font = `${mid}px 'Latin CG Bold'`;
+          const m = ctx.measureText(text);
+          const glyphH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+          const fits = glyphH <= maxH * pad && m.width <= maxW * pad;
+          fits ? (lo = mid) : (hi = mid);
+        }
+        return lo;
+      }
+
+      // Draw text centered (by actual glyph bounds) in a vertical section
+      function drawCentered(text, sectionY, sectionH, pad) {
+        const size = findSize(text, W, sectionH, pad);
+        ctx.font = `${size}px 'Latin CG Bold'`;
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = '#1a1a1a';
+
+        const m = ctx.measureText(text);
+        // Center horizontally by actual glyph width
+        const x = (W - m.width) / 2;
+        // Center the visual glyph (not the line box) vertically:
+        //   glyph center Y = sectionY + sectionH / 2
+        //   baseline Y     = glyph center Y + (ascent - descent) / 2
+        const baselineY = sectionY + sectionH / 2
+                        + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+        ctx.fillText(text, x, baselineY);
+      }
+
+      drawCentered('P',        0,              TOP_H, 0.92);
+      drawCentered('PLOTLINE', TOP_H + RULE,   BOT_H, 0.82);
+    })();
+  </script>
+</body>
+</html>

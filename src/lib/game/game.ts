@@ -2,7 +2,7 @@ import type { Room, GameAction, Story, PromptSlot, Player } from "./types";
 import { generateAssignments } from "./rotation";
 import { getRandomPlaceholder, PROMPTS } from "./prompts";
 
-const MAX_PLAYERS = 12;
+const MAX_PLAYERS = 10;
 const MIN_PLAYERS_TO_START = 4;
 const PROMPTS_PER_STORY = 7;
 

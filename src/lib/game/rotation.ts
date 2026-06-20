@@ -1,7 +1,7 @@
 /**
  * Rotation assignment engine.
  *
- * Given N players (4-12), produces an N x 7 assignment matrix where:
+ * Given N players (4-10), produces an N x 7 assignment matrix where:
  *   assignments[storyIndex][promptIndex] = playerId
  *
  * Constraints:
@@ -16,8 +16,8 @@ const PROMPTS_PER_STORY = 7;
 
 export function generateAssignments(playerIds: string[]): string[][] {
   const n = playerIds.length;
-  if (n < 4 || n > 12) {
-    throw new Error(`Player count must be 4-12, got ${n}`);
+  if (n < 4 || n > 10) {
+    throw new Error(`Player count must be 4-10, got ${n}`);
   }
 
   if (n >= 7) {

@@ -8,8 +8,7 @@ import {
   RECONNECT_TIMEOUT_MS,
   HOST_TRANSFER_TIMEOUT_MS,
   ROOM_DESTROY_TIMEOUT_MS,
-  MAX_PLAYERS_FREE,
-  MAX_PLAYERS_PREMIUM,
+  MAX_PLAYERS,
 } from "../constants";
 
 export function handleJoinRoom(
@@ -266,9 +265,8 @@ export function handleJoinRoom(
     server.gameState = createRoom(server.room.id, { id: playerId, name: msg.playerName }, now);
     server.gameState.isPremium = !!msg.isPremium;
   } else {
-    // Enforce player limit based on room tier
-    const maxPlayers = server.gameState.isPremium ? MAX_PLAYERS_PREMIUM : MAX_PLAYERS_FREE;
-    if (server.gameState.players.length >= maxPlayers) {
+    // isPremium gates competitive mode only — player cap is universal.
+    if (server.gameState.players.length >= MAX_PLAYERS) {
       server.sendTo(sender, {
         type: "ERROR",
         reason: "ROOM_FULL",

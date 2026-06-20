@@ -40,12 +40,12 @@ describe("PLAYER_JOINED", () => {
   });
 
   it("rejects join when room is full", () => {
-    const room = createLobbyWith(12);
+    const room = createLobbyWith(10);
     const next = gameReducer(room, {
       type: "PLAYER_JOINED",
       player: makePlayer("extra", "Extra"),
     });
-    expect(next.players).toHaveLength(12);
+    expect(next.players).toHaveLength(10);
   });
 
   it("rejects join in PLAYING state", () => {
