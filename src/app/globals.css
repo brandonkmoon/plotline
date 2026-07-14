@@ -3,10 +3,14 @@
 @tailwind utilities;
 
 :root {
+  /* Single source of truth for the Playbill palette. Tailwind's color
+     tokens reference these variables (see tailwind.config.ts) so the two
+     never drift apart. --ink and --banner are mirrored as hex literals in
+     the Tailwind config as well, because they need /opacity modifiers. */
   --bg: #ffffff;
   --ink: #1a1a1a;
   --text-dim: #555555;
-  --text-muted: #777777;
+  --text-muted: #767676; /* WCAG AA (4.5:1) on white; was #777 (fail) */
   --rule: #1a1a1a;
   --list-border: #b8b8b8;
   --input-border: #cccccc;
@@ -43,6 +47,9 @@ body {
   padding: 32px 20px 24px;
   text-align: center;
   border-bottom: 3px solid var(--ink);
+  /* Must cover the title-screen buttons as they slide down from above. */
+  position: relative;
+  z-index: 10;
 }
 .banner-title-img {
   display: block;
@@ -159,12 +166,6 @@ body {
 }
 
 /* ── Title screen entrance animation ───────────────────────── */
-
-/* The banner must cover the buttons as they slide down from above. */
-.banner {
-  position: relative;
-  z-index: 10;
-}
 
 /* Each button sits in a wrapper so the transform doesn't conflict with
    the button's own styles. Buttons start fully hidden (visibility:hidden)
@@ -515,5 +516,60 @@ body {
   .banner-subtitle {
     font-size: 15px;
     letter-spacing: 6px;
+  }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────
+   Honor the OS "reduce motion" setting: switch off decorative and
+   infinite/looping animations, and reveal any content that would
+   otherwise start hidden behind an entrance animation. The screen
+   crossfade (.screen-exit) is intentionally left running — the room
+   page relies on its animationend event to swap screens. */
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-in,
+  .player-enter,
+  .check-pop,
+  .card-stagger,
+  .connection-pulse,
+  .timer-pulse,
+  .timer-urgent,
+  .timer-warning,
+  .line-reveal-anim,
+  .line-preview-text,
+  .prompt-header-enter,
+  .prompt-rule-enter,
+  .prompt-body-enter,
+  .title-btn-wrapper.title-btn-animate,
+  .help-backdrop,
+  .help-panel {
+    animation: none !important;
+  }
+
+  .line-preview::after {
+    animation: none !important;
+  }
+
+  /* Keep the preview line blurred, just stop it "breathing". */
+  .line-preview-text {
+    filter: blur(5px);
+  }
+
+  /* Restore the settled/visible end state for entrances that start hidden. */
+  .card-stagger,
+  .prompt-header-enter,
+  .prompt-rule-enter,
+  .prompt-body-enter,
+  .title-btn-text {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .title-btn-wrapper {
+    visibility: visible !important;
+    transform: none !important;
+  }
+
+  .title-btn-text {
+    transition: none !important;
   }
 }

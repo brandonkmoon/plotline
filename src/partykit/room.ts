@@ -1,5 +1,10 @@
 import type * as Party from "partykit/server";
-import type { Room, GameAction } from "@/lib/game/types";
+import type {
+  Room,
+  GameAction,
+  SeriesState,
+  StoryVoteResult,
+} from "@/lib/game/types";
 import type {
   ClientMessage,
   ServerMessage,
@@ -85,7 +90,6 @@ export default class RoomServer implements Party.Server {
   disconnectTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
   hostTransferTimer: ReturnType<typeof setTimeout> | null = null;
   roomDestroyTimer: ReturnType<typeof setTimeout> | null = null;
-  roundStartTime: number | null = null;
   roundStartedAt: number | null = null;
 
   // Reveal state tracking
@@ -121,6 +125,12 @@ export default class RoomServer implements Party.Server {
         roundStartedAt: number | null;
         revealStoryIndex: number;
         revealedLineCount: number;
+        seriesState?: SeriesState | null;
+        gameVoteResults?: StoryVoteResult[];
+        currentVotes?: Record<
+          string,
+          { lineIndex: number; isStandingOvation: boolean }
+        >;
       }>("snapshot");
 
       if (!stored?.gameState) return;
@@ -139,6 +149,16 @@ export default class RoomServer implements Party.Server {
 
       this.revealStoryIndex = stored.revealStoryIndex ?? 0;
       this.revealedLineCount = stored.revealedLineCount ?? 0;
+      // Restore the shuffled reveal order — without it, reveal advancement
+      // (which walks revealOrder) wedges after a server restart mid-reveal.
+      this.revealOrder = stored.gameState.revealOrder ?? [];
+
+      // Restore competitive/series state.
+      this.seriesState = stored.seriesState ?? null;
+      this.gameVoteResults = stored.gameVoteResults ?? [];
+      this.currentVotes = new Map(
+        Object.entries(stored.currentVotes ?? {})
+      );
 
       // Restore round timer with however much time remains.
       if (
@@ -216,6 +236,12 @@ export default class RoomServer implements Party.Server {
           roundStartedAt: this.roundStartedAt,
           revealStoryIndex: this.revealStoryIndex,
           revealedLineCount: this.revealedLineCount,
+          // Competitive/series state so a restart mid-series doesn't lose
+          // scores, votes, or the reveal order (revealOrder rides along on
+          // gameState).
+          seriesState: this.seriesState,
+          gameVoteResults: this.gameVoteResults,
+          currentVotes: Object.fromEntries(this.currentVotes),
         })
         .catch((err) => {
           console.error("[room] Failed to save state:", err);
@@ -508,6 +534,52 @@ export default class RoomServer implements Party.Server {
     return { pendingConnected, pendingDisconnected };
   }
 
+  /**
+   * Per-connection redaction of unrevealed responses.
+   *
+   * During PLAYING, the raw gameState carries every player's in-progress
+   * responses. Shipping those to every client leaks what others wrote before
+   * the reveal. We null out any response the recipient shouldn't see yet.
+   *
+   * The recipient legitimately needs, for the story they're assigned to this
+   * round, the two character-name lines (acts 0 & 1) so the dialogue prompts
+   * (acts 4-5) and the round-1 duplicate check can render — plus, of course,
+   * their own writing. Everything else stays hidden until reveal.
+   *
+   * Redaction is scoped to PLAYING only. During REVEAL/END the reveal UI
+   * renders from the separately-broadcast ASSEMBLED_STORIES and the voting /
+   * end screens legitimately read full story content, so we return the room
+   * untouched. The server always keeps full data internally (assembly,
+   * archiving and scoring all read this.gameState, never the redacted copy).
+   */
+  private redactRoomFor(recipientId: string): Room {
+    const room = this.gameState!;
+    if (room.state !== "PLAYING") return room;
+
+    const assignedStoryIndex = room.stories.find((s) =>
+      s.slots.some(
+        (sl) =>
+          sl.promptIndex === room.currentRound && sl.playerId === recipientId
+      )
+    )?.index;
+
+    return {
+      ...room,
+      stories: room.stories.map((story) => ({
+        ...story,
+        slots: story.slots.map((slot) => {
+          if (slot.response === null) return slot;
+          const ownedByRecipient = slot.playerId === recipientId;
+          const isNeededCharacterLine =
+            story.index === assignedStoryIndex &&
+            (slot.promptIndex === 0 || slot.promptIndex === 1);
+          if (ownedByRecipient || isNeededCharacterLine) return slot;
+          return { ...slot, response: null };
+        }),
+      })),
+    };
+  }
+
   broadcastStateUpdate() {
     if (!this.gameState) return;
 
@@ -548,7 +620,7 @@ export default class RoomServer implements Party.Server {
       }
       this.sendTo(conn, {
         type: "STATE_UPDATE",
-        room: this.gameState,
+        room: this.redactRoomFor(playerId),
         playerId,
         roundStartedAt: this.roundStartedAt,
         roundDurationMs: roundTimerMs(this),

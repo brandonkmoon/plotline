@@ -49,10 +49,13 @@ export default function ArchiveView({ room, stories }: ArchiveViewProps) {
 
   const handleShare = () => {
     trackEvent("copy_archive_link");
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
   };
 
   return (

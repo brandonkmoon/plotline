@@ -18,10 +18,9 @@ export default function JoinWithCodePage() {
     try {
       const storedId =
         sessionStorage.getItem(`plotline.playerId.${code}`) ??
-        localStorage.getItem(`plotline.rejoin.playerId`);
-      const storedRoom = localStorage.getItem(`plotline.rejoin.roomCode`);
+        localStorage.getItem(`plotline.rejoin.${code}`);
 
-      if (storedId && storedRoom === code) {
+      if (storedId) {
         router.replace(`/room/${code}`);
         return;
       }

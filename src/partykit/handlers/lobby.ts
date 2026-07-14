@@ -160,6 +160,13 @@ export function autoAdvanceAfterReady(server: RoomServer) {
       awards: server.seriesState.awards,
       finalStandings: { ...server.seriesState.cumulativePoints },
     } as ServerMessage);
+
+    // Series is over — reset competitive state so a subsequent series starts
+    // fresh (otherwise currentGameNumber would keep climbing past totalGames).
+    // Clients already hold the awards/standings they were just sent.
+    server.seriesState = null;
+    server.currentVotes.clear();
+    server.gameVoteResults = [];
   } else {
     const hostConn = [...server.connectionToPlayer.entries()]
       .find(([, pid]) => pid === server.gameState!.hostId);
@@ -172,6 +179,15 @@ export function autoAdvanceAfterReady(server: RoomServer) {
 export function handleCreateNextRoom(server: RoomServer, sender: Party.Connection) {
   if (!server.gameState) return;
   if (server.gameState.state !== "END" && server.gameState.state !== "REVEAL") return;
+
+  const playerId = server.connectionToPlayer.get(sender.id);
+  if (!playerId || playerId !== server.gameState.hostId) {
+    server.sendTo(sender, {
+      type: "ERROR",
+      reason: "Only the host can create the next room",
+    });
+    return;
+  }
 
   if (server.gameState.nextRoomCode) {
     server.broadcastStateUpdate();
@@ -229,6 +245,11 @@ export function handleNewRoom(server: RoomServer, sender: Party.Connection) {
   const newRoomCode = generateRoomCode();
 
   server.broadcast({ type: "ROOM_REDIRECT", newRoomCode });
+
+  // Full room reset — drop any competitive/series state too.
+  server.seriesState = null;
+  server.currentVotes.clear();
+  server.gameVoteResults = [];
 
   server.gameState = {
     ...server.gameState,

@@ -10,12 +10,17 @@ const config: Config = {
     extend: {
       colors: {
         // Playbill palette — flat theater-program aesthetic.
-        bg: "#ffffff",
+        // Tokens reference the CSS variables in globals.css (:root) so the
+        // palette lives in one place. `ink` and `banner` are kept as hex
+        // literals here because they're used with Tailwind /opacity
+        // modifiers (e.g. bg-ink/60), which require a resolvable color;
+        // they mirror --ink / --banner and must stay in sync.
+        bg: "var(--bg)",
         ink: "#1a1a1a",
-        "text-dim": "#666666",
-        "text-muted": "#999999",
-        "list-border": "#d0d0d0",
-        "input-border": "#e0e0e0",
+        "text-dim": "var(--text-dim)",
+        "text-muted": "var(--text-muted)",
+        "list-border": "var(--list-border)",
+        "input-border": "var(--input-border)",
         banner: "#fceb00",
       },
       fontFamily: {

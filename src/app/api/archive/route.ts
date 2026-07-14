@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Readers look archives up by an uppercased code (see /archive/[code] and
+  // the OG route), so we must store it uppercased too — a lowercase code
+  // here would create an archive that can never be reached.
+  const roomCode = body.room.code.toUpperCase();
+
   try {
     const db = await getDb();
     await db.transaction(async (tx: any) => {
@@ -32,14 +37,14 @@ export async function POST(request: NextRequest) {
       const existingRooms = await tx
         .select()
         .from(schema.archivedRooms)
-        .where(eq(schema.archivedRooms.code, body.room.code));
+        .where(eq(schema.archivedRooms.code, roomCode));
 
       if (existingRooms.length > 0) {
         // Get existing story IDs to delete their prompts
         const existingStories = await tx
           .select()
           .from(schema.archivedStories)
-          .where(eq(schema.archivedStories.roomCode, body.room.code));
+          .where(eq(schema.archivedStories.roomCode, roomCode));
 
         for (const story of existingStories) {
           await tx
@@ -49,52 +54,63 @@ export async function POST(request: NextRequest) {
 
         await tx
           .delete(schema.archivedStories)
-          .where(eq(schema.archivedStories.roomCode, body.room.code));
+          .where(eq(schema.archivedStories.roomCode, roomCode));
 
         await tx
           .delete(schema.archivedRooms)
-          .where(eq(schema.archivedRooms.code, body.room.code));
+          .where(eq(schema.archivedRooms.code, roomCode));
       }
 
       // Insert room
       await tx.insert(schema.archivedRooms).values({
-        code: body.room.code,
+        code: roomCode,
         createdAt: body.room.createdAt,
         completedAt: body.room.completedAt,
         playerCount: body.room.playerCount,
         storyCount: body.room.storyCount,
       });
 
-      // Insert stories and prompts
-      for (const story of body.stories) {
-        const storyResults = await tx
-          .insert(schema.archivedStories)
-          .values({
-            roomCode: body.room.code,
+      // Batch-insert every story in one statement, then map each story's
+      // index to the id the DB generated for it.
+      const insertedStories = await tx
+        .insert(schema.archivedStories)
+        .values(
+          body.stories.map((story) => ({
+            roomCode,
             storyIndex: story.storyIndex,
             readerName: story.readerName,
             createdAt: body.room.completedAt,
-          })
-          .returning();
+          }))
+        )
+        .returning();
 
-        const storyResult = storyResults[0];
+      const storyIdByIndex = new Map<number, number>(
+        insertedStories.map((s: { id: number; storyIndex: number }) => [
+          s.storyIndex,
+          s.id,
+        ])
+      );
 
-        for (const prompt of story.prompts) {
-          await tx.insert(schema.archivedPrompts).values({
-            storyId: storyResult.id,
-            slot: prompt.slot,
-            promptText: prompt.promptText,
-            contribution: prompt.contribution,
-            authorName: prompt.authorName,
-            wasPlaceholder: prompt.wasPlaceholder ? 1 : 0,
-            points: prompt.points ?? 0,
-          });
-        }
+      // Flatten every story's prompts into a single multi-row insert.
+      const promptRows = body.stories.flatMap((story) =>
+        story.prompts.map((prompt) => ({
+          storyId: storyIdByIndex.get(story.storyIndex)!,
+          slot: prompt.slot,
+          promptText: prompt.promptText,
+          contribution: prompt.contribution,
+          authorName: prompt.authorName,
+          wasPlaceholder: prompt.wasPlaceholder ? 1 : 0,
+          points: prompt.points ?? 0,
+        }))
+      );
+
+      if (promptRows.length > 0) {
+        await tx.insert(schema.archivedPrompts).values(promptRows);
       }
     });
 
     return NextResponse.json({
-      archiveUrl: `/archive/${body.room.code}`,
+      archiveUrl: `/archive/${roomCode}`,
     });
   } catch (error) {
     console.error("Failed to archive room:", error);

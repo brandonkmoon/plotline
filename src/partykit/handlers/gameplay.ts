@@ -25,11 +25,9 @@ export function handleStartGame(
     return;
   }
 
-  // Set game mode before starting
   const mode = msg.mode ?? "classic";
-  server.gameState = { ...server.gameState, gameMode: mode };
 
-  // Block competitive mode for free rooms
+  // Block competitive mode for free rooms (guard BEFORE mutating anything).
   if (mode === "competitive" && !server.gameState.isPremium) {
     server.sendTo(sender, {
       type: "ERROR",
@@ -38,35 +36,9 @@ export function handleStartGame(
     return;
   }
 
-  // Initialize series state for competitive mode
-  if (mode === "competitive") {
-    const totalGames = msg.seriesLength ?? 3;
-    const currentGameNumber = server.seriesState
-      ? server.seriesState.currentGameNumber + 1
-      : 1;
-
-    if (!server.seriesState) {
-      server.seriesState = {
-        mode: "competitive",
-        totalGames,
-        currentGameNumber: 1,
-        cumulativePoints: {},
-        standingOvationsUsed: {},
-        completedGames: [],
-        awards: [],
-      };
-    } else {
-      server.seriesState.currentGameNumber = currentGameNumber;
-      server.seriesState.standingOvationsUsed = {};
-    }
-
-    server.gameState.series = server.seriesState;
-  }
-
-  // Reset per-game vote state
-  server.currentVotes.clear();
-  server.gameVoteResults = [];
-
+  // Run the reducer FIRST. Only commit gameMode / seriesState mutations if it
+  // accepts the start — otherwise a rejected start (e.g. < 4 players) would
+  // leave the room with a half-applied competitive mode / series.
   const now = Date.now();
   const action: GameAction = {
     type: "GAME_STARTED",
@@ -83,7 +55,38 @@ export function handleStartGame(
     return;
   }
 
-  server.gameState = newState;
+  // Reducer accepted — now commit the game mode.
+  server.gameState = { ...newState, gameMode: mode };
+
+  if (mode === "competitive") {
+    const totalGames = msg.seriesLength ?? 3;
+
+    if (!server.seriesState) {
+      server.seriesState = {
+        mode: "competitive",
+        totalGames,
+        currentGameNumber: 1,
+        cumulativePoints: {},
+        standingOvationsUsed: {},
+        completedGames: [],
+        awards: [],
+      };
+    } else {
+      server.seriesState.currentGameNumber += 1;
+      server.seriesState.standingOvationsUsed = {};
+    }
+
+    server.gameState = { ...server.gameState, series: server.seriesState };
+  } else {
+    // A classic (non-competitive) game clears any leftover series state so a
+    // prior competitive run can't bleed into it.
+    server.seriesState = null;
+    server.gameState = { ...server.gameState, series: undefined };
+  }
+
+  // Reset per-game vote state
+  server.currentVotes.clear();
+  server.gameVoteResults = [];
 
   // Reset all player statuses to idle
   for (const p of server.gameState.players) {
@@ -179,9 +182,15 @@ export function handleHostAdvance(server: RoomServer, sender: Party.Connection) 
     timestamp: now,
   };
   const newState = gameReducer(server.gameState, action);
+
+  // No-op advance (duplicate or late — game not in PLAYING). Bail before
+  // touching reveal state so we never re-shuffle an in-progress reveal.
+  if (newState === prevState) return;
+
   server.gameState = newState;
 
-  if (newState.state === "REVEAL") {
+  if (prevState.state === "PLAYING" && newState.state === "REVEAL") {
+    // Real PLAYING → REVEAL transition: initialise the reveal exactly once.
     clearRoundTimer(server);
     server.initRevealState();
     const stories = assembleStories(newState);
@@ -288,9 +297,32 @@ export function handleRevealAdvance(server: RoomServer, sender: Party.Connection
 export function handleEndGame(server: RoomServer, sender: Party.Connection) {
   if (!server.gameState) return;
 
+  // Only the host can end the game.
+  const playerId = server.connectionToPlayer.get(sender.id);
+  if (!playerId || playerId !== server.gameState.hostId) {
+    server.sendTo(sender, {
+      type: "ERROR",
+      reason: "Only the host can end the game",
+    });
+    return;
+  }
+
+  // State guard: only an active game (PLAYING/REVEAL) can be ended.
+  if (
+    server.gameState.state !== "PLAYING" &&
+    server.gameState.state !== "REVEAL"
+  ) {
+    return;
+  }
+
   const now = Date.now();
+  const prevState = server.gameState;
   const action: GameAction = { type: "GAME_ENDED", timestamp: now };
   server.gameState = gameReducer(server.gameState, action);
+
+  // No transition happened (duplicate/out-of-phase) — bail before any
+  // archiving or score computation so points can't be double-counted.
+  if (server.gameState === prevState) return;
 
   clearRoundTimer(server);
   server.broadcastStateUpdate();
@@ -322,7 +354,6 @@ export function handleTypingStatus(
 
 export function startRoundTimer(server: RoomServer) {
   clearRoundTimer(server);
-  server.roundStartTime = Date.now();
   server.roundStartedAt = Date.now();
 
   server.roundTimer = setTimeout(() => {
@@ -353,7 +384,6 @@ export function clearRoundTimer(server: RoomServer) {
     clearTimeout(server.roundTimer);
     server.roundTimer = null;
   }
-  server.roundStartTime = null;
   server.roundStartedAt = null;
 }
 

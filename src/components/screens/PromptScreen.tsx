@@ -29,8 +29,6 @@ export default function PromptScreen() {
     currentPlayer,
     submitPrompt,
     sendTypingStatus,
-    roundStartedAt,
-    roundDurationMs,
     playerStatuses,
   } = useRoom();
   const [response, setResponse] = useState("");
@@ -129,8 +127,6 @@ export default function PromptScreen() {
     sendTypingStatus,
   ]);
 
-  if (!prompt) return null;
-
   // Stable placeholder — pick once per round, don't re-randomize on every render
   const stablePlaceholderRef = useRef<Record<number, string>>({});
   if (!stablePlaceholderRef.current[currentRound]) {
@@ -147,6 +143,8 @@ export default function PromptScreen() {
     }
   }
   const stablePlaceholder = stablePlaceholderRef.current[currentRound];
+
+  if (!prompt) return null;
 
   return (
     <>

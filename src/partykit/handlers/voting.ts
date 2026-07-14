@@ -65,6 +65,25 @@ export function handleSubmitVote(
   const playerId = server.connectionToPlayer.get(sender.id);
   if (!playerId) return;
 
+  // Only active players may vote — pending spectators must not.
+  if (!server.gameState.players.some((p) => p.id === playerId)) {
+    server.sendTo(sender, {
+      type: "ERROR",
+      reason: "Spectators cannot vote",
+    });
+    return;
+  }
+
+  // Validate lineIndex is an in-range integer (there are 7 lines, 0-6).
+  if (
+    !Number.isInteger(msg.lineIndex) ||
+    msg.lineIndex < 0 ||
+    msg.lineIndex > 6
+  ) {
+    server.sendTo(sender, { type: "ERROR", reason: "Invalid line" });
+    return;
+  }
+
   const currentStory = server.gameState.stories[server.revealStoryIndex];
   if (!currentStory) return;
   const slot = currentStory.slots[msg.lineIndex];
@@ -158,24 +177,34 @@ export async function handleAdvanceVoting(server: RoomServer, sender: Party.Conn
     }
   }
 
-  const winningSlot = currentStory.slots[winningLineIndex];
+  // Guard the no-votes case: if nothing was tallied, there is no winner —
+  // don't record line 0's author as a 0-tally winner.
+  const hasWinner = maxTally > 0;
+  const winningSlot = hasWinner
+    ? currentStory.slots[winningLineIndex]
+    : undefined;
   const winningAuthorId = winningSlot?.playerId ?? "";
 
+  // Build the per-line author/text snapshot. Skip placeholder slots: they were
+  // auto-filled for a player who didn't submit, so that player must not be
+  // credited (or win awards) for a line they didn't write.
   const lineAuthors: Record<number, string> = {};
   const lineTexts: Record<number, string> = {};
   for (let i = 0; i < currentStory.slots.length; i++) {
-    if (currentStory.slots[i]?.playerId) {
-      lineAuthors[i] = currentStory.slots[i].playerId!;
+    const s = currentStory.slots[i];
+    if (s?.isPlaceholder) continue;
+    if (s?.playerId) {
+      lineAuthors[i] = s.playerId;
     }
-    if (currentStory.slots[i]?.response) {
-      lineTexts[i] = currentStory.slots[i].response!;
+    if (s?.response) {
+      lineTexts[i] = s.response;
     }
   }
 
   server.gameVoteResults.push({
     storyIndex,
     votes,
-    winningLineIndex,
+    winningLineIndex: hasWinner ? winningLineIndex : -1,
     winningAuthorId,
     winningLineText: winningSlot?.response ?? "",
     lineAuthors,
@@ -235,6 +264,15 @@ export function clearVotingTimer(server: RoomServer) {
 export function computeAndBroadcastScores(server: RoomServer) {
   if (!server.gameState || !server.seriesState) return;
 
+  // Idempotency: this can be reached from several END transitions
+  // (END_GAME, final STORY_REVEALED, advanceAfterVoting). If we've already
+  // recorded this game's scores, do nothing — otherwise points and
+  // completedGames would be double-counted.
+  const gameNumber = server.seriesState.currentGameNumber;
+  if (server.seriesState.completedGames.some((g) => g.gameNumber === gameNumber)) {
+    return;
+  }
+
   const points: Record<string, number> = {};
   for (const p of server.gameState.players) {
     points[p.id] = 0;
@@ -262,9 +300,11 @@ export function computeAndBroadcastScores(server: RoomServer) {
     }
     for (let i = 0; i < linePoints.length; i++) {
       if (linePoints[i] > maxVoteCount) {
+        const slot = server.gameState.stories[result.storyIndex]?.slots[i];
+        // Placeholder lines can't be Line of the Game.
+        if (slot?.isPlaceholder) continue;
         maxVoteCount = linePoints[i];
         const authorId = result.lineAuthors[i] ?? "";
-        const slot = server.gameState.stories[result.storyIndex]?.slots[i];
         const author = server.gameState.players.find((p) => p.id === authorId);
         lineOfTheGame = {
           storyIndex: result.storyIndex,

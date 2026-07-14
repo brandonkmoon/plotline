@@ -255,12 +255,15 @@ export function handleJoinRoom(
 
   const playerId = crypto.randomUUID();
 
-  // Track the preferred host from the previous game (first message wins)
-  if (msg.previousHostName && server.preferredHostName === null) {
-    server.preferredHostName = msg.previousHostName;
-  }
-
   if (!server.gameState) {
+    // First player creates the room.
+    // Only honor previousHostName while the room is being created — never on
+    // an already-established room, otherwise a late joiner claiming the
+    // previous host's name could seize host mid-session.
+    if (msg.previousHostName && server.preferredHostName === null) {
+      server.preferredHostName = msg.previousHostName;
+    }
+
     // First player creates the room
     server.gameState = createRoom(server.room.id, { id: playerId, name: msg.playerName }, now);
     server.gameState.isPremium = !!msg.isPremium;
@@ -425,6 +428,11 @@ export function checkForEmptyRoom(server: RoomServer) {
       server.roomDestroyTimer = setTimeout(() => {
         server.gameState = null;
         server.clearRoundTimer();
+        // Room is gone — clear competitive/series state so a brand-new room
+        // reusing this server instance can't inherit stale data.
+        server.seriesState = null;
+        server.currentVotes.clear();
+        server.gameVoteResults = [];
       }, ROOM_DESTROY_TIMEOUT_MS);
     }
   }

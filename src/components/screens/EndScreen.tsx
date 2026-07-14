@@ -125,10 +125,13 @@ export default function EndScreen() {
         .catch(() => {});
     } else {
       const toCopy = full ?? storyText;
-      navigator.clipboard.writeText(toCopy).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
+      navigator.clipboard
+        .writeText(toCopy)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        })
+        .catch(() => {});
     }
   };
 

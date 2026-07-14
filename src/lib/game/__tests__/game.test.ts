@@ -304,13 +304,32 @@ describe("STORY_REVEALED", () => {
 });
 
 describe("GAME_ENDED", () => {
-  it("transitions to END", () => {
-    const room = createLobbyWith(4);
+  it("transitions an active game (PLAYING) to END", () => {
+    let room = createLobbyWith(4);
+    room = gameReducer(room, {
+      type: "GAME_STARTED",
+      hostId: "host",
+      timestamp: 2000,
+    });
+    expect(room.state).toBe("PLAYING");
+
     const next = gameReducer(room, {
       type: "GAME_ENDED",
       timestamp: 9000,
     });
     expect(next.state).toBe("END");
+  });
+
+  it("is a no-op from a non-active state (LOBBY)", () => {
+    const room = createLobbyWith(4);
+    const next = gameReducer(room, {
+      type: "GAME_ENDED",
+      timestamp: 9000,
+    });
+    // GAME_ENDED is only valid from PLAYING/REVEAL — from LOBBY it must not
+    // transition and should return the same reference.
+    expect(next).toBe(room);
+    expect(next.state).toBe("LOBBY");
   });
 });
 

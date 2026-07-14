@@ -20,9 +20,7 @@ drizzle/
 # Large exported assets (kept out of git — store externally)
 Screenshots/
 
-# Service worker artifacts (auto-generated)
-public/sw.js
-public/sw*.js
+# Service worker artifacts (workbox output is generated; sw.js is hand-written and tracked)
 public/workbox-*.js
 .partykit/
 .vercel

@@ -83,10 +83,14 @@ export default function JoinScreen({ initialCode }: { initialCode?: string } = {
 
       <hr className="rule" />
 
-      <label className="block font-serif text-[13px] uppercase tracking-[2px] text-text-dim mb-2">
+      <label
+        htmlFor="join-code"
+        className="block font-serif text-[13px] uppercase tracking-[2px] text-text-dim mb-2"
+      >
         Room Code
       </label>
       <input
+        id="join-code"
         type="text"
         value={code}
         onChange={handleCodeChange}
@@ -100,10 +104,14 @@ export default function JoinScreen({ initialCode }: { initialCode?: string } = {
         autoFocus
       />
 
-      <label className="block font-serif text-[13px] uppercase tracking-[2px] text-text-dim mb-2 mt-6">
+      <label
+        htmlFor="join-name"
+        className="block font-serif text-[13px] uppercase tracking-[2px] text-text-dim mb-2 mt-6"
+      >
         Your Name
       </label>
       <input
+        id="join-name"
         type="text"
         value={name}
         onChange={handleNameChange}

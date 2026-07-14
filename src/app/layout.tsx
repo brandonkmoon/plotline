@@ -43,7 +43,8 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL(
     (() => {
-      const url = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const url =
+        process.env.NEXT_PUBLIC_APP_URL || "https://www.plotlinegame.com";
       return url.startsWith("http") ? url : `https://${url}`;
     })()
   ),
@@ -71,8 +72,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({

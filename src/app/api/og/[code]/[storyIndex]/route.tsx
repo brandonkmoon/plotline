@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { getDb, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   normalizeLocation,
   normalizeAction,
@@ -51,27 +51,8 @@ export async function GET(
     return new Response("Invalid story index", { status: 400 });
   }
 
-  // Load bundled fonts
-  type Weight = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
-  type FontOption = { name: string; data: ArrayBuffer; weight: Weight; style: "normal" | "italic" };
-  let fonts: FontOption[] = [];
-  try {
-    const [playfairBold, loraRegular, loraItalic] = await Promise.all([
-      loadBundledFont("PlayfairDisplay-Bold.woff2"),
-      loadBundledFont("Lora-Regular.woff2"),
-      loadBundledFont("Lora-Italic.woff2"),
-    ]);
-    fonts = [
-      { name: "Playfair", data: playfairBold, weight: 700, style: "normal" },
-      { name: "Lora", data: loraRegular, weight: 400, style: "normal" },
-      { name: "Lora", data: loraItalic, weight: 400, style: "italic" },
-    ];
-  } catch (err) {
-    console.error("Failed to load bundled fonts:", err);
-    return new Response("Font loading failed", { status: 500 });
-  }
-
-  // Fetch story from DB
+  // Fetch the single requested story first. This is cheap and lets us
+  // return 404 before the expensive font loading / image rendering below.
   let storyData: {
     title: string;
     lines: { text: string; style: "name" | "location" | "action" | "dialogue" | "ending"; points?: number }[];
@@ -83,9 +64,14 @@ export async function GET(
     const stories = await db
       .select()
       .from(schema.archivedStories)
-      .where(eq(schema.archivedStories.roomCode, code));
+      .where(
+        and(
+          eq(schema.archivedStories.roomCode, code),
+          eq(schema.archivedStories.storyIndex, storyIdx)
+        )
+      );
 
-    const story = stories.find((s: { storyIndex: number }) => s.storyIndex === storyIdx);
+    const story = stories[0];
     if (story) {
       const prompts = await db
         .select()
@@ -129,6 +115,26 @@ export async function GET(
 
   if (!storyData) {
     return new Response("Story not found", { status: 404 });
+  }
+
+  // Load bundled fonts only after we know the story exists.
+  type Weight = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
+  type FontOption = { name: string; data: ArrayBuffer; weight: Weight; style: "normal" | "italic" };
+  let fonts: FontOption[] = [];
+  try {
+    const [playfairBold, loraRegular, loraItalic] = await Promise.all([
+      loadBundledFont("PlayfairDisplay-Bold.woff2"),
+      loadBundledFont("Lora-Regular.woff2"),
+      loadBundledFont("Lora-Italic.woff2"),
+    ]);
+    fonts = [
+      { name: "Playfair", data: playfairBold, weight: 700, style: "normal" },
+      { name: "Lora", data: loraRegular, weight: 400, style: "normal" },
+      { name: "Lora", data: loraItalic, weight: 400, style: "italic" },
+    ];
+  } catch (err) {
+    console.error("Failed to load bundled fonts:", err);
+    return new Response("Font loading failed", { status: 500 });
   }
 
   const { title, lines } = storyData;
@@ -297,13 +303,15 @@ export async function GET(
       width: WIDTH,
       height: HEIGHT,
       fonts,
+      headers: {
+        // Archived stories never change, so this card is safe to cache
+        // forever at the CDN edge.
+        "Cache-Control": "public, s-maxage=31536000, immutable",
+      },
     }
   );
   } catch (err) {
     console.error("OG image generation failed:", err);
-    return new Response(
-      `Image generation error: ${err instanceof Error ? err.message : String(err)}`,
-      { status: 500 }
-    );
+    return new Response("Image generation error", { status: 500 });
   }
 }

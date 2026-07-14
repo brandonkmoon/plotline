@@ -21,21 +21,50 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
-  // Skip non-GET and WebSocket/PartyKit requests
+  // Only GET requests are cacheable.
   if (request.method !== "GET") return;
-  const url = new URL(request.url);
-  if (url.pathname.startsWith("/parties/") || url.pathname.startsWith("/party/")) return;
 
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        // Cache successful same-origin responses (pages, static assets)
-        if (response.ok && url.origin === self.location.origin) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
+  const url = new URL(request.url);
+  const isSameOrigin = url.origin === self.location.origin;
+
+  // Never cache API responses — they must always come fresh from the network.
+  if (isSameOrigin && url.pathname.startsWith("/api/")) return;
+
+  // Cache-first for immutable static assets only: hashed build output,
+  // fonts, and icons/images. These change rarely (or carry a new hash),
+  // so serving them from cache is safe and fast.
+  const isStaticAsset =
+    isSameOrigin &&
+    (url.pathname.startsWith("/_next/static/") ||
+      /\.(?:woff2?|ttf|otf|png|jpg|jpeg|gif|svg|webp|ico)$/i.test(url.pathname));
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        });
       })
-      .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))
-  );
+    );
+    return;
+  }
+
+  // Page navigations: network-first so the live app always loads online,
+  // falling back to the cached app shell ("/") only when offline.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(() =>
+        caches.match("/").then((cached) => cached || Response.error())
+      )
+    );
+    return;
+  }
+
+  // Everything else (cross-origin, non-static, non-navigation) passes
+  // straight through to the network with no caching.
 });

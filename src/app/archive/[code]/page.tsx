@@ -1,9 +1,39 @@
 export const dynamic = "force-dynamic";
 
+import type { Metadata } from "next";
 import { getDb, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import ArchiveView from "@/components/archive/ArchiveView";
 import ArchiveNotFound from "@/components/archive/ArchiveNotFound";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { code: string };
+}): Promise<Metadata> {
+  const code = params.code.toUpperCase();
+  // Point social previews at the first story's generated OG card. The route
+  // returns 404 if the archive doesn't exist, so crawlers just get no image.
+  const ogImage = `/api/og/${code}/0`;
+  const title = `Plotline — Scene Archive #${code}`;
+  const description = "A collaborative scene from Plotline.";
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [ogImage],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
+  };
+}
 
 interface ArchiveStory {
   storyIndex: number;

@@ -94,6 +94,29 @@ describe("generateAssignments", () => {
     }
   });
 
+  // Core round-robin invariant: for each promptIndex (act) column, every
+  // player is assigned exactly one slot across all stories. This guarantees
+  // each act is written once by each player — the bijection that makes the
+  // rotation fair.
+  for (const n of [4, 5, 6, 7, 8, 9, 10]) {
+    it(`each player writes exactly one slot per promptIndex for N=${n}`, () => {
+      const playerIds = makePlayerIds(n);
+      const assignments = generateAssignments(playerIds);
+
+      for (let prompt = 0; prompt < 7; prompt++) {
+        const countByPlayer = new Map<string, number>();
+        for (const id of playerIds) countByPlayer.set(id, 0);
+        for (let story = 0; story < n; story++) {
+          const pid = assignments[story][prompt];
+          countByPlayer.set(pid, (countByPlayer.get(pid) ?? 0) + 1);
+        }
+        for (const id of playerIds) {
+          expect(countByPlayer.get(id)).toBe(1);
+        }
+      }
+    });
+  }
+
   it("handles N=4 where players must write multiple prompts per story", () => {
     const playerIds = makePlayerIds(4);
     const assignments = generateAssignments(playerIds);

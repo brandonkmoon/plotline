@@ -187,10 +187,13 @@ export default function CompetitiveEndScreen() {
       }).catch(() => {});
     } else {
       const toCopy = full ?? storyText;
-      navigator.clipboard.writeText(toCopy).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
+      navigator.clipboard
+        .writeText(toCopy)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        })
+        .catch(() => {});
     }
   };
 

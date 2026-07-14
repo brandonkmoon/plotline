@@ -319,6 +319,10 @@ function handleGameEnded(
   state: Room,
   action: Extract<GameAction, { type: "GAME_ENDED" }>
 ): Room {
+  // Only an in-progress game can be ended. Guarding here makes a duplicate
+  // or out-of-phase END_GAME a no-op (returns the same reference), which the
+  // handler relies on to avoid double-archiving / double-scoring.
+  if (state.state !== "PLAYING" && state.state !== "REVEAL") return state;
   return { ...state, state: "END", updatedAt: action.timestamp };
 }
 

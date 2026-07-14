@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { RoomProvider, useRoom } from "@/lib/client/RoomContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import ConnectionStatus from "@/components/ConnectionStatus";
 import LobbyScreen from "@/components/screens/LobbyScreen";
 import PromptScreen from "@/components/screens/PromptScreen";
 import WaitingScreen from "@/components/screens/WaitingScreen";
@@ -17,48 +16,6 @@ import SpectatorScreen from "@/components/screens/SpectatorScreen";
 import Button from "@/components/Button";
 import { gameClient } from "@/lib/multiplayer/gameClient";
 import { registerLeaveGuard, clearLeaveGuard } from "@/lib/client/leaveGuard";
-
-// Small room-code badge overlaid on the banner — always visible so players
-// can share the code at any point during the game.
-function RoomCodeBadge() {
-  const { room } = useRoom();
-  const [flash, setFlash] = useState(false);
-
-  if (!room?.code) return null;
-
-  const joinUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/join/${room.code}`;
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({ title: "Join my Plotline game", text: "Join my Plotline game!", url: joinUrl }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(joinUrl);
-    }
-    setFlash(true);
-    setTimeout(() => setFlash(false), 1200);
-  };
-
-  return (
-    <button
-      onClick={handleShare}
-      aria-label="Share room code"
-      style={{
-        position: "fixed",
-        top: 12,
-        right: 14,
-        zIndex: 50,
-        background: flash ? "var(--ink)" : "var(--bg)",
-        color: flash ? "var(--bg)" : "var(--ink)",
-        border: "1.5px solid var(--ink)",
-        padding: "4px 10px",
-        transition: "background 0.15s, color 0.15s",
-      }}
-      className="font-sans text-[13px] uppercase tracking-[2px]"
-    >
-      {flash ? "Copied!" : room.code}
-    </button>
-  );
-}
 
 function ConnectionErrorView() {
   const { connectionError } = useRoom();
@@ -421,16 +378,21 @@ function InfoStrip({
       setFlash(true);
       setTimeout(() => setFlash(false), 1200);
     } else {
-      navigator.clipboard.writeText(joinUrl).then(() => {
-        setFlash(true);
-        setTimeout(() => setFlash(false), 1200);
-      });
+      navigator.clipboard
+        .writeText(joinUrl)
+        .then(() => {
+          setFlash(true);
+          setTimeout(() => setFlash(false), 1200);
+        })
+        .catch(() => {});
     }
   };
 
   return (
-    <div
-      className="bg-ink py-[6px] px-4 flex items-center justify-between cursor-pointer sticky top-0 z-10 relative overflow-visible"
+    <button
+      type="button"
+      aria-label="Share room link"
+      className="w-full border-0 bg-ink py-[6px] px-4 flex items-center justify-between cursor-pointer sticky top-0 z-10 overflow-visible"
       onClick={handleShare}
     >
       <div className="flex items-center gap-2">
@@ -479,7 +441,7 @@ function InfoStrip({
       <span className="font-sans text-[11px] font-semibold tracking-[2px] text-white flex items-center gap-1">
         {flash ? "Shared!" : <>{code} <span className="text-[9px]">↗</span></>}
       </span>
-    </div>
+    </button>
   );
 }
 

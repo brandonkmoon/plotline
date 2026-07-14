@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { notFound } from "next/navigation";
 import { GameClient } from "@/lib/multiplayer/gameClient";
 import type { Room, AssembledStory } from "@/lib/game/types";
 import type { PlayerStatus } from "@/lib/multiplayer/types";
@@ -12,6 +13,12 @@ interface LogEntry {
 }
 
 export default function DebugPage() {
+  // Debug console must never be reachable in production — it exposes raw
+  // room state and lets anyone drive game actions.
+  if (process.env.NODE_ENV !== "development") {
+    notFound();
+  }
+
   const clientRef = useRef<GameClient | null>(null);
   const [roomCode, setRoomCode] = useState("");
   const [playerName, setPlayerName] = useState("");

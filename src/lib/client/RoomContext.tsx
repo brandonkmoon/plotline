@@ -6,6 +6,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
 } from "react";
 import { gameClient } from "@/lib/multiplayer/gameClient";
@@ -125,13 +126,8 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         setRoundDurationMs(gameClient.getRoundDurationMs());
         setPendingConnected(gameClient.getPendingConnected());
         setPendingDisconnected(gameClient.getPendingDisconnected());
-        // When round advances (currentRound changes), reset the
-        // "advance available" flag since a new round means a new timer
-        setAdvanceAvailable((prev) => {
-          // We can't easily detect round change here without prior state;
-          // the server will re-emit ADVANCE_AVAILABLE after the new timer
-          return prev;
-        });
+        // The advanceAvailable flag is reset on round change by a dedicated
+        // effect below; the server re-emits ADVANCE_AVAILABLE per round.
       })
     );
 
@@ -266,51 +262,131 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     room?.pendingPlayers?.find((p) => p.id === playerIdRef.current) ?? null;
   const isPending = currentPendingPlayer !== null;
 
-  const value: RoomContextValue = {
-    room,
-    currentPlayer,
-    currentPendingPlayer,
-    isPending,
-    playerStatuses,
-    isHost,
-    justBecameHost,
-    advanceAvailable,
-    unsubmittedCount,
-    assembledStories,
-    roundStartedAt,
-    roundDurationMs,
-    pendingConnected,
-    pendingDisconnected,
-    connectionError,
-    clearConnectionError,
-    revealState,
-    roomRedirect,
-    connect,
-    disconnect,
-    startGame: (mode, seriesLength) => gameClient.startGame(mode, seriesLength),
-    submitPrompt: (storyIndex, promptIndex, response) =>
+  // Stable delegate functions — each just forwards to the gameClient
+  // singleton, so they never need to change identity between renders.
+  const startGame = useCallback<RoomContextValue["startGame"]>(
+    (mode, seriesLength) => gameClient.startGame(mode, seriesLength),
+    []
+  );
+  const submitPrompt = useCallback<RoomContextValue["submitPrompt"]>(
+    (storyIndex, promptIndex, response) =>
       gameClient.submitPrompt(storyIndex, promptIndex, response),
-    hostAdvance: () => gameClient.hostAdvance(),
-    advanceReveal: () => gameClient.advanceReveal(),
-    revealAdvance: () => gameClient.revealAdvance(),
-    nextStory: () => gameClient.nextStory(),
-    endGame: () => gameClient.endGame(),
-    playAgain: () => gameClient.playAgain(),
-    newRoom: () => gameClient.newRoom(),
-    queueNextGame: () => gameClient.queueNextGame(),
-    createNextRoom: () => gameClient.createNextRoom(),
-    setReady: (ready) => gameClient.setReady(ready),
-    sendTypingStatus: (status) => gameClient.sendTypingStatus(status),
-    archiveUrl: room?.archiveUrl ?? null,
-    // Competitive mode
-    votingOpen,
-    gameScores,
-    seriesAwards,
-    startVoting: () => gameClient.startVoting(),
-    submitVote: (storyIndex, lineIndex, isStandingOvation) =>
+    []
+  );
+  const hostAdvance = useCallback(() => gameClient.hostAdvance(), []);
+  const advanceReveal = useCallback(() => gameClient.advanceReveal(), []);
+  const revealAdvance = useCallback(() => gameClient.revealAdvance(), []);
+  const nextStory = useCallback(() => gameClient.nextStory(), []);
+  const endGame = useCallback(() => gameClient.endGame(), []);
+  const playAgain = useCallback(() => gameClient.playAgain(), []);
+  const newRoom = useCallback(() => gameClient.newRoom(), []);
+  const queueNextGame = useCallback(() => gameClient.queueNextGame(), []);
+  const createNextRoom = useCallback(() => gameClient.createNextRoom(), []);
+  const setReady = useCallback<RoomContextValue["setReady"]>(
+    (ready) => gameClient.setReady(ready),
+    []
+  );
+  const sendTypingStatus = useCallback<RoomContextValue["sendTypingStatus"]>(
+    (status) => gameClient.sendTypingStatus(status),
+    []
+  );
+  const startVoting = useCallback(() => gameClient.startVoting(), []);
+  const submitVote = useCallback<RoomContextValue["submitVote"]>(
+    (storyIndex, lineIndex, isStandingOvation) =>
       gameClient.submitVote(storyIndex, lineIndex, isStandingOvation),
-    advanceVoting: () => gameClient.advanceVoting(),
-  };
+    []
+  );
+  const advanceVoting = useCallback(() => gameClient.advanceVoting(), []);
+
+  const archiveUrl = room?.archiveUrl ?? null;
+
+  const value = useMemo<RoomContextValue>(
+    () => ({
+      room,
+      currentPlayer,
+      currentPendingPlayer,
+      isPending,
+      playerStatuses,
+      isHost,
+      justBecameHost,
+      advanceAvailable,
+      unsubmittedCount,
+      assembledStories,
+      roundStartedAt,
+      roundDurationMs,
+      pendingConnected,
+      pendingDisconnected,
+      connectionError,
+      clearConnectionError,
+      revealState,
+      roomRedirect,
+      connect,
+      disconnect,
+      startGame,
+      submitPrompt,
+      hostAdvance,
+      advanceReveal,
+      revealAdvance,
+      nextStory,
+      endGame,
+      playAgain,
+      newRoom,
+      queueNextGame,
+      createNextRoom,
+      setReady,
+      sendTypingStatus,
+      archiveUrl,
+      // Competitive mode
+      votingOpen,
+      gameScores,
+      seriesAwards,
+      startVoting,
+      submitVote,
+      advanceVoting,
+    }),
+    [
+      room,
+      currentPlayer,
+      currentPendingPlayer,
+      isPending,
+      playerStatuses,
+      isHost,
+      justBecameHost,
+      advanceAvailable,
+      unsubmittedCount,
+      assembledStories,
+      roundStartedAt,
+      roundDurationMs,
+      pendingConnected,
+      pendingDisconnected,
+      connectionError,
+      clearConnectionError,
+      revealState,
+      roomRedirect,
+      connect,
+      disconnect,
+      startGame,
+      submitPrompt,
+      hostAdvance,
+      advanceReveal,
+      revealAdvance,
+      nextStory,
+      endGame,
+      playAgain,
+      newRoom,
+      queueNextGame,
+      createNextRoom,
+      setReady,
+      sendTypingStatus,
+      archiveUrl,
+      votingOpen,
+      gameScores,
+      seriesAwards,
+      startVoting,
+      submitVote,
+      advanceVoting,
+    ]
+  );
 
   return <RoomContext.Provider value={value}>{children}</RoomContext.Provider>;
 }

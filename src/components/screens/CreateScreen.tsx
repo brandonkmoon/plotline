@@ -60,10 +60,14 @@ export default function CreateScreen() {
 
       <hr className="rule" />
 
-      <label className="block font-serif text-[13px] uppercase tracking-[2px] text-text-dim mb-2">
+      <label
+        htmlFor="create-name"
+        className="block font-serif text-[13px] uppercase tracking-[2px] text-text-dim mb-2"
+      >
         Your Name
       </label>
       <input
+        id="create-name"
         type="text"
         value={name}
         onChange={handleNameChange}

@@ -222,6 +222,19 @@ export default function RevealScreen() {
       <div
         className="screen cursor-pointer select-none anim-fade-in"
         onClick={!allRevealed ? handleTap : undefined}
+        role={!allRevealed ? "button" : undefined}
+        tabIndex={!allRevealed ? 0 : undefined}
+        aria-label={!allRevealed ? "Reveal next line" : undefined}
+        onKeyDown={
+          !allRevealed
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleTap();
+                }
+              }
+            : undefined
+        }
       >
         {justBecameHost && (
           <p className="font-sans text-[12px] uppercase tracking-[2px] text-white bg-ink px-4 py-2 text-center mb-4">

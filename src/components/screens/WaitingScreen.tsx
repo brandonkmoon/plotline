@@ -14,8 +14,6 @@ export default function WaitingScreen() {
     justBecameHost,
     advanceAvailable,
     hostAdvance,
-    roundStartedAt,
-    roundDurationMs,
     pendingConnected,
     pendingDisconnected,
     playerStatuses,
@@ -35,7 +33,11 @@ export default function WaitingScreen() {
     <>
       <div className="screen anim-fade-in text-center">
         {justBecameHost && (
-          <p className="font-sans text-[12px] uppercase tracking-[2px] text-white bg-ink px-4 py-2 text-center mb-4">
+          <p
+            role="status"
+            aria-live="polite"
+            className="font-sans text-[12px] uppercase tracking-[2px] text-white bg-ink px-4 py-2 text-center mb-4"
+          >
             You&rsquo;re now the host
           </p>
         )}
@@ -47,7 +49,7 @@ export default function WaitingScreen() {
         <h1 className="font-serif font-bold text-[24px] text-ink mb-1">
           Sit Tight
         </h1>
-        <p className="font-sans text-[12px] text-text-muted mb-1">
+        <p className="font-sans text-[12px] text-text-muted mb-1" aria-live="polite">
           {submittedCount} of {connectedPlayers.length} submitted
         </p>
 
