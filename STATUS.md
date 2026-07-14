@@ -1,6 +1,6 @@
 # Plotline — Project Status
 
-Last updated: 2026-04-30
+Last updated: 2026-07-14
 
 ## What Plotline Is
 
@@ -10,8 +10,8 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 
 | Layer | Tech | Location |
 |-------|------|----------|
-| Web app | Next.js 14 (App Router) | `~/Desktop/plotline/` |
-| Mobile app | Expo (React Native) | `~/Desktop/plotline-app/` |
+| Web app | Next.js 14 (App Router) | `~/Projects/plotline/web/` |
+| Mobile app | Expo (React Native) | `~/Projects/plotline/mobile/` |
 | Real-time server | PartyKit (Cloudflare Workers) | `src/partykit/` in web project |
 | Database | Turso (libSQL/SQLite) via Drizzle | Archives completed games |
 | Payments | RevenueCat (iOS IAP) | `plotline-app/lib/purchases.ts` |
@@ -21,9 +21,8 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 ## Current State
 
 ### iOS App
-- **v1.0.0**: Approved and live on App Store (app ID: 6763647982)
-- **v1.1.0**: Submitted for Apple review (build 7). Includes:
-  - Producer mode ($3.99 lifetime IAP via RevenueCat)
+- **v1.1.0**: Approved and live on App Store as of July 2026 (app ID: 6763647982, build 7). Includes:
+  - Producer mode ($3.99 lifetime IAP via RevenueCat) — purchase flow confirmed working in production (2026-07-14)
   - iPad support (supportsTablet: true)
   - RevenueCat v9.15.2 with lazy loading (fixed v10 crash on iPad)
   - Production API key (was using test key)
@@ -77,14 +76,15 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 
 ## What's Next
 
-### After Apple approves v1.1.0
+v1.1.0 is approved and live (confirmed 2026-07-14), so these are unblocked:
 - **Google Play Store**: $25 dev account needed, then `eas build --platform android` + `eas submit`
 - **Share with real users**: everything is ready
 - **New app icon**: `icon-alt.png` (playbill style) is ready if Brandon wants to switch
+- **Verify Universal Links**: they were set to activate once v1.1.0 went live — worth confirming plotlinegame.com/join/ABCD links open the app
 
 ### Future Work
 - **Stripe for web**: so web users can purchase Producer mode
-- **App Store Promotion**: enable IAP promotion once purchase flow is confirmed working
+- **App Store Promotion**: purchase flow is confirmed working (2026-07-14), so IAP promotion can be enabled in App Store Connect whenever
 - **Play-by-mail mode**: async play over hours/days (would need push notifications)
 - **In-session async pacing** (deferred 2026-05-04 — see below)
 
@@ -156,3 +156,11 @@ The server previously hardcoded `isPremium = true` for all rooms (so competitive
 - iOS builds: `eas build --platform ios --profile production`
 - iOS submit: `eas submit --platform ios --latest`
 - Tests: `npx vitest run` (from web project root)
+
+### Over-the-air updates (EAS Update — configured 2026-07-14)
+- JS-only changes (screens, game UI, styling, bug fixes) ship without Apple review:
+  `eas update --channel production --message "what changed"` (from mobile project root)
+- Users receive the update on their next app launch after publish
+- NOT active until the next store build ships — the current live v1.1.0 build predates this config, so the first update-capable version is whatever build goes out next
+- Runtime version policy is "appVersion": an OTA update only reaches builds with the same `version` in app.json (currently 1.2.0). Bumping the version means shipping a new store build before OTA works again for that version.
+- Still requires a store build + Apple review: new native packages, Expo SDK upgrades, icon/permissions/entitlements changes

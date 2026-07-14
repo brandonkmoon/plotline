@@ -47,7 +47,7 @@ Scenes are assembled in `storyAssembly.ts` into a template: "[Name1] and [Name2]
 ## Tech Stack
 
 - **Framework**: Next.js 14 (App Router, Server Components)
-- **Mobile**: Expo (React Native) — `~/Desktop/plotline-app/`
+- **Mobile**: Expo (React Native) — `~/Projects/plotline/mobile/`
 - **Realtime**: PartyKit (Cloudflare-based WebSocket server)
 - **Database**: Turso (libSQL/SQLite) via Drizzle ORM — for archiving completed games
 - **Payments**: RevenueCat (react-native-purchases v9.15.2) — iOS IAP only for now
@@ -165,7 +165,7 @@ git push origin main
 npx partykit deploy
 
 # iOS build + submit
-cd ~/Desktop/plotline-app
+cd ~/Projects/plotline/mobile
 eas build --platform ios --profile production
 eas submit --platform ios --latest
 ```
