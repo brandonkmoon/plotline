@@ -144,12 +144,18 @@ NEXT_PUBLIC_PARTYKIT_HOST    # PartyKit server (default: localhost:1999)
 APP_URL                      # Internal API base URL
 NEXT_PUBLIC_APP_URL          # Public URL for meta tags / archive links
 NEXT_PUBLIC_PLAUSIBLE_DOMAIN # Plausible analytics domain
+ARCHIVE_SECRET               # Shared secret gating POST /api/archive. Must be
+                             # the SAME value here (Vercel) and on PartyKit
+                             # (below). Unset = archive endpoint is open.
 ```
 
-**PartyKit secret** (set on the server, not in Next.js — `npx partykit env add REVENUECAT_API_KEY`, then redeploy):
+**PartyKit secrets** (set on the server, not in Next.js — `npx partykit env add <KEY>`, then redeploy):
 ```
 REVENUECAT_API_KEY           # RevenueCat SECRET v1 API key — server verifies
                              # the Producer entitlement. Unset = premium denied.
+ARCHIVE_SECRET               # Same value as the Vercel ARCHIVE_SECRET above.
+                             # The server sends it as a Bearer token when it
+                             # POSTs completed games to /api/archive.
 ```
 
 ## Development

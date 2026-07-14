@@ -39,33 +39,12 @@ export default function EndScreen() {
     trackEvent("game_completed");
   }, []);
 
-  // Client-side archive fallback. If the PartyKit server's archive POST
-  // failed (wrong URL, redirect, timeout, etc.), we archive directly from
-  // the browser so the Save Image / Share features still work.
+  // Archiving is done server-side: the PartyKit server posts to the
+  // authenticated /api/archive endpoint (the browser can't — it has no
+  // secret). We just reflect success when the archive URL arrives.
   useEffect(() => {
-    if (archived || !room || assembledStories.length === 0) return;
-    // Also treat archiveUrl arriving later (from server) as success
-    if (archiveUrl) { setArchived(true); return; }
-
-    const timer = setTimeout(async () => {
-      try {
-        const { serializeRoomForArchive } = await import(
-          "@/lib/archive/serialize"
-        );
-        const data = serializeRoomForArchive(room);
-        const res = await fetch("/api/archive", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) setArchived(true);
-      } catch {
-        // Best effort — if this also fails, Save Image won't work
-      }
-    }, 3000); // wait 3s for the server-side archive to arrive first
-
-    return () => clearTimeout(timer);
-  }, [archived, archiveUrl, room, assembledStories]);
+    if (archiveUrl) setArchived(true);
+  }, [archiveUrl]);
 
   // Store our name + the previous host name for the new room so
   // AutoConnect can join with the right name and the server can

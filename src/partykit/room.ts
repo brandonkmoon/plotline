@@ -670,9 +670,13 @@ export default class RoomServer implements Party.Server {
         this.gameState.gameMode === "competitive" ? this.gameVoteResults : undefined
       );
       const apiHost = (this.room.env.APP_URL as string) || process.env.APP_URL || "http://localhost:3000";
+      const archiveSecret = this.room.env.ARCHIVE_SECRET as string | undefined;
       const response = await fetch(`${apiHost}/api/archive`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(archiveSecret ? { Authorization: `Bearer ${archiveSecret}` } : {}),
+        },
         body: JSON.stringify(archiveData),
       });
       if (response.ok) {

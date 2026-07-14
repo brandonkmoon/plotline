@@ -6,6 +6,22 @@ import { eq } from "drizzle-orm";
 import type { ArchiveData } from "@/lib/archive/serialize";
 
 export async function POST(request: NextRequest) {
+  // Only the PartyKit server may write archives. It sends a shared secret;
+  // the browser cannot. If ARCHIVE_SECRET is configured (on Vercel AND the
+  // PartyKit server), require it. Until it's set on both, the endpoint stays
+  // open — so set it as part of the archive-auth rollout, not before.
+  const archiveSecret = process.env.ARCHIVE_SECRET;
+  if (archiveSecret) {
+    const auth = request.headers.get("authorization");
+    if (auth !== `Bearer ${archiveSecret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn(
+      "[archive] ARCHIVE_SECRET is not set — the archive endpoint is unauthenticated"
+    );
+  }
+
   let body: ArchiveData;
   try {
     body = await request.json();
@@ -22,6 +38,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "Invalid archive data" },
       { status: 400 }
+    );
+  }
+
+  // A real game has at most 10 stories (one per player) of 7 prompts each.
+  // Reject anything wildly larger as a cheap guard against payload abuse.
+  const totalPrompts = body.stories.reduce(
+    (n, s) => n + (Array.isArray(s.prompts) ? s.prompts.length : 0),
+    0
+  );
+  if (body.stories.length > 12 || totalPrompts > 120) {
+    return NextResponse.json(
+      { error: "Archive payload too large" },
+      { status: 413 }
     );
   }
 
