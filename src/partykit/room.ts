@@ -261,6 +261,24 @@ export default class RoomServer implements Party.Server {
           (p) => p.id === playerId
         );
         if (existingPlayer || existingPending) {
+          // Identity-takeover guard: only bind this connection to the
+          // playerId if that player does NOT already have a live socket.
+          // Otherwise anyone who put a known playerId (broadcast in every
+          // STATE_UPDATE) in the query string would hijack that player —
+          // and it would defeat handleJoinRoom's PLAYER_ALREADY_CONNECTED
+          // check, which reads playerToConnection. A genuine reconnect has
+          // a dead prior socket, so getConnection returns undefined and we
+          // bind as before; the follow-up JOIN_ROOM is handled normally.
+          const priorConnId = this.playerToConnection.get(playerId);
+          const priorIsLive =
+            priorConnId != null &&
+            priorConnId !== conn.id &&
+            this.room.getConnection(priorConnId) != null;
+          if (priorIsLive) {
+            // Leave the mapping pointing at the live socket. The takeover
+            // attempt's JOIN_ROOM will be rejected with PLAYER_ALREADY_CONNECTED.
+            return;
+          }
           this.connectionToPlayer.set(conn.id, playerId);
           this.playerToConnection.set(playerId, conn.id);
           if (process.env.NODE_ENV === "development") {

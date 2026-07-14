@@ -1438,3 +1438,51 @@ describe("RoomServer instance behavior", () => {
     });
   });
 });
+
+describe("onConnect identity guard", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => "" })
+    );
+  });
+
+  function ctxFor(roomCode: string, playerId: string) {
+    return {
+      request: { url: `https://example.com/party/${roomCode}?playerId=${playerId}` },
+    } as any;
+  }
+
+  it("refuses to rebind a playerId that already has a live connection", () => {
+    const { server, connections } = makeServer();
+    join(server, connections, "c1", "Alice");
+    const pid = server.gameState!.players[0].id;
+    expect((server as any).playerToConnection.get(pid)).toBe("c1");
+
+    // A second socket arrives carrying the victim's playerId while c1 is live.
+    const attacker = makeMockConnection("c2");
+    connections.set("c2", attacker);
+    server.onConnect(attacker as any, ctxFor("TEST", pid));
+
+    // The mapping stays on the live original; the attacker isn't bound.
+    expect((server as any).playerToConnection.get(pid)).toBe("c1");
+    expect((server as any).connectionToPlayer.get("c2")).toBeUndefined();
+  });
+
+  it("binds on a genuine reconnect once the prior socket is gone", () => {
+    const { server, connections } = makeServer();
+    join(server, connections, "c1", "Alice");
+    const pid = server.gameState!.players[0].id;
+
+    // Original socket drops.
+    connections.delete("c1");
+
+    // Player reconnects on a fresh socket carrying their playerId.
+    const rejoin = makeMockConnection("c3");
+    connections.set("c3", rejoin);
+    server.onConnect(rejoin as any, ctxFor("TEST", pid));
+
+    expect((server as any).playerToConnection.get(pid)).toBe("c3");
+    expect((server as any).connectionToPlayer.get("c3")).toBe(pid);
+  });
+});
