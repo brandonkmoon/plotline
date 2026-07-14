@@ -6,10 +6,10 @@ import { eq } from "drizzle-orm";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   const db = await getDb();
-  const code = params.code.toUpperCase();
+  const code = (await params).code.toUpperCase();
 
   const rooms = await db
     .select()
