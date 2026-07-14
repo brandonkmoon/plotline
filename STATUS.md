@@ -21,12 +21,9 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 ## Current State
 
 ### iOS App
-- **v1.1.0**: Approved and live on App Store as of July 2026 (app ID: 6763647982, build 7). Includes:
-  - Producer mode ($3.99 lifetime IAP via RevenueCat) — purchase flow confirmed working in production (2026-07-14)
-  - iPad support (supportsTablet: true)
-  - RevenueCat v9.15.2 with lazy loading (fixed v10 crash on iPad)
-  - Production API key (was using test key)
-  - All gameplay improvements from the web app
+- **LIVE on App Store: v1.2.0, build 8** (released 2026-05-07; app ID: 6763647982). Includes Producer mode ($3.99 lifetime IAP via RevenueCat, purchase confirmed working), iPad support, RevenueCat v9.15.2 lazy-loaded, production API key.
+  - NOTE: this live build predates the EAS Update setup (2026-07-14), so it is NOT over-the-air-updatable. The first OTA-capable release will be **v1.2.1** (see below).
+- **v1.2.1 (in progress)**: first OTA-capable build. Will bundle the `fix/review-pass-1` mobile fixes (connect-on-room-screen, purchases feedback, leave guard, etc.) + EAS Update. build 9 of v1.2.0 (uploaded 2026-07-14) is stranded in TestFlight — can't release under the already-released 1.2.0 number, hence the bump to 1.2.1.
 - **Bundle ID**: com.brandonkmoon.plotline
 - **Apple Team ID**: 45F374H7T2
 
@@ -39,7 +36,7 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 ### Server (PartyKit)
 - Deployed at plotline.brandonkmoon.partykit.dev
 - Deploy command: `npx partykit deploy` (from web project root)
-- `isPremium` flag is live — set by client on room creation
+- LIVE server still trusts the client `isPremium` flag. The `fix/review-pass-1` branch replaces this with server-side RevenueCat verification (`src/partykit/revenuecat.ts`) — NOT yet deployed. Deploy it only alongside the v1.2.1 client (older clients would lose competitive), and set the `REVENUECAT_API_KEY` PartyKit secret first.
 - All rooms: 4–10 player cap
 - Free rooms: classic mode only
 - Premium rooms: competitive mode unlocked
