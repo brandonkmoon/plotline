@@ -143,7 +143,7 @@ function revealAllStories(
 
 describe("Competitive mode server tests", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => "" }));
   });
 
   describe("Starting competitive mode", () => {
