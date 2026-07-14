@@ -25,7 +25,10 @@ export type ClientMessage =
       playerId?: string;
       protocolVersion: number;
       previousHostName?: string;
-      isPremium?: boolean;
+      // RevenueCat App User ID, sent by the host when creating a room. The
+      // server verifies the Producer entitlement against RevenueCat before
+      // enabling competitive mode. Never trust a client-sent premium boolean.
+      revenueCatUserId?: string;
     }
   | { type: "START_GAME"; mode?: "classic" | "competitive"; seriesLength?: 1 | 2 | 3 | 4 | 5 }
   | {

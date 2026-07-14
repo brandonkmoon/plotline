@@ -4,6 +4,7 @@ import type { ClientMessage } from "@/lib/multiplayer/types";
 import { PROTOCOL_VERSION } from "@/lib/multiplayer/types";
 import { gameReducer, createRoom } from "@/lib/game";
 import type RoomServer from "../room";
+import { verifyProducerEntitlement } from "../revenuecat";
 import {
   RECONNECT_TIMEOUT_MS,
   HOST_TRANSFER_TIMEOUT_MS,
@@ -266,7 +267,26 @@ export function handleJoinRoom(
 
     // First player creates the room
     server.gameState = createRoom(server.room.id, { id: playerId, name: msg.playerName }, now);
-    server.gameState.isPremium = !!msg.isPremium;
+
+    // Premium (competitive mode) is NEVER trusted from the client. The room
+    // starts classic; if the host supplied a RevenueCat user id, verify the
+    // entitlement server-side and enable premium once RevenueCat confirms it,
+    // then re-broadcast the updated lobby. Fire-and-forget: the host's socket
+    // stays open in the lobby, so the async check completes before eviction.
+    server.gameState.isPremium = false;
+    if (msg.revenueCatUserId) {
+      const appUserId = msg.revenueCatUserId;
+      void verifyProducerEntitlement(
+        server.room.env as Record<string, unknown>,
+        appUserId
+      ).then((entitled) => {
+        if (entitled && server.gameState && !server.gameState.isPremium) {
+          server.gameState.isPremium = true;
+          server.saveState();
+          server.broadcastStateUpdate();
+        }
+      });
+    }
   } else {
     // isPremium gates competitive mode only — player cap is universal.
     if (server.gameState.players.length >= MAX_PLAYERS) {

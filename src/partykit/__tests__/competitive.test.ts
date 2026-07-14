@@ -56,8 +56,13 @@ function join(
     type: "JOIN_ROOM",
     playerName,
     protocolVersion: PROTOCOL_VERSION,
-    ...(opts.isPremium ? { isPremium: true } : {}),
   }), conn as any);
+  // In production, premium is granted only after the server verifies the
+  // host's RevenueCat entitlement (async). For tests we simulate a verified
+  // host by marking the freshly-created room premium directly.
+  if (opts.isPremium && server.gameState) {
+    server.gameState.isPremium = true;
+  }
   return conn;
 }
 

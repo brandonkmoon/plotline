@@ -129,7 +129,7 @@ src/
 
 **Round-robin rotation**: Each player writes for a different scene each act. With N players and 7 acts, there are N scenes.
 
-**isPremium**: Set on room creation based on host's Producer purchase status. Persists for the life of the room, even across game resets and host transfers. All rooms support 4–10 players regardless of tier — `isPremium` only gates competitive mode.
+**isPremium**: Set on room creation, but **only after the server verifies the host's Producer entitlement with RevenueCat** — never trusted from the client. The iOS host sends its RevenueCat App User ID with JOIN_ROOM; the PartyKit room calls RevenueCat's REST API (`src/partykit/revenuecat.ts`, using the `REVENUECAT_API_KEY` secret) and enables premium only if the entitlement is active. Fails closed if the key is unset. Persists for the life of the room, even across game resets and host transfers. All rooms support 4–10 players regardless of tier — `isPremium` only gates competitive mode.
 
 **Input sanitization**: All player names and responses are sanitized at the server boundary (HTML tags stripped, special chars escaped, max lengths enforced).
 
@@ -144,6 +144,12 @@ NEXT_PUBLIC_PARTYKIT_HOST    # PartyKit server (default: localhost:1999)
 APP_URL                      # Internal API base URL
 NEXT_PUBLIC_APP_URL          # Public URL for meta tags / archive links
 NEXT_PUBLIC_PLAUSIBLE_DOMAIN # Plausible analytics domain
+```
+
+**PartyKit secret** (set on the server, not in Next.js — `npx partykit env add REVENUECAT_API_KEY`, then redeploy):
+```
+REVENUECAT_API_KEY           # RevenueCat SECRET v1 API key — server verifies
+                             # the Producer entitlement. Unset = premium denied.
 ```
 
 ## Development
