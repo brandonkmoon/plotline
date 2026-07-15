@@ -1,6 +1,6 @@
 # Plotline — Project Status
 
-Last updated: 2026-07-14
+Last updated: 2026-07-15
 
 ## What Plotline Is
 
@@ -21,9 +21,8 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 ## Current State
 
 ### iOS App
-- **LIVE on App Store: v1.2.0, build 8** (released 2026-05-07; app ID: 6763647982). Includes Producer mode ($3.99 lifetime IAP via RevenueCat, purchase confirmed working), iPad support, RevenueCat v9.15.2 lazy-loaded, production API key.
-  - NOTE: this live build predates the EAS Update setup (2026-07-14), so it is NOT over-the-air-updatable. The first OTA-capable release will be **v1.2.1** (see below).
-- **v1.2.1 (in progress)**: first OTA-capable build. Will bundle the `fix/review-pass-1` mobile fixes (connect-on-room-screen, purchases feedback, leave guard, etc.) + EAS Update. build 9 of v1.2.0 (uploaded 2026-07-14) is stranded in TestFlight — can't release under the already-released 1.2.0 number, hence the bump to 1.2.1.
+- **LIVE on App Store: v1.2.1, build 10** ("Ready for Distribution" ~2026-07-15; app ID: 6763647982). First **OTA-capable** build (EAS Update). Bundles the `fix/review-pass-1` mobile fixes (connect-on-room-screen, purchases feedback, leave guard) and sends the RevenueCat App User ID for server-side premium verification. Producer mode ($3.99 lifetime IAP), iPad support, RevenueCat v9.15.2 lazy-loaded, production API key.
+  - Prior live build was v1.2.0 build 8 (released 2026-05-07), which predates EAS Update and is NOT OTA-updatable. From v1.2.1 on, JS-only fixes ship via `eas update` with no Apple review.
 - **Bundle ID**: com.brandonkmoon.plotline
 - **Apple Team ID**: 45F374H7T2
 
@@ -36,7 +35,7 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 ### Server (PartyKit)
 - Deployed at plotline.brandonkmoon.partykit.dev
 - Deploy command: `npx partykit deploy` (from web project root)
-- LIVE server still trusts the client `isPremium` flag. The `fix/review-pass-1` branch replaces this with server-side RevenueCat verification (`src/partykit/revenuecat.ts`) — NOT yet deployed. Deploy it only alongside the v1.2.1 client (older clients would lose competitive), and set the `REVENUECAT_API_KEY` PartyKit secret first.
+- **Server-side premium verification is LIVE (deployed 2026-07-15).** The server verifies the host's RevenueCat entitlement (`src/partykit/revenuecat.ts`, using the `REVENUECAT_API_KEY` secret) instead of trusting a client flag. Validated end-to-end on-device 2026-07-15 (Producer account → competitive available). Fails closed if the secret is unset.
 - All rooms: 4–10 player cap
 - Free rooms: classic mode only
 - Premium rooms: competitive mode unlocked
