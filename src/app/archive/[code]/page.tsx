@@ -9,9 +9,9 @@ import ArchiveNotFound from "@/components/archive/ArchiveNotFound";
 export async function generateMetadata({
   params,
 }: {
-  params: { code: string };
+  params: Promise<{ code: string }>;
 }): Promise<Metadata> {
-  const code = params.code.toUpperCase();
+  const code = (await params).code.toUpperCase();
   // Point social previews at the first story's generated OG card. The route
   // returns 404 if the archive doesn't exist, so crawlers just get no image.
   const ogImage = `/api/og/${code}/0`;
@@ -58,10 +58,10 @@ interface ArchiveRoom {
 export default async function ArchivePage({
   params,
 }: {
-  params: { code: string };
+  params: Promise<{ code: string }>;
 }) {
   const db = await getDb();
-  const code = params.code.toUpperCase();
+  const code = (await params).code.toUpperCase();
 
   const rooms = await db
     .select()

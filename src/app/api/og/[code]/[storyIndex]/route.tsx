@@ -42,10 +42,11 @@ async function loadBundledFont(filename: string): Promise<ArrayBuffer> {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { code: string; storyIndex: string } }
+  { params }: { params: Promise<{ code: string; storyIndex: string }> }
 ) {
-  const code = params.code.toUpperCase();
-  const storyIdx = parseInt(params.storyIndex, 10);
+  const { code: rawCode, storyIndex } = await params;
+  const code = rawCode.toUpperCase();
+  const storyIdx = parseInt(storyIndex, 10);
 
   if (isNaN(storyIdx)) {
     return new Response("Invalid story index", { status: 400 });
