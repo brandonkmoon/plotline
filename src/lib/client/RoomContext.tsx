@@ -190,7 +190,9 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
 
   // Detect host transfer: when this client's isHost flips false → true,
   // show a brief "you're now the host" notice for 4 seconds.
-  // eslint-disable-next-line react-hooks/refs -- playerIdRef only changes alongside a state update (re-render), so this render-time read stays consistent; moving it to state would churn the identity effects.
+  // playerIdRef only changes alongside a state update (re-render), so this
+  // render-time read stays consistent; moving it to state would churn the
+  // identity effects.
   const currentPlayer = room?.players.find((p) => p.id === playerIdRef.current) ?? null;
   const isHost = currentPlayer?.isHost ?? false;
 
@@ -258,7 +260,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     setConnectionError(null);
   }, []);
 
-  // eslint-disable-next-line react-hooks/refs -- see note above: ref changes pair with a state update, so the render-time read is consistent.
+  // See note above: ref changes pair with a state update, so the render-time read is consistent.
   const currentPendingPlayer = room?.pendingPlayers?.find((p) => p.id === playerIdRef.current) ?? null;
   const isPending = currentPendingPlayer !== null;
 

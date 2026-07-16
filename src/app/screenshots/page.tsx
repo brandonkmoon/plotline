@@ -754,6 +754,8 @@ export default function ScreenshotPage() {
 
       {/* Banner — rendered here so it's below the selector tabs */}
       <div className="banner screenshot-banner">
+        {/* Internal App Store screenshot tool (not user-facing); plain img is fine. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/plotline-title.png"
           alt="Plotline"

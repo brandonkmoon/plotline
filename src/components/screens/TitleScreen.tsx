@@ -226,6 +226,9 @@ export default function TitleScreen() {
             target="_blank"
             rel="noopener noreferrer"
           >
+            {/* Official Apple badge served from Apple's CDN — must not be
+                re-optimized/proxied (Apple brand guidelines), so a plain img. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83"
               alt="Download on the App Store"

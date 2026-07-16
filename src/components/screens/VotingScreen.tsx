@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
 import { setHelpScreen } from "@/lib/helpContext";
 import Button from "@/components/Button";
@@ -43,16 +43,20 @@ export default function VotingScreen() {
     (room?.stories?.filter((s) => s.isRevealed).length ?? 0) === 0;
   const showFirstTimeHint = isFirstVoteOfSeries && !hintDismissed;
 
-  // Which lines did I write?
-  const myLineIndices = new Set<number>();
-  if (room && currentPlayer) {
-    const gameStory = room.stories[storyIndex];
-    if (gameStory) {
-      gameStory.slots.forEach((slot, i) => {
-        if (slot.playerId === currentPlayer.id) myLineIndices.add(i);
-      });
+  // Which lines did I write? Memoized so it doesn't rebuild every render and
+  // churn the useCallback deps below.
+  const myLineIndices = useMemo(() => {
+    const set = new Set<number>();
+    if (room && currentPlayer) {
+      const gameStory = room.stories[storyIndex];
+      if (gameStory) {
+        gameStory.slots.forEach((slot, i) => {
+          if (slot.playerId === currentPlayer.id) set.add(i);
+        });
+      }
     }
-  }
+    return set;
+  }, [room, currentPlayer, storyIndex]);
 
   // Vote count for live progress
   const votesIn = room?.votingState?.votesReceived?.length ?? 0;
