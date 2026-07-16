@@ -3,6 +3,7 @@ import type { GameAction } from "@/lib/game/types";
 import type { ClientMessage, ServerMessage } from "@/lib/multiplayer/types";
 import { gameReducer, createRoom, generateRoomCode } from "@/lib/game";
 import type RoomServer from "../room";
+import { MAX_PLAYERS } from "../constants";
 import { clearRoundTimer } from "./gameplay";
 import { computeAndBroadcastScores } from "./voting";
 
@@ -21,6 +22,17 @@ export function handlePlayAgain(server: RoomServer, sender: Connection) {
     server.seriesState.currentGameNumber < server.seriesState.totalGames;
   const isFinalCompetitive = server.seriesState &&
     server.seriesState.currentGameNumber >= server.seriesState.totalGames;
+
+  // Classic mode during REVEAL: only the host may restart, so a single queued
+  // player can't cut the reveal short and reset the room for the whole group.
+  // At END, the normal queued-player path below applies.
+  if (!server.seriesState && server.gameState.state === "REVEAL" && !isHost) {
+    server.sendTo(sender, {
+      type: "ERROR",
+      reason: "Only the host can start the next game during the reveal",
+    });
+    return;
+  }
 
   // Final competitive game: host advances to the awards ceremony — but only
   // once the game has actually ended and awards are computed. Advancing during
@@ -56,12 +68,31 @@ export function handlePlayAgain(server: RoomServer, sender: Connection) {
     originalHost?.queuedForNextGame ? originalHost : senderPlayer;
   if (!host) return;
 
+  // Build the next-game roster, capped at MAX_PLAYERS. The host holds one slot;
+  // queued players fill next, then ready pending spectators. Anyone past the
+  // cap is KEPT as a pending spectator rather than silently dropped (the
+  // reducer's PLAYER_JOINED just no-ops past the cap, which loses them).
+  const queuedJoiners = server.gameState.players.filter(
+    (p) => p.id !== host.id && p.queuedForNextGame
+  );
   const readyPending = (server.gameState.pendingPlayers ?? []).filter(
     (p) => p.ready
   );
-  const keepPending = (server.gameState.pendingPlayers ?? []).filter(
+  const unreadyPending = (server.gameState.pendingPlayers ?? []).filter(
     (p) => !p.ready
   );
+
+  const availableSlots = Math.max(0, MAX_PLAYERS - 1); // host holds one slot
+  const admittedPlayers = queuedJoiners.slice(0, availableSlots);
+  const admittedPendingReady = readyPending.slice(
+    0,
+    Math.max(0, availableSlots - admittedPlayers.length)
+  );
+  // Everyone who didn't get a seat stays on as a pending spectator (ready=false).
+  const overflowPending = [
+    ...queuedJoiners.slice(admittedPlayers.length),
+    ...readyPending.slice(admittedPendingReady.length),
+  ].map((p) => ({ id: p.id, name: p.name, joinedAt: now, ready: false }));
 
   const newRoom = createRoom(
     server.gameState.code,
@@ -70,10 +101,7 @@ export function handlePlayAgain(server: RoomServer, sender: Connection) {
   );
 
   let state = newRoom;
-  for (const player of server.gameState.players) {
-    if (player.id === host.id) continue;
-    if (!player.queuedForNextGame) continue;
-
+  for (const player of admittedPlayers) {
     const action: GameAction = {
       type: "PLAYER_JOINED",
       player: {
@@ -87,7 +115,7 @@ export function handlePlayAgain(server: RoomServer, sender: Connection) {
     state = gameReducer(state, action);
   }
 
-  for (const pending of readyPending) {
+  for (const pending of admittedPendingReady) {
     const action: GameAction = {
       type: "PLAYER_JOINED",
       player: {
@@ -103,7 +131,7 @@ export function handlePlayAgain(server: RoomServer, sender: Connection) {
 
   state = {
     ...state,
-    pendingPlayers: keepPending,
+    pendingPlayers: [...unreadyPending, ...overflowPending],
   };
 
   state.isPremium = server.gameState.isPremium;
