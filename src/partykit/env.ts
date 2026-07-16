@@ -10,4 +10,7 @@ export interface Env {
   APP_URL: string;
   ARCHIVE_SECRET?: string;
   REVENUECAT_API_KEY?: string;
+  // Per-IP connection rate limiter (see wrangler.jsonc). Optional so local dev
+  // / tests without the binding still typecheck and fail open.
+  CONNECT_LIMITER?: RateLimit;
 }
