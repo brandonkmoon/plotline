@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 export async function GET(
   _request: NextRequest,
@@ -27,12 +27,25 @@ export async function GET(
     .from(schema.archivedStories)
     .where(eq(schema.archivedStories.roomCode, code));
 
+  // Fetch all prompts for these stories in ONE query, then group in memory —
+  // avoids an N+1 (one prompts query per story).
+  const storyIds = stories.map((s: any) => s.id);
+  const allPrompts = storyIds.length
+    ? await db
+        .select()
+        .from(schema.archivedPrompts)
+        .where(inArray(schema.archivedPrompts.storyId, storyIds))
+    : [];
+  const promptsByStory = new Map<unknown, typeof allPrompts>();
+  for (const p of allPrompts) {
+    const list = promptsByStory.get(p.storyId);
+    if (list) list.push(p);
+    else promptsByStory.set(p.storyId, [p]);
+  }
+
   const storiesWithPrompts = [];
   for (const story of stories) {
-    const prompts = await db
-      .select()
-      .from(schema.archivedPrompts)
-      .where(eq(schema.archivedPrompts.storyId, story.id));
+    const prompts = promptsByStory.get(story.id) ?? [];
 
     storiesWithPrompts.push({
       storyIndex: story.storyIndex,

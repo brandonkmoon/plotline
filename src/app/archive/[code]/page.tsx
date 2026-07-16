@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { getDb, schema } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import ArchiveView from "@/components/archive/ArchiveView";
 import ArchiveNotFound from "@/components/archive/ArchiveNotFound";
 
@@ -77,12 +77,24 @@ export default async function ArchivePage({
     .from(schema.archivedStories)
     .where(eq(schema.archivedStories.roomCode, code));
 
+  // One query for all prompts, grouped in memory — avoids an N+1 per story.
+  const storyIds = dbStories.map((s: any) => s.id);
+  const allPrompts = storyIds.length
+    ? await db
+        .select()
+        .from(schema.archivedPrompts)
+        .where(inArray(schema.archivedPrompts.storyId, storyIds))
+    : [];
+  const promptsByStory = new Map<unknown, typeof allPrompts>();
+  for (const p of allPrompts) {
+    const list = promptsByStory.get(p.storyId);
+    if (list) list.push(p);
+    else promptsByStory.set(p.storyId, [p]);
+  }
+
   const stories: ArchiveStory[] = [];
   for (const story of dbStories) {
-    const prompts = await db
-      .select()
-      .from(schema.archivedPrompts)
-      .where(eq(schema.archivedPrompts.storyId, story.id));
+    const prompts = promptsByStory.get(story.id) ?? [];
 
     stories.push({
       storyIndex: story.storyIndex,
