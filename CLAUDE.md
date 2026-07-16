@@ -199,7 +199,5 @@ eas submit --platform ios --latest
 
 ## Known Cleanup Items
 
-- `public/fonts/Latin CG Bold Regular.otf` — dead file, can be deleted (title is now a PNG)
-- Duplicate `sw 2-6.js` and `workbox-*.js` files in `public/` — stale copies, delete them
-- `LatinCGBold.otf` and `icon-mock.html` in project root — icon design artifacts, can be deleted
-- `landing-mock.html` in project root — landing page prototype, can be deleted
+_(none — the old dead font / service-worker copies / mock HTML artifacts have
+all been removed.)_

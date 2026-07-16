@@ -8,10 +8,14 @@ describe("sanitize", () => {
     expect(sanitize("<img src=x onerror=alert(1)>", 100)).toBe("");
   });
 
-  it("escapes special characters", () => {
-    expect(sanitize("a & b", 100)).toBe("a &amp; b");
-    expect(sanitize("a < b", 100)).toBe("a &lt; b");
-    expect(sanitize("a > b", 100)).toBe("a &gt; b");
+  it("leaves special characters raw for the renderer to escape once", () => {
+    // Tag-stripping is the XSS defense; entity-escaping is left to each output
+    // sink (React/RN/satori all auto-escape), so we don't double-encode here.
+    expect(sanitize("a & b", 100)).toBe("a & b");
+    expect(sanitize("Tom & Jerry", 100)).toBe("Tom & Jerry");
+    // A bare "<" that isn't a complete tag survives tag-stripping but is inert
+    // once the renderer escapes it on output.
+    expect(sanitize("a < b", 100)).toBe("a < b");
   });
 
   it("trims whitespace", () => {

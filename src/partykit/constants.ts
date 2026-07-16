@@ -18,14 +18,17 @@ const BIDI_CONTROLS = /[\u202A-\u202E\u2066-\u2069\u200E\u200F\u061C]/g;
 const COMBINING_RUN = /\p{M}{3,}/gu; // 3+ stacked marks → keep the first two
 
 export function sanitize(input: string, maxLength: number): string {
+  // Tag-stripping is the XSS defense here — NOT entity-escaping. Every sink
+  // that renders this text (React web, React Native <Text>, satori OG images,
+  // the archive page) already escapes on output, so escaping &<> a second time
+  // server-side just double-encodes: a player named "Tom & Jerry" would show up
+  // as "Tom &amp; Jerry" everywhere. Strip tags + control chars, then store the
+  // raw text and let each renderer escape it once.
   return input
     .normalize("NFKC") // fold compatibility/homoglyph forms; compose diacritics
-    .replace(/<[^>]*>/g, "") // strip HTML tags
+    .replace(/<[^>]*>/g, "") // strip HTML tags (primary XSS defense)
     .replace(BIDI_CONTROLS, "") // strip bidi override/isolate controls
     .replace(COMBINING_RUN, (m) => m.slice(0, 2)) // cap zalgo stacks
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
     .trim()
     .slice(0, maxLength);
 }
