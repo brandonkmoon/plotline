@@ -104,9 +104,10 @@ export function handleSubmitVote(
     isStandingOvation: msg.isStandingOvation,
   });
 
-  if (msg.isStandingOvation && server.seriesState) {
-    server.seriesState.standingOvationsUsed[playerId] = true;
-  }
+  // NOTE: standingOvationsUsed is committed at tally time (handleAdvanceVoting),
+  // not here — otherwise casting an ovation then changing to a regular vote
+  // before the round closes would silently burn the once-per-game ovation.
+  // The check above still rejects a second ovation across already-tallied rounds.
 
   const votesReceived = Array.from(server.currentVotes.keys());
   server.gameState = {
@@ -160,6 +161,10 @@ export async function handleAdvanceVoting(server: RoomServer, sender: Connection
   for (const [voterId, vote] of server.currentVotes) {
     const points = vote.isStandingOvation ? 3 : 1;
     lineTallies[vote.lineIndex] += points;
+    // Commit the once-per-game ovation now, based on the final vote.
+    if (vote.isStandingOvation && server.seriesState) {
+      server.seriesState.standingOvationsUsed[voterId] = true;
+    }
     votes.push({
       voterId,
       storyIndex,
