@@ -38,6 +38,7 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 - Deploy command: `npx partykit deploy` (from web project root)
 - **Server-side premium verification is LIVE (deployed 2026-07-15).** The server verifies the host's RevenueCat entitlement (`src/partykit/revenuecat.ts`, using the `REVENUECAT_API_KEY` secret) instead of trusting a client flag. Validated end-to-end on-device 2026-07-15 (Producer account → competitive available). Fails closed if the secret is unset.
 - **Archive endpoint auth is LIVE (deployed 2026-07-15).** `POST /api/archive` now requires a `Bearer ARCHIVE_SECRET`; the PartyKit server sends it, browsers can't. Secret set identically on Vercel + PartyKit. The server posts to `https://www.plotlinegame.com` (canonical host — `APP_URL` in `partykit.json`) so the apex→www redirect can't strip the auth header. Validated: no-auth/wrong-bearer → 401, correct → passes.
+- **onConnect identity-takeover guard is LIVE (deployed 2026-07-16).** `onConnect` refuses to rebind a `?playerId=` that already has a live socket, so a broadcast playerId can't be used to hijack a live player; genuine reconnects (dead prior socket) are unaffected. Runtime-verified locally and against production (hijack rejected with `PLAYER_ALREADY_CONNECTED`; genuine reconnect succeeds). This was the last high-severity item from the 228-finding review — the backlog is now closed.
 - All rooms: 4–10 player cap
 - Free rooms: classic mode only
 - Premium rooms: competitive mode unlocked
