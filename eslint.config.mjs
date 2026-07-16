@@ -3,7 +3,9 @@
 import coreWebVitals from "eslint-config-next/core-web-vitals";
 
 /** @type {import('eslint').Linter.Config[]} */
-export default [
+const config = [
   { ignores: [".next/**", "node_modules/**", "public/**", "*.config.js"] },
   ...coreWebVitals,
 ];
+
+export default config;

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { requestLeave } from "@/lib/client/leaveGuard";
 
@@ -16,7 +17,10 @@ export default function PlaybillBanner() {
 
   return (
     <div className="banner">
-      <a href="/" onClick={handleLogoClick} aria-label="Go to home">
+      <Link href="/" onClick={handleLogoClick} aria-label="Go to home">
+        {/* Deliberately a plain <img>, not next/image: the title must paint
+            instantly with no optimization round-trip to avoid a title flash. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/plotline-title.png"
           alt="Plotline"
@@ -25,7 +29,7 @@ export default function PlaybillBanner() {
           height={44}
           draggable={false}
         />
-      </a>
+      </Link>
       <div className="banner-subtitle">The Collaborative Storytelling Game</div>
     </div>
   );

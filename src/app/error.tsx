@@ -33,6 +33,9 @@ export default function Error({
         >
           Try Again
         </button>
+        {/* Full reload (not next/link) is intentional here: it guarantees a
+            clean slate out of the errored state. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
           href="/"
           className="font-sans text-[12px] uppercase tracking-[2px] text-text-dim hover:text-ink transition-colors"

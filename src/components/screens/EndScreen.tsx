@@ -34,6 +34,9 @@ export default function EndScreen() {
   );
   const [copied, setCopied] = useState(false);
   const [archived, setArchived] = useState(!!archiveUrl);
+  // Must be with the other hooks, above the `if (!room) return null` below —
+  // otherwise the hook count changes when room toggles and React errors.
+  const [savingImage, setSavingImage] = useState<number | null>(null);
 
   useEffect(() => {
     trackEvent("game_completed");
@@ -113,8 +116,6 @@ export default function EndScreen() {
         .catch(() => {});
     }
   };
-
-  const [savingImage, setSavingImage] = useState<number | null>(null);
 
   const handleSaveImage = async (storyIndex: number) => {
     if (!room?.code || savingImage !== null) return;
