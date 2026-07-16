@@ -283,8 +283,13 @@ function ScreenTransition({
   const [displayed, setDisplayed] = useState<React.ReactNode>(children);
   const [exiting, setExiting] = useState(false);
   const childrenRef = useRef(children);
-  childrenRef.current = children;
   const prevKeyRef = useRef(screenKey);
+
+  // Track the latest children in an effect (not during render) so the
+  // animation-end handler swaps in the newest screen.
+  useEffect(() => {
+    childrenRef.current = children;
+  });
 
   useEffect(() => {
     if (screenKey === prevKeyRef.current) return;
