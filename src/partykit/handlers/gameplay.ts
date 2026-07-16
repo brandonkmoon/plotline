@@ -340,11 +340,16 @@ export function handleTypingStatus(
   msg: Extract<ClientMessage, { type: "TYPING_STATUS" }>,
   sender: Connection
 ) {
+  // Only these two are valid typing signals — ignore anything else so a client
+  // can't inject arbitrary statuses.
+  if (msg.status !== "writing" && msg.status !== "idle") return;
+
   const playerId = server.connectionToPlayer.get(sender.id);
   if (!playerId) return;
 
   const currentStatus = server.playerStatuses.get(playerId);
   if (currentStatus === "submitted") return;
+  if (currentStatus === msg.status) return; // no-op — don't rebroadcast (amplifier)
 
   server.playerStatuses.set(playerId, msg.status);
   server.broadcastPlayerStatuses(true); // skip save — typing is ephemeral

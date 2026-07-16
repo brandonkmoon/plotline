@@ -228,6 +228,12 @@ export function handleJoinRoom(
     server.gameState.state !== "CREATED" &&
     server.gameState.state !== "DESTROYED"
   ) {
+    // Cap mid-game spectators so pendingPlayers can't grow unbounded (DoS).
+    if ((server.gameState.pendingPlayers ?? []).length >= MAX_PLAYERS) {
+      server.sendTo(sender, { type: "ERROR", reason: "ROOM_FULL" });
+      sender.close();
+      return;
+    }
     const pendingId = crypto.randomUUID();
     const pendingPlayer: PendingPlayer = {
       id: pendingId,

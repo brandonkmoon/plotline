@@ -362,6 +362,12 @@ export default class RoomServer extends Server<Env> {
     if (msg.type === "JOIN_ROOM" && msg.playerName) {
       msg = { ...msg, playerName: sanitize(msg.playerName, MAX_NAME_LENGTH) };
     }
+    if (msg.type === "JOIN_ROOM" && msg.previousHostName) {
+      msg = {
+        ...msg,
+        previousHostName: sanitize(msg.previousHostName, MAX_NAME_LENGTH),
+      };
+    }
     if (msg.type === "SUBMIT_PROMPT" && msg.response) {
       msg = { ...msg, response: sanitize(msg.response, MAX_RESPONSE_LENGTH) };
     }
