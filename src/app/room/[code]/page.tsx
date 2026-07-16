@@ -92,7 +92,7 @@ function ConnectionErrorView() {
       message =
         "Someone in this room already has that name. Try joining with a different one.";
       action = (
-        <Link href="/join">
+        <Link href={code ? `/join/${code}` : "/join"}>
           <Button variant="primary">Try again</Button>
         </Link>
       );

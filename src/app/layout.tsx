@@ -72,6 +72,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#fceb00",
 };
 
 export default function RootLayout({
@@ -89,11 +90,15 @@ export default function RootLayout({
         <main className="app-main">{children}</main>
         <HelpOverlay />
         <PlausibleAnalytics />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `if("serviceWorker"in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js")})}`,
-          }}
-        />
+        {/* Register the service worker in production only — in dev it caches
+            stale bundles and fights Turbopack HMR. */}
+        {process.env.NODE_ENV === "production" && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `if("serviceWorker"in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js")})}`,
+            }}
+          />
+        )}
       </body>
     </html>
   );
