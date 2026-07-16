@@ -59,7 +59,12 @@ export function handleStartGame(
   server.gameState = { ...newState, gameMode: mode };
 
   if (mode === "competitive") {
-    const totalGames = msg.seriesLength ?? 3;
+    // Clamp to the valid 1–5 range so a crafted seriesLength (0, negative,
+    // huge, NaN) can't make game 1 instantly "final" or run forever.
+    const rawLen = Number(msg.seriesLength);
+    const totalGames = Number.isFinite(rawLen)
+      ? Math.min(5, Math.max(1, Math.round(rawLen)))
+      : 3;
 
     if (!server.seriesState) {
       server.seriesState = {

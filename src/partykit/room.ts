@@ -372,6 +372,14 @@ export default class RoomServer extends Server<Env> {
       msg = { ...msg, response: sanitize(msg.response, MAX_RESPONSE_LENGTH) };
     }
 
+    // A brand-new join (no reconnect id) must carry a non-empty name — an empty
+    // one would create a nameless player and break the next joiner's name check.
+    if (msg.type === "JOIN_ROOM" && !msg.playerId && !msg.playerName) {
+      this.sendTo(sender, { type: "ERROR", reason: "A name is required" });
+      sender.close();
+      return;
+    }
+
     switch (msg.type) {
       case "JOIN_ROOM":
         handleJoinRoom(this, msg, sender);
@@ -511,6 +519,9 @@ export default class RoomServer extends Server<Env> {
     const data = JSON.stringify(msg);
     let count = 0;
     for (const conn of this.room.getConnections()) {
+      // Only sockets that completed JOIN_ROOM get game content — a bare socket
+      // opened to a room code must not be able to passively harvest stories/scores.
+      if (!this.connectionToPlayer.has(conn.id)) continue;
       conn.send(data);
       count++;
     }
@@ -731,6 +742,11 @@ export default class RoomServer extends Server<Env> {
 
   async archiveRoom() {
     if (!this.gameState) return;
+    // Capture which game we're archiving. The fetch can take seconds; if a
+    // PLAY_AGAIN replaces the room meanwhile, we must not stamp this URL onto
+    // the new game.
+    const archivedCreatedAt = this.gameState.createdAt;
+    const archivedCode = this.gameState.code;
     try {
       const archiveData = serializeRoomForArchive(
         this.gameState,
@@ -750,11 +766,17 @@ export default class RoomServer extends Server<Env> {
         const { archiveUrl } = (await response.json()) as {
           archiveUrl: string;
         };
-        if (this.gameState) {
+        // Only stamp the URL if the same game is still current — a PLAY_AGAIN
+        // during the fetch would otherwise put this URL on the new game.
+        if (
+          this.gameState &&
+          this.gameState.createdAt === archivedCreatedAt &&
+          this.gameState.code === archivedCode
+        ) {
           const action: GameAction = { type: "ARCHIVE_URL_SET", archiveUrl };
           this.gameState = gameReducer(this.gameState, action);
+          this.broadcastStateUpdate();
         }
-        this.broadcastStateUpdate();
       } else {
         const text = await response.text().catch(() => "");
         console.error("Archive API returned", response.status, text);
