@@ -4,6 +4,7 @@ import type { ClientMessage, ServerMessage } from "@/lib/multiplayer/types";
 import { PROTOCOL_VERSION } from "@/lib/multiplayer/types";
 import { createRoom, gameReducer } from "@/lib/game";
 import RoomServer from "@/partykit/room";
+import { ensureHostIsConnected, transferHost } from "@/partykit/handlers/connection";
 
 /**
  * Since PartyKit server instances are tightly coupled to the PartyKit runtime,
@@ -640,6 +641,65 @@ function getLatestStateUpdate(conn: MockConnection) {
 function startGameViaServer(server: RoomServer, hostConn: MockConnection) {
   deliver(server, JSON.stringify({ type: "START_GAME" }), hostConn as any);
 }
+
+describe("Host transfer grace period", () => {
+  it("does not steal host immediately when the host is disconnected — arms the grace timer, transfers only after it elapses", () => {
+    vi.useFakeTimers();
+    const { server, connections } = makeServer();
+    join(server, connections, "h", "Host");
+    join(server, connections, "p2", "Bob");
+    const hostId = server.gameState!.hostId;
+
+    // Simulate the host's socket dropping (as onClose leaves it): still marked
+    // isConnected until later, so first make them disconnected with no timer.
+    server.gameState = {
+      ...server.gameState!,
+      players: server.gameState!.players.map((p) =>
+        p.id === hostId ? { ...p, isConnected: false } : p
+      ),
+    };
+    server.hostTransferTimer = null;
+
+    // A subsequent join triggers ensureHostIsConnected — it must NOT reassign
+    // host on the spot; it should arm the grace timer instead.
+    ensureHostIsConnected(server);
+    expect(server.gameState!.hostId).toBe(hostId); // not stolen
+    expect(server.hostTransferTimer).not.toBeNull(); // grace timer armed
+
+    // If the host never returns, the grace period ends and host transfers.
+    vi.advanceTimersByTime(30_000);
+    expect(server.gameState!.hostId).not.toBe(hostId);
+
+    vi.useRealTimers();
+  });
+
+  it("leaves an already-running grace timer alone (no duplicate/immediate transfer)", () => {
+    vi.useFakeTimers();
+    const { server, connections } = makeServer();
+    join(server, connections, "h", "Host");
+    join(server, connections, "p2", "Bob");
+    const hostId = server.gameState!.hostId;
+
+    server.gameState = {
+      ...server.gameState!,
+      players: server.gameState!.players.map((p) =>
+        p.id === hostId ? { ...p, isConnected: false } : p
+      ),
+    };
+    // Grace timer already set by the disconnect path.
+    server.hostTransferTimer = setTimeout(
+      () => transferHost(server, hostId),
+      30_000
+    );
+    const existingTimer = server.hostTransferTimer;
+
+    ensureHostIsConnected(server);
+    expect(server.hostTransferTimer).toBe(existingTimer); // untouched
+    expect(server.gameState!.hostId).toBe(hostId); // not transferred yet
+
+    vi.useRealTimers();
+  });
+});
 
 describe("RoomServer instance behavior", () => {
   beforeEach(() => {

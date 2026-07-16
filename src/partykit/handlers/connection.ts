@@ -412,29 +412,18 @@ export function ensureHostIsConnected(server: RoomServer) {
   );
   if (host?.isConnected) return;
 
-  if (server.hostTransferTimer) {
-    clearTimeout(server.hostTransferTimer);
-    server.hostTransferTimer = null;
+  // The host is disconnected. Do NOT transfer immediately — that would steal
+  // host from someone who's just refreshing the moment anyone else joins.
+  // Instead respect the 30s grace period: make sure the transfer timer is
+  // running (it's normally set on the host's disconnect). If the host
+  // reconnects in time, the reconnect path clears this timer and they keep
+  // host; if the grace elapses, transferHost hands off to the earliest player.
+  if (!server.hostTransferTimer && server.gameState.hostId) {
+    const oldHostId = server.gameState.hostId;
+    server.hostTransferTimer = setTimeout(() => {
+      transferHost(server, oldHostId);
+    }, HOST_TRANSFER_TIMEOUT_MS);
   }
-
-  const connectedPlayers = server.gameState.players
-    .filter((p) => p.isConnected && p.id !== server.gameState!.hostId)
-    .sort((a, b) => a.joinedAt - b.joinedAt);
-
-  if (connectedPlayers.length === 0) return;
-
-  const newHost = connectedPlayers[0];
-  server.gameState = {
-    ...server.gameState,
-    hostId: newHost.id,
-    players: server.gameState.players.map((p) => ({
-      ...p,
-      isHost: p.id === newHost.id,
-    })),
-    updatedAt: Date.now(),
-  };
-
-  server.broadcastStateUpdate();
 }
 
 export function checkForEmptyRoom(server: RoomServer) {
