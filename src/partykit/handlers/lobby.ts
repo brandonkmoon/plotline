@@ -22,9 +22,13 @@ export function handlePlayAgain(server: RoomServer, sender: Connection) {
   const isFinalCompetitive = server.seriesState &&
     server.seriesState.currentGameNumber >= server.seriesState.totalGames;
 
-  // Final competitive game: host force-advance → broadcast awards
+  // Final competitive game: host advances to the awards ceremony — but only
+  // once the game has actually ended and awards are computed. Advancing during
+  // REVEAL would broadcast an empty awards list.
   if (isFinalCompetitive && isHost) {
-    autoAdvanceAfterReady(server);
+    if (server.gameState.state === "END") {
+      autoAdvanceAfterReady(server);
+    }
     return;
   }
 
@@ -170,9 +174,14 @@ export function autoAdvanceAfterReady(server: RoomServer) {
   } else {
     const hostConn = [...server.connectionToPlayer.entries()]
       .find(([, pid]) => pid === server.gameState!.hostId);
-    if (hostConn) {
-      handlePlayAgain(server, server.room.getConnection(hostConn[0])!);
+    const conn = hostConn
+      ? server.room.getConnection(hostConn[0])
+      : undefined;
+    if (conn) {
+      handlePlayAgain(server, conn);
     }
+    // If the host's socket is gone, host-transfer reassigns to a connected
+    // player and the next ready-check advances then — no crash, no forced skip.
   }
 }
 
