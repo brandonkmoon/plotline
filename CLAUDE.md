@@ -167,6 +167,19 @@ npm run dev          # Next.js dev server (port 3000)
 npm run pk:dev       # Realtime server via `wrangler dev` (port 8787) — separate terminal
 npx vitest run       # Run all tests
 npx vitest run --watch # Vitest watch mode
+npm run typecheck    # tsc for the Next app + the worker (tsconfig.worker.json)
+```
+
+## Database migrations (Turso / Drizzle)
+
+`npm run db:push` (drizzle-kit push) is fine for **local dev** — it syncs the
+schema directly. But for **production schema changes**, generate and commit the
+SQL first so there's a migration history and no silent column drop/recreate on
+the live archive data:
+
+```bash
+npm run db:generate   # drizzle-kit generate → SQL migration files (commit these)
+# then apply the reviewed migration to prod (do NOT push straight to prod)
 ```
 
 ## Deploy
