@@ -5,7 +5,7 @@ import { useRoom } from "@/lib/client/RoomContext";
 import { setHelpScreen } from "@/lib/helpContext";
 import Button from "@/components/Button";
 
-const VOTING_DURATION_MS = 30_000;
+const VOTING_DURATION_MS = 15_000; // fallback only; server sends votingDurationMs
 
 export default function VotingScreen() {
   const {
@@ -144,7 +144,7 @@ export default function VotingScreen() {
             <li>• <strong>Tap</strong> a line to vote (1 pt to the author)</li>
             <li>• <strong>Long-press</strong> for a standing ovation (3 pts to author, 2 pts to you)</li>
             <li>• You get <strong>1 standing ovation per game</strong> — use it or lose it</li>
-            <li>• If you don&rsquo;t vote, your vote is assigned randomly</li>
+            <li>• If you don&rsquo;t vote before time&rsquo;s up, you abstain</li>
           </ul>
           <button
             onClick={() => setHintDismissed(true)}

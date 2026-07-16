@@ -315,11 +315,19 @@ function InfoStrip({
   code,
   timerStartedAt,
   timerDurationMs,
+  warnAtSeconds = 30,
+  urgentAtSeconds = 10,
+  warnColor = "#fceb00",
 }: {
   playerName: string | null;
   code: string;
   timerStartedAt?: number | null;
   timerDurationMs?: number;
+  // Warning (amber/yellow) at <= warnAtSeconds, urgent (red) at <= urgentAtSeconds.
+  // Voting passes tighter, amber thresholds; the writing round uses the defaults.
+  warnAtSeconds?: number;
+  urgentAtSeconds?: number;
+  warnColor?: string;
 }) {
   const [flash, setFlash] = useState(false);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
@@ -360,11 +368,6 @@ function InfoStrip({
   const timerDisplay = totalSeconds !== null
     ? `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`
     : null;
-  const timerColor = totalSeconds !== null && totalSeconds <= 10
-    ? "#dc2626"
-    : totalSeconds !== null && totalSeconds <= 30
-    ? "#fceb00"
-    : "#ffffff";
 
   const joinUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/join/${code}`;
 
@@ -408,10 +411,10 @@ function InfoStrip({
       </div>
 
       {timerDisplay && (() => {
-        const isUrgent = totalSeconds !== null && totalSeconds <= 10;
-        const isWarning = totalSeconds !== null && totalSeconds > 10 && totalSeconds <= 30;
+        const isUrgent = totalSeconds !== null && totalSeconds <= urgentAtSeconds;
+        const isWarning = totalSeconds !== null && totalSeconds > urgentAtSeconds && totalSeconds <= warnAtSeconds;
         const timerFontSize = isUrgent ? 22 : isWarning ? 16 : 13;
-        const activeColor = isUrgent ? "#dc2626" : isWarning ? "#fceb00" : timerColor;
+        const activeColor = isUrgent ? "#dc2626" : isWarning ? warnColor : "#ffffff";
         return (
           <span
             className={`absolute left-1/2 z-20 flex items-center justify-center font-sans font-semibold tracking-[1px] transition-all duration-300 ${
@@ -557,6 +560,10 @@ function RoomContent() {
           code={room.code}
           timerStartedAt={showTimer ? timerStartedAt : null}
           timerDurationMs={showTimer ? timerDurationMs : undefined}
+          // Voting is a fast 15s round: amber at 10s, red at 5s.
+          warnAtSeconds={isVoting ? 10 : 30}
+          urgentAtSeconds={isVoting ? 5 : 10}
+          warnColor={isVoting ? "#d97706" : "#fceb00"}
         />
       )}
       <ScreenTransition screenKey={screenKey}>{screen}</ScreenTransition>
