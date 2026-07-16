@@ -27,6 +27,7 @@ export function handleStartVoting(server: RoomServer, sender: Connection) {
   }
 
   server.currentVotes.clear();
+  clearVotingTimer(server); // clear any stale timer/startedAt before this round
 
   const now = Date.now();
   server.votingStartedAt = now;
@@ -47,7 +48,14 @@ export function handleStartVoting(server: RoomServer, sender: Connection) {
     votingDurationMs: VOTING_DURATION_MS,
   });
 
-  clearVotingTimer(server);
+  // Auto-close the round if the host doesn't advance in time, so no one gets
+  // cut off. Voting happens with players connected, so this attended timer is
+  // reliable (the DO isn't evicted while sockets are open) — same pattern as
+  // the per-round timer in room.ts.
+  server.votingTimer = setTimeout(() => {
+    void closeVoting(server);
+  }, VOTING_DURATION_MS);
+
   server.broadcastStateUpdate();
 }
 
@@ -128,6 +136,16 @@ export async function handleAdvanceVoting(server: RoomServer, sender: Connection
 
   const playerId = server.connectionToPlayer.get(sender.id);
   if (!playerId || playerId !== server.gameState.hostId) return;
+
+  await closeVoting(server);
+}
+
+// Tally the current story's votes and advance the reveal. Called by the host
+// (handleAdvanceVoting) or automatically when the voting timer fires.
+export async function closeVoting(server: RoomServer) {
+  if (!server.gameState) return;
+  if (server.gameState.state !== "REVEAL") return;
+  if (server.gameState.votingState?.phase !== "voting") return;
   clearVotingTimer(server);
 
   const storyIndex = server.revealStoryIndex;

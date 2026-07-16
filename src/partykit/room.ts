@@ -20,6 +20,7 @@ import {
   HOST_TRANSFER_TIMEOUT_MS,
   MAX_NAME_LENGTH,
   MAX_RESPONSE_LENGTH,
+  VOTING_DURATION_MS,
   sanitize,
 } from "./constants";
 
@@ -53,6 +54,7 @@ import {
   handleStartVoting,
   handleSubmitVote,
   handleAdvanceVoting,
+  closeVoting,
 } from "./handlers/voting";
 
 /**
@@ -207,6 +209,21 @@ export default class RoomServer extends Server<Env> {
         } else {
           this.pendingAdvanceAvailable = true;
         }
+      }
+
+      // Restore the voting timer if a vote round was open when the DO restarted.
+      if (
+        this.gameState.state === "REVEAL" &&
+        this.gameState.votingState?.phase === "voting" &&
+        this.gameState.votingState.votingStartedAt
+      ) {
+        this.votingStartedAt = this.gameState.votingState.votingStartedAt;
+        const remaining =
+          VOTING_DURATION_MS -
+          (Date.now() - this.gameState.votingState.votingStartedAt);
+        this.votingTimer = setTimeout(() => {
+          void closeVoting(this);
+        }, Math.max(0, remaining));
       }
 
       // Restart disconnect timers for any active player who isn't submitted.
