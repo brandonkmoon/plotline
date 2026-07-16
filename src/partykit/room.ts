@@ -233,8 +233,14 @@ export default class RoomServer extends Server<Env> {
       ) {
         for (const player of this.gameState.players) {
           const status = this.playerStatuses.get(player.id);
-          if (status !== "submitted") {
+          // Don't resurrect a player who was already fully disconnected into
+          // "reconnecting" on restart — that would restart their grace timer
+          // and delay empty-room cleanup. Only players still mid-game (not yet
+          // submitted, not already dropped) get a fresh reconnect window.
+          if (status !== "submitted" && status !== "disconnected") {
             this.playerStatuses.set(player.id, "reconnecting");
+            const prev = this.disconnectTimers.get(player.id);
+            if (prev) clearTimeout(prev);
             const timer = setTimeout(() => {
               handlePlayerDisconnected(this, player.id);
             }, RECONNECT_TIMEOUT_MS);
@@ -493,7 +499,10 @@ export default class RoomServer extends Server<Env> {
       }
     }
 
-    // Set reconnect timeout
+    // Set reconnect timeout (clear any existing one first so a rapid
+    // disconnect→reconnect→disconnect can't leak an orphaned timer).
+    const existingTimer = this.disconnectTimers.get(playerId);
+    if (existingTimer) clearTimeout(existingTimer);
     const disconnectTimer = setTimeout(() => {
       handlePlayerDisconnected(this, playerId);
     }, RECONNECT_TIMEOUT_MS);

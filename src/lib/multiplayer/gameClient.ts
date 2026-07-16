@@ -174,6 +174,10 @@ class GameClient {
   private playerName: string = "";
   private unknownPlayerRetries: number = 0;
   private readonly MAX_UNKNOWN_PLAYER_RETRIES = 2;
+  private lastConnectOptions?: {
+    forceNewPlayer?: boolean;
+    previousHostName?: string;
+  };
 
   constructor() {
     // When the tab becomes visible again, force reconnect immediately
@@ -238,6 +242,9 @@ class GameClient {
     this.roomCode = roomCode;
     this.playerName = playerName;
     this.connectionError = null;
+    // Remember the options so an automatic UNKNOWN_PLAYER retry (below) can
+    // reconnect with the same previousHostName instead of silently dropping it.
+    this.lastConnectOptions = options;
 
     // Close any existing socket before opening a new one. Without this,
     // a previous rejected connection (e.g. NAME_TAKEN) can keep
@@ -432,7 +439,12 @@ class GameClient {
                   const delay = this.unknownPlayerRetries * 2000; // 2s, 4s
                   setTimeout(() => {
                     if (!this.roomCode) return;
-                    this.connect(this.roomCode, this.playerName).catch(() => {
+                    this.connect(
+                      this.roomCode,
+                      this.playerName,
+                      undefined,
+                      this.lastConnectOptions,
+                    ).catch(() => {
                       // Retry failure is handled by the ERROR handler above.
                     });
                   }, delay);

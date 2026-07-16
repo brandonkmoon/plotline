@@ -20,7 +20,15 @@ const listeners = new Set<() => void>();
 
 export function setHelpScreen(screen: HelpScreen) {
   currentScreen = screen;
-  listeners.forEach((fn) => fn());
+  // Isolate listeners: one throwing subscriber must not stop the rest from
+  // being notified (or leave the help tip visually out of sync).
+  listeners.forEach((fn) => {
+    try {
+      fn();
+    } catch {
+      // ignore a misbehaving subscriber
+    }
+  });
 }
 
 export function getHelpScreen(): HelpScreen {
