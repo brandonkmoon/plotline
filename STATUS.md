@@ -1,6 +1,6 @@
 # Plotline — Project Status
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 
 ## What Plotline Is
 
@@ -39,7 +39,9 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 - Historical PartyKit deploy (do not use): `npx partykit deploy`.
 - **Server-side premium verification is LIVE (deployed 2026-07-15).** The server verifies the host's RevenueCat entitlement (`src/partykit/revenuecat.ts`, using the `REVENUECAT_API_KEY` secret) instead of trusting a client flag. Validated end-to-end on-device 2026-07-15 (Producer account → competitive available). Fails closed if the secret is unset.
 - **Archive endpoint auth is LIVE (deployed 2026-07-15).** `POST /api/archive` now requires a `Bearer ARCHIVE_SECRET`; the PartyKit server sends it, browsers can't. Secret set identically on Vercel + PartyKit. The server posts to `https://www.plotlinegame.com` (canonical host — `APP_URL` in `partykit.json`) so the apex→www redirect can't strip the auth header. Validated: no-auth/wrong-bearer → 401, correct → passes.
-- **onConnect identity-takeover guard is LIVE (deployed 2026-07-16).** `onConnect` refuses to rebind a `?playerId=` that already has a live socket, so a broadcast playerId can't be used to hijack a live player; genuine reconnects (dead prior socket) are unaffected. Runtime-verified locally and against production (hijack rejected with `PLAYER_ALREADY_CONNECTED`; genuine reconnect succeeds). This was the last high-severity item from the 228-finding review — the backlog is now closed.
+- **onConnect identity-takeover guard is LIVE (deployed 2026-07-16).** `onConnect` refuses to rebind a `?playerId=` that already has a live socket, so a broadcast playerId can't be used to hijack a live player; genuine reconnects (dead prior socket) are unaffected. Runtime-verified locally and against production (hijack rejected with `PLAYER_ALREADY_CONNECTED`; genuine reconnect succeeds).
+- **Full code-review backlog CLOSED (2026-07-16).** Every severity from the 228-finding review is done — high, medium, low, nit, and all lint — across web, server, mobile, and infra, plus the shared-code split (web canonical + drift-check CI). The bulk turned out to be already-fixed in the first pass; the real remaining work was small, contained fixes (timer-leak guards, retry-option preservation, sanitize no-double-encode, SW prod-gating, etc.). One native-only item deferred to the next `eas build`: the mobile `WRITE_EXTERNAL_STORAGE` permission trim.
+- **Mobile OTA shipped (2026-07-16).** All accumulated mobile JS fixes published via `eas update --branch production` (runtime 1.2.1, both platforms). Users apply it on next launch (launch-time `checkAndApplyUpdate()` is in the 1.2.1 build).
 - All rooms: 4–10 player cap
 - Free rooms: classic mode only
 - Premium rooms: competitive mode unlocked
@@ -137,7 +139,7 @@ handlers/
 ```
 
 ### Tests
-- 172 tests, all passing (Vitest)
+- 184 tests, all passing (Vitest)
 - Covers: game reducer, rotation, normalization, story assembly, room codes, serialization, server messages, sanitization, awards, scoring, tie-breaking, competitive flow
 
 ### Important: isPremium hardcode removed
@@ -152,7 +154,7 @@ The server previously hardcoded `isPremium = true` for all rooms (so competitive
 
 ### Environment
 - Web deploys: push to `main` → Vercel auto-deploys
-- PartyKit deploys: `npx partykit deploy` (manual)
+- Realtime server deploys: `npx wrangler deploy` (manual, from web root)
 - iOS builds: `eas build --platform ios --profile production`
 - iOS submit: `eas submit --platform ios --latest`
 - Tests: `npx vitest run` (from web project root)
