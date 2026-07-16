@@ -12,7 +12,7 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 |-------|------|----------|
 | Web app | Next.js 16 (App Router, Turbopack) | `~/Projects/plotline/web/` |
 | Mobile app | Expo (React Native) | `~/Projects/plotline/mobile/` |
-| Real-time server | PartyKit (Cloudflare Workers) | `src/partykit/` in web project |
+| Real-time server | Cloudflare **partyserver** (Durable Objects) | `src/partykit/` in web project (deployed via `wrangler`) |
 | Database | Turso (libSQL/SQLite) via Drizzle | Archives completed games |
 | Payments | RevenueCat (iOS IAP) | `plotline-app/lib/purchases.ts` |
 | Analytics | Plausible | Privacy-friendly, cookieless |
@@ -33,9 +33,10 @@ A multiplayer blind collaborative storytelling party game (4-10 players). Player
 - Web users cannot purchase Producer mode yet (needs Stripe — future work)
 - All rooms created from web are free tier (classic only; competitive requires the iOS app's Producer IAP)
 
-### Server (PartyKit)
-- Deployed at plotline.brandonkmoon.partykit.dev
-- Deploy command: `npx partykit deploy` (from web project root)
+### Server (Cloudflare partyserver — migrated off PartyKit 2026-07-16)
+- Deployed at **plotline.brandonkmoon.workers.dev** (Durable Objects, free Workers plan). Deploy: `npx wrangler deploy` (from web root); local dev: `npm run pk:dev` (= `wrangler dev`). Secrets via `wrangler secret put`. Config in `wrangler.jsonc`; worker code typechecked by `tsconfig.worker.json` (the Next tsconfig excludes `src/partykit`).
+- The **old PartyKit deployment (plotline.brandonkmoon.partykit.dev) is left running** for iOS 1.2.0 clients that predate OTA and are hardcoded to it. Web + iOS 1.2.1 use the Worker.
+- Historical PartyKit deploy (do not use): `npx partykit deploy`.
 - **Server-side premium verification is LIVE (deployed 2026-07-15).** The server verifies the host's RevenueCat entitlement (`src/partykit/revenuecat.ts`, using the `REVENUECAT_API_KEY` secret) instead of trusting a client flag. Validated end-to-end on-device 2026-07-15 (Producer account → competitive available). Fails closed if the secret is unset.
 - **Archive endpoint auth is LIVE (deployed 2026-07-15).** `POST /api/archive` now requires a `Bearer ARCHIVE_SECRET`; the PartyKit server sends it, browsers can't. Secret set identically on Vercel + PartyKit. The server posts to `https://www.plotlinegame.com` (canonical host — `APP_URL` in `partykit.json`) so the apex→www redirect can't strip the auth header. Validated: no-auth/wrong-bearer → 401, correct → passes.
 - **onConnect identity-takeover guard is LIVE (deployed 2026-07-16).** `onConnect` refuses to rebind a `?playerId=` that already has a live socket, so a broadcast playerId can't be used to hijack a live player; genuine reconnects (dead prior socket) are unaffected. Runtime-verified locally and against production (hijack rejected with `PLAYER_ALREADY_CONNECTED`; genuine reconnect succeeds). This was the last high-severity item from the 228-finding review — the backlog is now closed.

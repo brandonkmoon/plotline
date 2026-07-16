@@ -48,13 +48,13 @@ Scenes are assembled in `storyAssembly.ts` into a template: "[Name1] and [Name2]
 
 - **Framework**: Next.js 14 (App Router, Server Components)
 - **Mobile**: Expo (React Native) — `~/Projects/plotline/mobile/`
-- **Realtime**: PartyKit (Cloudflare-based WebSocket server)
+- **Realtime**: Cloudflare **partyserver** (Durable Objects; migrated off PartyKit 2026-07-16). Client still uses `partysocket`.
 - **Database**: Turso (libSQL/SQLite) via Drizzle ORM — for archiving completed games
 - **Payments**: RevenueCat (react-native-purchases v9.15.2) — iOS IAP only for now
 - **Styling**: Tailwind CSS + custom CSS variables in `globals.css`
 - **Testing**: Vitest (172 tests)
 - **Analytics**: Plausible
-- **Hosting**: Vercel (web) + PartyKit (WebSocket server)
+- **Hosting**: Vercel (web) + Cloudflare Workers/Durable Objects (realtime server)
 - **Domain**: plotlinegame.com
 - **PWA**: Custom service worker (`public/sw.js`), manifest, iOS meta tags
 
@@ -149,7 +149,7 @@ ARCHIVE_SECRET               # Shared secret gating POST /api/archive. Must be
                              # (below). Unset = archive endpoint is open.
 ```
 
-**PartyKit secrets** (set on the server, not in Next.js — `npx partykit env add <KEY>`, then redeploy):
+**Realtime-server secrets** (set on the Worker, not in Next.js — `npx wrangler secret put <KEY>`):
 ```
 REVENUECAT_API_KEY           # RevenueCat SECRET v1 API key — server verifies
                              # the Producer entitlement. Unset = premium denied.
@@ -162,7 +162,7 @@ ARCHIVE_SECRET               # Same value as the Vercel ARCHIVE_SECRET above.
 
 ```bash
 npm run dev          # Next.js dev server (port 3000)
-npx partykit dev     # PartyKit dev server (port 1999) — run in separate terminal
+npm run pk:dev       # Realtime server via `wrangler dev` (port 8787) — separate terminal
 npx vitest run       # Run all tests
 npx vitest run --watch # Vitest watch mode
 ```
@@ -173,8 +173,8 @@ npx vitest run --watch # Vitest watch mode
 # Web app — auto-deploys on push to main via Vercel
 git push origin main
 
-# PartyKit server — manual deploy
-npx partykit deploy
+# Realtime server (Cloudflare partyserver) — manual deploy
+npx wrangler deploy   # deploys src/partykit/server.ts to plotline.brandonkmoon.workers.dev
 
 # iOS build + submit
 cd ~/Projects/plotline/mobile
