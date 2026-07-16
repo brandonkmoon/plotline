@@ -121,6 +121,8 @@ src/
 
 ## Key Architecture Decisions
 
+**Shared code with mobile (this repo is CANONICAL)**: Five pure files are duplicated in the mobile app (`plotline-mobile`) and this repo is the source of truth: `src/lib/game/{types,normalize,roomCode,prompts}.ts` and `src/lib/multiplayer/types.ts` (the wire protocol — runtime-version-checked, so silent drift can brick shipped iOS builds). Change them HERE, push, then run `npm run sync:shared` in the mobile repo. Mobile CI fails on drift (it fetches these files from this public repo's `main` and diffs). Mobile has no game engine — the reducer/rotation/assembly live only here (server-side).
+
 **Identity & Reconnection**: Players are identified by `playerId` stored in `sessionStorage` (per-tab) with `localStorage` fallback (cross-tab reconnection). The server supports name-based reconnection. Mobile app uses AsyncStorage. Both platforms force reconnect on app foreground (AppState/visibilitychange).
 
 **Unique Names**: Enforced server-side at join time (case-insensitive). Returns `NAME_TAKEN` error if duplicate.
