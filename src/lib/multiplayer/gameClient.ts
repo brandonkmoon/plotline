@@ -180,7 +180,13 @@ class GameClient {
     // rather than waiting for PartySocket's heartbeat to detect the drop.
     if (typeof document !== "undefined") {
       document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && this.socket) {
+        // Only reconnect if the socket isn't already open — a healthy connection
+        // survives most tab switches, so don't tear it down needlessly.
+        if (
+          !document.hidden &&
+          this.socket &&
+          this.socket.readyState !== WebSocket.OPEN
+        ) {
           this.socket.reconnect();
         }
       });
