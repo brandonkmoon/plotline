@@ -1,11 +1,11 @@
-import type * as Party from "partykit/server";
+import type { Connection } from "partyserver";
 import type { GameAction, Vote, StoryVoteResult, GameScores, SeriesAward } from "@/lib/game/types";
 import type { ClientMessage, ServerMessage } from "@/lib/multiplayer/types";
 import { gameReducer } from "@/lib/game";
 import type RoomServer from "../room";
 import { VOTING_DURATION_MS } from "../constants";
 
-export function handleStartVoting(server: RoomServer, sender: Party.Connection) {
+export function handleStartVoting(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
   if (server.gameState.state !== "REVEAL") return;
   if (server.gameState.gameMode !== "competitive") return;
@@ -40,7 +40,7 @@ export function handleStartVoting(server: RoomServer, sender: Party.Connection) 
     },
   };
 
-  server.broadcast({
+  server.broadcastToAll({
     type: "VOTING_OPEN",
     storyIndex: server.revealStoryIndex,
     votingStartedAt: now,
@@ -54,7 +54,7 @@ export function handleStartVoting(server: RoomServer, sender: Party.Connection) 
 export function handleSubmitVote(
   server: RoomServer,
   msg: Extract<ClientMessage, { type: "SUBMIT_VOTE" }>,
-  sender: Party.Connection
+  sender: Connection
 ) {
   if (!server.gameState) return;
   if (server.gameState.state !== "REVEAL") return;
@@ -120,7 +120,7 @@ export function handleSubmitVote(
   server.broadcastStateUpdate();
 }
 
-export async function handleAdvanceVoting(server: RoomServer, sender: Party.Connection) {
+export async function handleAdvanceVoting(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
   if (server.gameState.state !== "REVEAL") return;
   if (server.gameState.votingState?.phase !== "voting") return;
@@ -213,7 +213,7 @@ export async function handleAdvanceVoting(server: RoomServer, sender: Party.Conn
 
   server.currentVotes.clear();
 
-  server.broadcast({ type: "VOTING_CLOSED", storyIndex } as ServerMessage);
+  server.broadcastToAll({ type: "VOTING_CLOSED", storyIndex } as ServerMessage);
 
   await advanceAfterVoting(server);
 }
@@ -342,7 +342,7 @@ export function computeAndBroadcastScores(server: RoomServer) {
     voteResults: [...server.gameVoteResults],
   });
 
-  server.broadcast({
+  server.broadcastToAll({
     type: "GAME_SCORES",
     scores: gameScores,
     voteResults: server.gameVoteResults,

@@ -24,3 +24,6 @@ Screenshots/
 public/workbox-*.js
 .partykit/
 .vercel
+
+# wrangler local dev state
+.wrangler/

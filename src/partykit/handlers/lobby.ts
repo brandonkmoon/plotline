@@ -1,4 +1,4 @@
-import type * as Party from "partykit/server";
+import type { Connection } from "partyserver";
 import type { GameAction } from "@/lib/game/types";
 import type { ClientMessage, ServerMessage } from "@/lib/multiplayer/types";
 import { gameReducer, createRoom, generateRoomCode } from "@/lib/game";
@@ -6,7 +6,7 @@ import type RoomServer from "../room";
 import { clearRoundTimer } from "./gameplay";
 import { computeAndBroadcastScores } from "./voting";
 
-export function handlePlayAgain(server: RoomServer, sender: Party.Connection) {
+export function handlePlayAgain(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
   if (server.gameState.state !== "END" && server.gameState.state !== "REVEAL")
     return;
@@ -126,7 +126,7 @@ export function handlePlayAgain(server: RoomServer, sender: Party.Connection) {
   server.broadcastPlayerStatuses();
 }
 
-export function handleQueueNextGame(server: RoomServer, sender: Party.Connection) {
+export function handleQueueNextGame(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
   if (server.gameState.state !== "END" && server.gameState.state !== "REVEAL") return;
 
@@ -155,7 +155,7 @@ export function autoAdvanceAfterReady(server: RoomServer) {
     server.seriesState.currentGameNumber >= server.seriesState.totalGames;
 
   if (isFinalGame) {
-    server.broadcast({
+    server.broadcastToAll({
       type: "SERIES_AWARDS",
       awards: server.seriesState.awards,
       finalStandings: { ...server.seriesState.cumulativePoints },
@@ -176,7 +176,7 @@ export function autoAdvanceAfterReady(server: RoomServer) {
   }
 }
 
-export function handleCreateNextRoom(server: RoomServer, sender: Party.Connection) {
+export function handleCreateNextRoom(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
   if (server.gameState.state !== "END" && server.gameState.state !== "REVEAL") return;
 
@@ -206,7 +206,7 @@ export function handleCreateNextRoom(server: RoomServer, sender: Party.Connectio
 export function handleSetReady(
   server: RoomServer,
   msg: Extract<ClientMessage, { type: "SET_READY" }>,
-  sender: Party.Connection
+  sender: Connection
 ) {
   if (!server.gameState) return;
 
@@ -230,7 +230,7 @@ export function handleSetReady(
   server.broadcastStateUpdate();
 }
 
-export function handleNewRoom(server: RoomServer, sender: Party.Connection) {
+export function handleNewRoom(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
 
   const playerId = server.connectionToPlayer.get(sender.id);
@@ -244,7 +244,7 @@ export function handleNewRoom(server: RoomServer, sender: Party.Connection) {
 
   const newRoomCode = generateRoomCode();
 
-  server.broadcast({ type: "ROOM_REDIRECT", newRoomCode });
+  server.broadcastToAll({ type: "ROOM_REDIRECT", newRoomCode });
 
   // Full room reset — drop any competitive/series state too.
   server.seriesState = null;

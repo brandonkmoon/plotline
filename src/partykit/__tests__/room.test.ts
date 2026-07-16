@@ -597,9 +597,17 @@ function makeMockPartyRoom(id: string, connections: Map<string, MockConnection>)
 
 function makeServer(roomCode = "TEST") {
   const connections = new Map<string, MockConnection>();
-  const mockRoom = makeMockPartyRoom(roomCode, connections);
-  const server = new RoomServer(mockRoom);
+  const server = new RoomServer({} as any, {} as any);
+  // Inject the mock room facade; the real ctx/env are never used in unit tests.
+  (server as any).room = makeMockPartyRoom(roomCode, connections);
   return { server, connections };
+}
+
+// partyserver's onMessage is (connection, message); these tests were written
+// against PartyKit's (message, connection) order. This adapter keeps the many
+// existing call sites unchanged.
+function deliver(server: RoomServer, message: string, conn: MockConnection) {
+  server["onMessage"](conn as any, message);
 }
 
 function join(
@@ -617,7 +625,7 @@ function join(
     protocolVersion: opts.protocolVersion ?? PROTOCOL_VERSION,
     ...(opts.playerId !== undefined ? { playerId: opts.playerId } : {}),
   };
-  server.onMessage(JSON.stringify(msg), conn as any);
+  deliver(server, JSON.stringify(msg), conn as any);
   return conn;
 }
 
@@ -630,7 +638,7 @@ function getLatestStateUpdate(conn: MockConnection) {
 }
 
 function startGameViaServer(server: RoomServer, hostConn: MockConnection) {
-  server.onMessage(JSON.stringify({ type: "START_GAME" }), hostConn as any);
+  deliver(server, JSON.stringify({ type: "START_GAME" }), hostConn as any);
 }
 
 describe("RoomServer instance behavior", () => {
@@ -742,7 +750,7 @@ describe("RoomServer instance behavior", () => {
       expect(aliceSlot).toBeDefined();
 
       // Alice submits
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({
           type: "SUBMIT_PROMPT",
           storyIndex: aliceSlot!.storyIndex,
@@ -944,7 +952,7 @@ describe("RoomServer instance behavior", () => {
           (s) => s.promptIndex === update.room.currentRound
         )!;
         const conn = connByPlayerId[slot.playerId!];
-        server.onMessage(
+        deliver(server, 
           JSON.stringify({
             type: "SUBMIT_PROMPT",
             storyIndex: story.index,
@@ -1006,7 +1014,7 @@ describe("RoomServer instance behavior", () => {
           (sl) => sl.promptIndex === 0 && sl.playerId === byName["Alice"]
         )
       )!;
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({
           type: "SUBMIT_PROMPT",
           storyIndex: aliceStory.index,
@@ -1021,7 +1029,7 @@ describe("RoomServer instance behavior", () => {
           (sl) => sl.promptIndex === 0 && sl.playerId === byName["Bob"]
         )
       )!;
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({
           type: "SUBMIT_PROMPT",
           storyIndex: bobStory.index,
@@ -1166,7 +1174,7 @@ describe("RoomServer instance behavior", () => {
       const c4Before = c4.sentMessages.length;
 
       // Alice submits
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({
           type: "SUBMIT_PROMPT",
           storyIndex: aliceSlot!.storyIndex,
@@ -1231,7 +1239,7 @@ describe("RoomServer instance behavior", () => {
       for (const story of u.room.stories) {
         const slot = story.slots.find((s) => s.promptIndex === round)!;
         const conn = connByPlayerId[slot.playerId!];
-        server.onMessage(
+        deliver(server, 
           JSON.stringify({
             type: "SUBMIT_PROMPT",
             storyIndex: story.index,
@@ -1280,7 +1288,7 @@ describe("RoomServer instance behavior", () => {
 
       // Fire 7 REVEAL_ADVANCE calls
       for (let i = 0; i < 7; i++) {
-        server.onMessage(
+        deliver(server, 
           JSON.stringify({ type: "REVEAL_ADVANCE" }),
           readerConn as any
         );
@@ -1308,7 +1316,7 @@ describe("RoomServer instance behavior", () => {
       const revealMsgsBefore = c1.sentMessages.filter(
         (m) => m.type === "REVEAL_STATE"
       ).length;
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({ type: "REVEAL_ADVANCE" }),
         readerConn as any
       );
@@ -1335,7 +1343,7 @@ describe("RoomServer instance behavior", () => {
       >;
       expect(beforeReady.room.pendingPlayers?.[0]?.ready).toBe(false);
 
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({ type: "SET_READY", ready: true }),
         newcomer as any
       );
@@ -1360,13 +1368,13 @@ describe("RoomServer instance behavior", () => {
       const frank = join(server, connections, "c6", "Frank");
 
       // Mark Eve as ready, leave Frank not ready
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({ type: "SET_READY", ready: true }),
         eve as any
       );
 
       // Transition to END
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({ type: "END_GAME" }),
         c1 as any
       );
@@ -1378,11 +1386,11 @@ describe("RoomServer instance behavior", () => {
       expect(atEnd.room.state).toBe("END");
 
       // Host queues for next game, then sends PLAY_AGAIN
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({ type: "QUEUE_NEXT_GAME" }),
         c1 as any
       );
-      server.onMessage(
+      deliver(server, 
         JSON.stringify({ type: "PLAY_AGAIN" }),
         c1 as any
       );
@@ -1412,7 +1420,7 @@ describe("RoomServer instance behavior", () => {
       const c3 = join(server, connections, "c3", "Carol");
       const c4 = join(server, connections, "c4", "Dave");
 
-      server.onMessage(JSON.stringify({ type: "NEW_ROOM" }), host as any);
+      deliver(server, JSON.stringify({ type: "NEW_ROOM" }), host as any);
 
       for (const conn of [host, c2, c3, c4]) {
         const redirect = conn.sentMessages.find(
@@ -1429,7 +1437,7 @@ describe("RoomServer instance behavior", () => {
       join(server, connections, "c1", "Alice");
       const c2 = join(server, connections, "c2", "Bob");
 
-      server.onMessage(JSON.stringify({ type: "NEW_ROOM" }), c2 as any);
+      deliver(server, JSON.stringify({ type: "NEW_ROOM" }), c2 as any);
 
       const err = c2.sentMessages.find((m) => m.type === "ERROR");
       expect(err).toBeDefined();

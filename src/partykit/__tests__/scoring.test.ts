@@ -92,7 +92,7 @@ function makeServer(opts: {
       awards: [],
     } as SeriesState,
     gameVoteResults: opts.voteResults ?? [],
-    broadcast(msg: ServerMessage) { broadcasted.push(msg); },
+    broadcastToAll(msg: ServerMessage) { broadcasted.push(msg); },
     broadcasted,
   } as any;
 }

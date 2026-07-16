@@ -17,7 +17,7 @@ const SUBSCRIBERS_URL = "https://api.revenuecat.com/v1/subscribers/";
  * response, or absent entitlement returns false.
  */
 export async function verifyProducerEntitlement(
-  env: Record<string, unknown>,
+  env: { REVENUECAT_API_KEY?: string },
   appUserId: string
 ): Promise<boolean> {
   const apiKey = typeof env?.REVENUECAT_API_KEY === "string" ? env.REVENUECAT_API_KEY : "";

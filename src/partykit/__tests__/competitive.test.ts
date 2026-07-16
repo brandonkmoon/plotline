@@ -38,9 +38,16 @@ function makeMockPartyRoom(id: string, connections: Map<string, MockConnection>)
 
 function makeServer(roomCode = "TEST") {
   const connections = new Map<string, MockConnection>();
-  const mockRoom = makeMockPartyRoom(roomCode, connections);
-  const server = new RoomServer(mockRoom);
+  const server = new RoomServer({} as any, {} as any);
+  // Inject the mock room facade; the real ctx/env are never used in unit tests.
+  (server as any).room = makeMockPartyRoom(roomCode, connections);
   return { server, connections };
+}
+
+// partyserver's onMessage is (connection, message); these tests were written
+// against PartyKit's (message, connection) order. This adapter bridges them.
+function deliver(server: RoomServer, message: string, conn: MockConnection) {
+  server["onMessage"](conn as any, message);
 }
 
 function join(
@@ -52,7 +59,7 @@ function join(
 ): MockConnection {
   const conn = makeMockConnection(connectionId);
   connections.set(connectionId, conn);
-  server.onMessage(JSON.stringify({
+  deliver(server, JSON.stringify({
     type: "JOIN_ROOM",
     playerName,
     protocolVersion: PROTOCOL_VERSION,
@@ -78,7 +85,7 @@ function getMessages(conn: MockConnection, type: string) {
 }
 
 function startCompetitive(server: RoomServer, hostConn: MockConnection, seriesLength: number = 3) {
-  server.onMessage(JSON.stringify({
+  deliver(server, JSON.stringify({
     type: "START_GAME",
     mode: "competitive",
     seriesLength,
@@ -110,7 +117,7 @@ function playAllRounds(
       const response = round <= 1
         ? `Player${slot.playerId} — a character`
         : `response-r${round}-s${story.index}`;
-      server.onMessage(JSON.stringify({
+      deliver(server, JSON.stringify({
         type: "SUBMIT_PROMPT",
         storyIndex: story.index,
         promptIndex: round,
@@ -131,11 +138,11 @@ function revealAllStories(
   for (let s = 0; s < storyCount; s++) {
     // Reveal 7 lines one at a time
     for (let line = 0; line < 7; line++) {
-      server.onMessage(JSON.stringify({ type: "REVEAL_ADVANCE" }), hostConn as any);
+      deliver(server, JSON.stringify({ type: "REVEAL_ADVANCE" }), hostConn as any);
     }
     // In competitive: start voting then advance voting
-    server.onMessage(JSON.stringify({ type: "START_VOTING" }), hostConn as any);
-    server.onMessage(JSON.stringify({ type: "ADVANCE_VOTING" }), hostConn as any);
+    deliver(server, JSON.stringify({ type: "START_VOTING" }), hostConn as any);
+    deliver(server, JSON.stringify({ type: "ADVANCE_VOTING" }), hostConn as any);
   }
 }
 
@@ -204,11 +211,11 @@ describe("Competitive mode server tests", () => {
 
       // Reveal all 7 lines of first story (one at a time)
       for (let i = 0; i < 7; i++) {
-        server.onMessage(JSON.stringify({ type: "REVEAL_ADVANCE" }), c1 as any);
+        deliver(server, JSON.stringify({ type: "REVEAL_ADVANCE" }), c1 as any);
       }
 
       // Start voting
-      server.onMessage(JSON.stringify({ type: "START_VOTING" }), c1 as any);
+      deliver(server, JSON.stringify({ type: "START_VOTING" }), c1 as any);
 
       const votingOpen = getMessages(c1, "VOTING_OPEN");
       expect(votingOpen.length).toBeGreaterThan(0);
@@ -229,9 +236,9 @@ describe("Competitive mode server tests", () => {
       playAllRounds(server, c1, connections);
 
       for (let i = 0; i < 7; i++) {
-        server.onMessage(JSON.stringify({ type: "REVEAL_ADVANCE" }), c1 as any);
+        deliver(server, JSON.stringify({ type: "REVEAL_ADVANCE" }), c1 as any);
       }
-      server.onMessage(JSON.stringify({ type: "START_VOTING" }), c1 as any);
+      deliver(server, JSON.stringify({ type: "START_VOTING" }), c1 as any);
 
       // Get the story index being voted on from voting state
       const uVoting = getLatestStateUpdate(c1);
@@ -242,7 +249,7 @@ describe("Competitive mode server tests", () => {
       const votableLine = votingStory.slots.findIndex((s: any) => s.playerId !== bobId);
 
       // Bob submits a vote
-      server.onMessage(JSON.stringify({
+      deliver(server, JSON.stringify({
         type: "SUBMIT_VOTE",
         storyIndex: votingStoryIndex,
         lineIndex: votableLine >= 0 ? votableLine : 0,
@@ -269,10 +276,10 @@ describe("Competitive mode server tests", () => {
       playAllRounds(server, c1, connections);
 
       for (let i = 0; i < 7; i++) {
-        server.onMessage(JSON.stringify({ type: "REVEAL_ADVANCE" }), c1 as any);
+        deliver(server, JSON.stringify({ type: "REVEAL_ADVANCE" }), c1 as any);
       }
-      server.onMessage(JSON.stringify({ type: "START_VOTING" }), c1 as any);
-      server.onMessage(JSON.stringify({ type: "ADVANCE_VOTING" }), c1 as any);
+      deliver(server, JSON.stringify({ type: "START_VOTING" }), c1 as any);
+      deliver(server, JSON.stringify({ type: "ADVANCE_VOTING" }), c1 as any);
 
       await vi.waitFor(() => {
         const closed = getMessages(c1, "VOTING_CLOSED");
@@ -334,7 +341,7 @@ describe("Competitive mode server tests", () => {
       });
 
       // Queue up
-      server.onMessage(JSON.stringify({ type: "QUEUE_NEXT_GAME" }), c2 as any);
+      deliver(server, JSON.stringify({ type: "QUEUE_NEXT_GAME" }), c2 as any);
 
       const after = getLatestStateUpdate(c1);
       const bob = after.room.players.find((p: any) => p.name === "Bob");
@@ -360,7 +367,7 @@ describe("Competitive mode server tests", () => {
 
       // All 4 players queue
       for (const conn of [c1, c2, c3, c4]) {
-        server.onMessage(JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
+        deliver(server, JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
       }
 
       const after = getLatestStateUpdate(c1);
@@ -389,7 +396,7 @@ describe("Competitive mode server tests", () => {
 
       // All ready → auto-advance to lobby
       for (const conn of [c1, c2, c3, c4]) {
-        server.onMessage(JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
+        deliver(server, JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
       }
 
       const lobby = getLatestStateUpdate(c1);
@@ -415,7 +422,7 @@ describe("Competitive mode server tests", () => {
       });
 
       for (const conn of [c1, c2, c3, c4]) {
-        server.onMessage(JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
+        deliver(server, JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
       }
 
       // Start game 2
@@ -448,7 +455,7 @@ describe("Competitive mode server tests", () => {
 
       // All ready → should trigger SERIES_AWARDS
       for (const conn of [c1, c2, c3, c4]) {
-        server.onMessage(JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
+        deliver(server, JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
       }
 
       const awards = getMessages(c1, "SERIES_AWARDS");
@@ -478,7 +485,7 @@ describe("Competitive mode server tests", () => {
       });
 
       for (const conn of [c1, c2, c3, c4]) {
-        server.onMessage(JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
+        deliver(server, JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
       }
 
       const awards = getMessages(c1, "SERIES_AWARDS");
@@ -544,7 +551,7 @@ describe("Competitive mode server tests", () => {
 
       // Eve joins mid-game and marks ready
       const eve = join(server, connections, "c5", "Eve");
-      server.onMessage(JSON.stringify({ type: "SET_READY", ready: true }), eve as any);
+      deliver(server, JSON.stringify({ type: "SET_READY", ready: true }), eve as any);
 
       playAllRounds(server, c1, connections);
       const u = getLatestStateUpdate(c1);
@@ -556,7 +563,7 @@ describe("Competitive mode server tests", () => {
 
       // All original players + Eve ready up
       for (const conn of [c1, c2, c3, c4, eve]) {
-        server.onMessage(JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
+        deliver(server, JSON.stringify({ type: "QUEUE_NEXT_GAME" }), conn as any);
       }
 
       const lobby = getLatestStateUpdate(c1);

@@ -1,4 +1,5 @@
-import type * as Party from "partykit/server";
+import { Server, type Connection, type ConnectionContext } from "partyserver";
+import type { Env } from "./env";
 import type {
   Room,
   GameAction,
@@ -71,8 +72,18 @@ import {
  *                        and closes the connection.
  */
 
-export default class RoomServer implements Party.Server {
-  room: Party.Room;
+export default class RoomServer extends Server<Env> {
+  // Compatibility facade: proxies PartyKit's `this.room.*` accessors onto
+  // partyserver primitives so every handler module keeps calling
+  // `server.room.*` unchanged. Getters (not eager reads) because `this.name`
+  // is populated by partyserver on the first routed request.
+  room: {
+    id: string;
+    env: Env;
+    storage: DurableObjectStorage;
+    getConnection: (id: string) => Connection | undefined;
+    getConnections: () => Iterable<Connection>;
+  };
 
   // Game state
   gameState: Room | null = null;
@@ -111,8 +122,22 @@ export default class RoomServer implements Party.Server {
   votingTimer: ReturnType<typeof setTimeout> | null = null;
   votingStartedAt: number | null = null;
 
-  constructor(room: Party.Room) {
-    this.room = room;
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    const self = this;
+    this.room = {
+      get id() {
+        return self.name;
+      },
+      get env() {
+        return self.env;
+      },
+      get storage() {
+        return self.ctx.storage;
+      },
+      getConnection: (id) => self.getConnection(id),
+      getConnections: () => self.getConnections(),
+    };
   }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────
@@ -177,7 +202,7 @@ export default class RoomServer implements Party.Server {
             const unsubmittedCount = this.gameState.stories.filter(
               (s) => s.slots[currentRound]?.response === null
             ).length;
-            this.broadcast({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
+            this.broadcastToAll({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
           }, remaining);
         } else {
           this.pendingAdvanceAvailable = true;
@@ -249,7 +274,7 @@ export default class RoomServer implements Party.Server {
     }, 50);
   }
 
-  onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
+  onConnect(conn: Connection, ctx: ConnectionContext) {
     try {
       const url = new URL(ctx.request.url);
       const playerId = url.searchParams.get("playerId");
@@ -296,7 +321,8 @@ export default class RoomServer implements Party.Server {
     }
   }
 
-  onMessage(message: string, sender: Party.Connection) {
+  // partyserver reverses PartyKit's arg order: (connection, message).
+  onMessage(sender: Connection, message: string) {
     let msg: ClientMessage;
     try {
       msg = JSON.parse(message);
@@ -381,7 +407,7 @@ export default class RoomServer implements Party.Server {
     }
   }
 
-  onClose(conn: Party.Connection) {
+  onClose(conn: Connection) {
     const playerId = this.connectionToPlayer.get(conn.id);
     if (!playerId) return;
 
@@ -431,7 +457,7 @@ export default class RoomServer implements Party.Server {
           (s) => s.slots[currentRound]?.response === null
         ).length;
         if (unsubmittedCount > 0) {
-          this.broadcast({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
+          this.broadcastToAll({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
         }
       }
     }
@@ -454,11 +480,11 @@ export default class RoomServer implements Party.Server {
 
   // --- Broadcasting ---
 
-  sendTo(conn: Party.Connection, msg: ServerMessage) {
+  sendTo(conn: Connection, msg: ServerMessage) {
     conn.send(JSON.stringify(msg));
   }
 
-  broadcast(msg: ServerMessage) {
+  broadcastToAll(msg: ServerMessage) {
     const data = JSON.stringify(msg);
     let count = 0;
     for (const conn of this.room.getConnections()) {
@@ -486,7 +512,7 @@ export default class RoomServer implements Party.Server {
     }
   }
 
-  sendRevealSnapshotTo(conn: Party.Connection) {
+  sendRevealSnapshotTo(conn: Connection) {
     if (!this.gameState || this.gameState.state !== "REVEAL") return;
 
     const stories = assembleStories(this.gameState);
@@ -522,7 +548,7 @@ export default class RoomServer implements Party.Server {
     const readerPlayer = readerId ? this.gameState.players.find(p => p.id === readerId) : null;
     const readerName = readerPlayer?.name ?? "someone";
 
-    this.broadcast({
+    this.broadcastToAll({
       type: "REVEAL_STATE",
       storyIndex: this.revealStoryIndex,
       revealedCount: this.revealedLineCount,
@@ -607,7 +633,7 @@ export default class RoomServer implements Party.Server {
       const unsubmittedCount = this.gameState.stories.filter(
         (s) => s.slots[currentRound]?.response === null
       ).length;
-      this.broadcast({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
+      this.broadcastToAll({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
     }
 
     this.saveState();
@@ -698,7 +724,9 @@ export default class RoomServer implements Party.Server {
         body: JSON.stringify(archiveData),
       });
       if (response.ok) {
-        const { archiveUrl } = await response.json();
+        const { archiveUrl } = (await response.json()) as {
+          archiveUrl: string;
+        };
         if (this.gameState) {
           const action: GameAction = { type: "ARCHIVE_URL_SET", archiveUrl };
           this.gameState = gameReducer(this.gameState, action);

@@ -1,4 +1,4 @@
-import type * as Party from "partykit/server";
+import type { Connection } from "partyserver";
 import type { Player, GameAction, PendingPlayer } from "@/lib/game/types";
 import type { ClientMessage } from "@/lib/multiplayer/types";
 import { PROTOCOL_VERSION } from "@/lib/multiplayer/types";
@@ -15,7 +15,7 @@ import {
 export function handleJoinRoom(
   server: RoomServer,
   msg: Extract<ClientMessage, { type: "JOIN_ROOM" }>,
-  sender: Party.Connection
+  sender: Connection
 ) {
   const now = Date.now();
 
@@ -276,10 +276,8 @@ export function handleJoinRoom(
     server.gameState.isPremium = false;
     if (msg.revenueCatUserId) {
       const appUserId = msg.revenueCatUserId;
-      void verifyProducerEntitlement(
-        server.room.env as Record<string, unknown>,
-        appUserId
-      ).then((entitled) => {
+      void verifyProducerEntitlement(server.room.env, appUserId).then(
+        (entitled) => {
         if (entitled && server.gameState && !server.gameState.isPremium) {
           server.gameState.isPremium = true;
           server.saveState();

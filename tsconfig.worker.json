@@ -1,0 +1,16 @@
+{
+  // Typechecks the Cloudflare Worker subtree under the Workers runtime types,
+  // separate from the Next.js/DOM program (which excludes src/partykit). Tests
+  // are excluded here — vitest runs them; this program validates deploy code.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types"],
+    "lib": ["esnext"],
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "incremental": false,
+    "plugins": []
+  },
+  "include": ["src/partykit/**/*.ts"],
+  "exclude": ["node_modules", "src/partykit/**/__tests__/**"]
+}

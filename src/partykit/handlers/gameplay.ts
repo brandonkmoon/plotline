@@ -1,4 +1,4 @@
-import type * as Party from "partykit/server";
+import type { Connection } from "partyserver";
 import type { GameAction } from "@/lib/game/types";
 import type { ClientMessage } from "@/lib/multiplayer/types";
 import { gameReducer, assembleStories } from "@/lib/game";
@@ -12,7 +12,7 @@ import { computeAndBroadcastScores } from "./voting";
 export function handleStartGame(
   server: RoomServer,
   msg: Extract<ClientMessage, { type: "START_GAME" }>,
-  sender: Party.Connection
+  sender: Connection
 ) {
   if (!server.gameState) return;
 
@@ -103,7 +103,7 @@ export function handleStartGame(
 export function handleSubmitPrompt(
   server: RoomServer,
   msg: Extract<ClientMessage, { type: "SUBMIT_PROMPT" }>,
-  sender: Party.Connection
+  sender: Connection
 ) {
   if (!server.gameState) return;
 
@@ -138,7 +138,7 @@ export function handleSubmitPrompt(
     clearRoundTimer(server);
     server.initRevealState();
     const stories = assembleStories(newState);
-    server.broadcast({ type: "ASSEMBLED_STORIES", stories });
+    server.broadcastToAll({ type: "ASSEMBLED_STORIES", stories });
     server.broadcastRevealState();
   } else if (newState.currentRound > prevRound && newState.state === "PLAYING") {
     resetPlayerStatusesForNewRound(server);
@@ -154,7 +154,7 @@ export function handleSubmitPrompt(
       const unsubmittedCount = newState.stories.filter(
         (s) => s.slots[currentRound]?.response === null
       ).length;
-      server.broadcast({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
+      server.broadcastToAll({ type: "ADVANCE_AVAILABLE", unsubmittedCount });
     }
   }
 
@@ -162,7 +162,7 @@ export function handleSubmitPrompt(
   server.broadcastPlayerStatuses();
 }
 
-export function handleHostAdvance(server: RoomServer, sender: Party.Connection) {
+export function handleHostAdvance(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
 
   const playerId = server.connectionToPlayer.get(sender.id);
@@ -194,7 +194,7 @@ export function handleHostAdvance(server: RoomServer, sender: Party.Connection) 
     clearRoundTimer(server);
     server.initRevealState();
     const stories = assembleStories(newState);
-    server.broadcast({ type: "ASSEMBLED_STORIES", stories });
+    server.broadcastToAll({ type: "ASSEMBLED_STORIES", stories });
     server.broadcastRevealState();
   } else if (newState.currentRound > prevState.currentRound) {
     resetPlayerStatusesForNewRound(server);
@@ -205,7 +205,7 @@ export function handleHostAdvance(server: RoomServer, sender: Party.Connection) 
   server.broadcastPlayerStatuses();
 }
 
-export function handleAdvanceReveal(server: RoomServer, sender: Party.Connection) {
+export function handleAdvanceReveal(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
   if (server.gameState.state !== "REVEAL") return;
 
@@ -260,7 +260,7 @@ export function handleAdvanceReveal(server: RoomServer, sender: Party.Connection
   }
 }
 
-export function handleRevealAdvance(server: RoomServer, sender: Party.Connection) {
+export function handleRevealAdvance(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
   if (server.gameState.state !== "REVEAL") return;
 
@@ -294,7 +294,7 @@ export function handleRevealAdvance(server: RoomServer, sender: Party.Connection
   server.broadcastStateUpdate();
 }
 
-export function handleEndGame(server: RoomServer, sender: Party.Connection) {
+export function handleEndGame(server: RoomServer, sender: Connection) {
   if (!server.gameState) return;
 
   // Only the host can end the game.
@@ -338,7 +338,7 @@ export function handleEndGame(server: RoomServer, sender: Party.Connection) {
 export function handleTypingStatus(
   server: RoomServer,
   msg: Extract<ClientMessage, { type: "TYPING_STATUS" }>,
-  sender: Party.Connection
+  sender: Connection
 ) {
   const playerId = server.connectionToPlayer.get(sender.id);
   if (!playerId) return;
@@ -364,7 +364,7 @@ export function startRoundTimer(server: RoomServer) {
       (s) => s.slots[currentRound]?.response === null
     ).length;
 
-    server.broadcast({
+    server.broadcastToAll({
       type: "ADVANCE_AVAILABLE",
       unsubmittedCount,
     });

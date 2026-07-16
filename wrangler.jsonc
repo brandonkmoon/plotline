@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "plotline",
+  "main": "src/partykit/server.ts",
+  "compatibility_date": "2025-04-01",
+  // process.env.NODE_ENV is read in room.ts / connection.ts / gameplay.ts.
+  // Plain Workers have no `process`; nodejs_compat provides it (NODE_ENV is
+  // undefined at runtime, so the dev-only logging simply no-ops).
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      // Binding name "Main" kebab-cases to the party "main" that partysocket
+      // connects to by default (/parties/main/:room). class_name is the DO impl.
+      { "name": "Main", "class_name": "RoomServer" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomServer"] }],
+  "vars": {
+    "APP_URL": "https://www.plotlinegame.com"
+  }
+  // Secrets (NOT here): REVENUECAT_API_KEY, ARCHIVE_SECRET
+  //   -> set via `wrangler secret put <NAME>` before/after deploy.
+}
