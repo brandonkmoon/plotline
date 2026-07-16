@@ -134,25 +134,8 @@ export async function handleAdvanceVoting(server: RoomServer, sender: Connection
   const currentStory = server.gameState.stories[storyIndex];
   if (!currentStory) { console.error("[voting] no story at index", storyIndex); return; }
 
-  // Assign random votes for connected players who didn't vote
-  const connectedPlayers = server.gameState.players.filter((p) => p.isConnected);
-  for (const player of connectedPlayers) {
-    if (!server.currentVotes.has(player.id)) {
-      const eligible: number[] = [];
-      for (let i = 0; i < currentStory.slots.length; i++) {
-        if (currentStory.slots[i]?.playerId !== player.id) {
-          eligible.push(i);
-        }
-      }
-      if (eligible.length > 0) {
-        const randomLine = eligible[Math.floor(Math.random() * eligible.length)];
-        server.currentVotes.set(player.id, {
-          lineIndex: randomLine,
-          isStandingOvation: false,
-        });
-      }
-    }
-  }
+  // Only real votes are tallied — players who don't vote simply abstain.
+  // (No votes at all → the no-winner guard below records no winning line.)
 
   // Tally all votes
   const lineTallies: number[] = new Array(7).fill(0);
