@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useSyncExternalStore } from "react";
+import { useState, useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { useFocusTrap } from "@/lib/client/useFocusTrap";
 import { getHelpScreen, onHelpScreenChange, HELP_TIPS } from "@/lib/helpContext";
 
 function useHelpScreen() {
@@ -28,6 +29,9 @@ export default function HelpOverlay() {
       setShowFull(true);
     }
   }, [showTip, showFull, tip]);
+
+  const fullPanelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(fullPanelRef, showFull, () => setShowFull(false));
 
   // Close on Escape
   useEffect(() => {
@@ -83,7 +87,12 @@ export default function HelpOverlay() {
       {showFull && (
         <div className="help-backdrop" onClick={() => setShowFull(false)}>
           <div
-            className="help-panel"
+            ref={fullPanelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="How to play"
+            tabIndex={-1}
+            className="help-panel outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             <button

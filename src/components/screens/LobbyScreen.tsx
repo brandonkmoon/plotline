@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoom } from "@/lib/client/RoomContext";
+import { useFocusTrap } from "@/lib/client/useFocusTrap";
 import { setHelpScreen } from "@/lib/helpContext";
 import { trackEvent } from "@/lib/analytics";
 import Button from "@/components/Button";
@@ -18,11 +19,22 @@ function ModeSheet({
   isPremium: boolean;
 }) {
   const [seriesLength, setSeriesLength] = useState<1 | 2 | 3 | 4 | 5>(3);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(sheetRef, true, onClose);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50"
+      onClick={onClose}
+    >
       <div
-        className="bg-white border-t-[3px] border-ink w-full max-w-[480px] p-6 pb-10"
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Choose game mode"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white border-t-[3px] border-ink w-full max-w-[480px] p-6 pb-10 outline-none"
         style={{ animation: "helpSlideUp 0.3s ease-out" }}
       >
         <button
