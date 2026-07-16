@@ -130,9 +130,38 @@ function playAllRounds(
 }
 
 /** Reveal all stories: for each story, reveal 7 lines, vote, advance */
+// Every connected player votes for a line they didn't write in the story
+// currently open for voting, so the host can advance (gate: all voted or timer).
+function voteAllForCurrentStory(
+  server: RoomServer,
+  hostConn: MockConnection,
+  connections: Map<string, MockConnection>
+) {
+  const u = getLatestStateUpdate(hostConn);
+  const storyIndex = u.room.votingState?.storyIndex;
+  if (storyIndex === undefined) return;
+  const story = u.room.stories[storyIndex];
+  for (const p of u.room.players) {
+    let conn: MockConnection | undefined;
+    for (const [, c] of connections) {
+      if (getLatestStateUpdate(c)?.playerId === p.id) { conn = c; break; }
+    }
+    if (!conn) continue;
+    const lineIndex = story.slots.findIndex((s: any) => s?.playerId !== p.id);
+    if (lineIndex < 0) continue;
+    deliver(server, JSON.stringify({
+      type: "SUBMIT_VOTE",
+      storyIndex,
+      lineIndex,
+      isStandingOvation: false,
+    }), conn as any);
+  }
+}
+
 function revealAllStories(
   server: RoomServer,
   hostConn: MockConnection,
+  connections: Map<string, MockConnection>,
   storyCount: number
 ) {
   for (let s = 0; s < storyCount; s++) {
@@ -140,8 +169,9 @@ function revealAllStories(
     for (let line = 0; line < 7; line++) {
       deliver(server, JSON.stringify({ type: "REVEAL_ADVANCE" }), hostConn as any);
     }
-    // In competitive: start voting then advance voting
+    // Competitive: start voting, everyone votes, then advance.
     deliver(server, JSON.stringify({ type: "START_VOTING" }), hostConn as any);
+    voteAllForCurrentStory(server, hostConn, connections);
     deliver(server, JSON.stringify({ type: "ADVANCE_VOTING" }), hostConn as any);
   }
 }
@@ -279,6 +309,7 @@ describe("Competitive mode server tests", () => {
         deliver(server, JSON.stringify({ type: "REVEAL_ADVANCE" }), c1 as any);
       }
       deliver(server, JSON.stringify({ type: "START_VOTING" }), c1 as any);
+      voteAllForCurrentStory(server, c1, connections);
       deliver(server, JSON.stringify({ type: "ADVANCE_VOTING" }), c1 as any);
 
       await vi.waitFor(() => {
@@ -305,7 +336,7 @@ describe("Competitive mode server tests", () => {
       const u = getLatestStateUpdate(c1);
       const storyCount = u.room.stories.length;
 
-      revealAllStories(server, c1, storyCount);
+      revealAllStories(server, c1, connections, storyCount);
 
       // Wait for async archiveRoom
       await vi.waitFor(() => {
@@ -333,7 +364,7 @@ describe("Competitive mode server tests", () => {
       playAllRounds(server, c1, connections);
 
       const u = getLatestStateUpdate(c1);
-      revealAllStories(server, c1, u.room.stories.length);
+      revealAllStories(server, c1, connections, u.room.stories.length);
 
       // Wait for scores
       await vi.waitFor(() => {
@@ -359,7 +390,7 @@ describe("Competitive mode server tests", () => {
       playAllRounds(server, c1, connections);
 
       const u = getLatestStateUpdate(c1);
-      revealAllStories(server, c1, u.room.stories.length);
+      revealAllStories(server, c1, connections, u.room.stories.length);
 
       await vi.waitFor(() => {
         expect(getMessages(c1, "GAME_SCORES").length).toBeGreaterThan(0);
@@ -388,7 +419,7 @@ describe("Competitive mode server tests", () => {
       playAllRounds(server, c1, connections);
 
       const u = getLatestStateUpdate(c1);
-      revealAllStories(server, c1, u.room.stories.length);
+      revealAllStories(server, c1, connections, u.room.stories.length);
 
       await vi.waitFor(() => {
         expect(getMessages(c1, "GAME_SCORES").length).toBeGreaterThan(0);
@@ -415,7 +446,7 @@ describe("Competitive mode server tests", () => {
       playAllRounds(server, c1, connections);
 
       const u = getLatestStateUpdate(c1);
-      revealAllStories(server, c1, u.room.stories.length);
+      revealAllStories(server, c1, connections, u.room.stories.length);
 
       await vi.waitFor(() => {
         expect(getMessages(c1, "GAME_SCORES").length).toBeGreaterThan(0);
@@ -447,7 +478,7 @@ describe("Competitive mode server tests", () => {
       playAllRounds(server, c1, connections);
 
       const u = getLatestStateUpdate(c1);
-      revealAllStories(server, c1, u.room.stories.length);
+      revealAllStories(server, c1, connections, u.room.stories.length);
 
       await vi.waitFor(() => {
         expect(getMessages(c1, "GAME_SCORES").length).toBeGreaterThan(0);
@@ -478,7 +509,7 @@ describe("Competitive mode server tests", () => {
       playAllRounds(server, c1, connections);
 
       const u = getLatestStateUpdate(c1);
-      revealAllStories(server, c1, u.room.stories.length);
+      revealAllStories(server, c1, connections, u.room.stories.length);
 
       await vi.waitFor(() => {
         expect(getMessages(c1, "GAME_SCORES").length).toBeGreaterThan(0);
@@ -555,7 +586,7 @@ describe("Competitive mode server tests", () => {
 
       playAllRounds(server, c1, connections);
       const u = getLatestStateUpdate(c1);
-      revealAllStories(server, c1, u.room.stories.length);
+      revealAllStories(server, c1, connections, u.room.stories.length);
 
       await vi.waitFor(() => {
         expect(getMessages(c1, "GAME_SCORES").length).toBeGreaterThan(0);

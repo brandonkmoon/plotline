@@ -282,7 +282,7 @@ export default function VotingScreen() {
         <div className="mt-4">
           {votesIn < totalPlayers && (
             <p className="font-body italic text-[13px] text-text-muted text-center mb-2">
-              {totalPlayers - votesIn} player{totalPlayers - votesIn !== 1 ? "s" : ""} didn&rsquo;t vote &mdash; their vote{totalPlayers - votesIn !== 1 ? "s" : ""} will be assigned randomly.
+              {totalPlayers - votesIn} player{totalPlayers - votesIn !== 1 ? "s" : ""} didn&rsquo;t vote &mdash; they abstain.
             </p>
           )}
           <Button variant="primary" onClick={advanceVoting}>

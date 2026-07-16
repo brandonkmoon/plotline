@@ -212,6 +212,18 @@ export function handleAdvanceReveal(server: RoomServer, sender: Connection) {
   const playerId = server.connectionToPlayer.get(sender.id);
   if (!playerId) return;
 
+  // In competitive mode, stories advance by finishing the vote round
+  // (Start Voting → Advance Voting), never by skipping the reveal. The client
+  // only sends this in classic mode; block it so voting can't be bypassed with
+  // a hand-crafted message.
+  if (server.gameState.gameMode === "competitive") {
+    server.sendTo(sender, {
+      type: "ERROR",
+      reason: "Finish the vote to advance in competitive mode",
+    });
+    return;
+  }
+
   const isHost = playerId === server.gameState.hostId;
 
   const currentStory = server.gameState.stories[server.revealStoryIndex];

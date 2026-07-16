@@ -137,6 +137,25 @@ export async function handleAdvanceVoting(server: RoomServer, sender: Connection
   const playerId = server.connectionToPlayer.get(sender.id);
   if (!playerId || playerId !== server.gameState.hostId) return;
 
+  // Not skippable: the host can only close the round once every connected
+  // player has voted or the timer has run out (it also auto-closes on the
+  // timer). Matches the client's advance gate.
+  const connectedCount = server.gameState.players.filter(
+    (p) => p.isConnected
+  ).length;
+  const allVoted =
+    connectedCount > 0 && server.currentVotes.size >= connectedCount;
+  const startedAt = server.gameState.votingState.votingStartedAt;
+  const timerExpired =
+    !startedAt || Date.now() - startedAt >= VOTING_DURATION_MS;
+  if (!allVoted && !timerExpired) {
+    server.sendTo(sender, {
+      type: "ERROR",
+      reason: "Wait for all votes or the timer to end",
+    });
+    return;
+  }
+
   await closeVoting(server);
 }
 
